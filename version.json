@@ -1,4 +1,4 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.7",
   "notes": "Data is now 100% safe during updates — backup created before every update"
 }
