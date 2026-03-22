@@ -132,22 +132,17 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
     <!-- Plans -->
     <div id="plan-section">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;text-align:center;color:#18181B">Choose Your Plan</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
         <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')" style="border:2px solid #E7E2D9;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s">
           <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px">Monthly</div>
-          <div id="price-monthly" style="font-size:20px;font-weight:900;color:#18181B;margin:6px 0">₹499</div>
+          <div style="font-size:20px;font-weight:900;color:#18181B;margin:6px 0">₹499</div>
           <div style="font-size:10px;color:#78716C">per month</div>
         </div>
         <div class="plan-card" id="plan-yearly" onclick="selectPlan('yearly')" style="border:2px solid #E8622A;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s;background:#FFF7F0;position:relative">
           <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#E8622A;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</div>
           <div style="font-size:10px;font-weight:700;color:#E8622A;text-transform:uppercase;letter-spacing:1px">Yearly</div>
-          <div id="price-yearly" style="font-size:20px;font-weight:900;color:#E8622A;margin:6px 0">₹4,499</div>
+          <div style="font-size:20px;font-weight:900;color:#E8622A;margin:6px 0">₹4,499</div>
           <div style="font-size:10px;color:#78716C">per year</div>
-        </div>
-        <div class="plan-card" id="plan-lifetime" onclick="selectPlan('lifetime')" style="border:2px solid #E7E2D9;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s">
-          <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px">Lifetime</div>
-          <div id="price-lifetime" style="font-size:20px;font-weight:900;color:#18181B;margin:6px 0">₹19,999</div>
-          <div style="font-size:10px;color:#78716C">one time</div>
         </div>
       </div>
 
@@ -1671,8 +1666,9 @@ function showLicenseScreen(){
 
 function selectPlan(plan){
   selPlan = plan;
-  ['monthly','yearly','lifetime'].forEach(p=>{
+  ['monthly','yearly'].forEach(p=>{
     const el = document.getElementById('plan-'+p);
+    if(!el) return;
     if(p === plan){
       el.style.borderColor = '#E8622A';
       el.style.background = '#FFF7F0';
@@ -1723,12 +1719,13 @@ function generateKey(plan, customerName){
   return 'CCTR-' + hash.slice(0,4) + '-' + hash.slice(4,8) + '-' + btoa(expiry.toString()).slice(0,4).toUpperCase() + '-' + btoa(customerName||'USER').slice(0,4).toUpperCase();
 }
 
-// Activate a license key entered by user
 function activateLicenseKey(){
   const key = (document.getElementById('license-key-input').value||'').trim().toUpperCase();
   if(!key || key.length < 10){ showLicMsg('Enter a valid license key','err'); return;}
 
-  // Check against GitHub license list
+  showLicMsg('⏳ Verifying...','warn');
+
+  // Try online verification first, fall back to offline
   verifyKeyOnline(key).then(result => {
     if(result.valid){
       saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name });
@@ -1738,21 +1735,27 @@ function activateLicenseKey(){
       showLicMsg('❌ Invalid or expired key. Contact support.', 'err');
     }
   }).catch(()=>{
-    showLicMsg('⚠️ Cannot verify online. Check internet connection.', 'warn');
+    // Offline fallback — accept any CCTR- key format and activate with 1 year
+    if(key.startsWith('CCTR-') && key.length >= 15){
+      saveLicense({ key, plan: 'yearly', expiry: Date.now() + 365*86400000, name: 'Customer', offline: true });
+      showLicMsg('✅ License activated (offline mode)!', 'ok');
+      setTimeout(()=>hideLicenseScreen(), 1000);
+    } else {
+      showLicMsg('❌ Invalid key format. Must start with CCTR-', 'err');
+    }
   });
 }
 
 // Verify key against GitHub license list
 async function verifyKeyOnline(key){
-  try{
-    const url = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json';
-    const r = await fetch(url + '?t=' + Date.now());
-    const licenses = await r.json();
-    const lic = licenses[key];
-    if(!lic) return { valid: false };
-    if(lic.plan !== 'lifetime' && Date.now() > lic.expiry) return { valid: false };
-    return { valid: true, ...lic };
-  }catch(e){ throw e; }
+  const url = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t='+Date.now();
+  const resp = await fetch(url, {cache:'no-store'});
+  if(!resp.ok) throw new Error('Network error');
+  const licenses = await resp.json();
+  const lic = licenses[key];
+  if(!lic) return { valid: false };
+  if(lic.plan !== 'lifetime' && Date.now() > lic.expiry) return { valid: false };
+  return { valid: true, ...lic };
 }
 
 function showLicMsg(msg, type){
