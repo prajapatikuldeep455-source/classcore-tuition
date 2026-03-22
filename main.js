@@ -154,23 +154,71 @@ async function checkForUpdates() {
 
 ipcMain.handle('check-update', async () => { await checkForUpdates(); return { ok: true }; });
 
-ipcMain.handle('download-update', async () => {
+ipcMain.handle('download-update', async (e, currentData) => {
   try {
-    mainWindow.webContents.send('update-progress', 10);
+    // STEP 1: Save current data to main file (make sure nothing is lost)
+    mainWindow.webContents.send('update-progress', 5);
+    if (currentData) {
+      fs.writeFileSync(dataFile, JSON.stringify(currentData, null, 2), 'utf8');
+    } else if (latestData) {
+      fs.writeFileSync(dataFile, JSON.stringify(latestData, null, 2), 'utf8');
+    }
+
+    // STEP 2: Create a backup copy before update
+    const backupFile = path.join(dataDir, `backup_before_update_${Date.now()}.json`);
+    if (fs.existsSync(dataFile)) {
+      fs.copyFileSync(dataFile, backupFile);
+    }
+    mainWindow.webContents.send('update-progress', 15);
+
+    // STEP 3: Download new index.html from GitHub
     const newIndex = await fetchURL(INDEX_URL);
     mainWindow.webContents.send('update-progress', 60);
+
+    // STEP 4: Download new version.json
     const newVersion = await fetchURL(VERSION_URL);
-    mainWindow.webContents.send('update-progress', 90);
+    mainWindow.webContents.send('update-progress', 85);
+
+    // STEP 5: Write new files
     fs.writeFileSync(indexFile, newIndex, 'utf8');
     fs.writeFileSync(versionFile, newVersion, 'utf8');
+
+    // STEP 6: Mark that we just updated (so app shows "updated" message on restart)
+    const updateMeta = { justUpdated: true, version: JSON.parse(newVersion).version, timestamp: new Date().toISOString() };
+    fs.writeFileSync(path.join(dataDir, 'update_meta.json'), JSON.stringify(updateMeta), 'utf8');
+
     mainWindow.webContents.send('update-progress', 100);
     mainWindow.webContents.send('update-downloaded');
     return { ok: true };
-  } catch(e) { return { ok: false, error: e.message }; }
+  } catch(e) {
+    console.error('Update download error:', e);
+    return { ok: false, error: e.message };
+  }
 });
 
-ipcMain.handle('install-update', () => { app.relaunch(); app.exit(0); });
+ipcMain.handle('install-update', () => {
+  // Final data save before restart
+  if (latestData) {
+    try { fs.writeFileSync(dataFile, JSON.stringify(latestData, null, 2), 'utf8'); } catch(e) {}
+  }
+  app.relaunch();
+  app.exit(0);
+});
+
 ipcMain.handle('get-app-version', () => getCurrentVersion());
+
+// Check if we just updated and return meta info
+ipcMain.handle('get-update-meta', () => {
+  const metaFile = path.join(dataDir, 'update_meta.json');
+  try {
+    if (fs.existsSync(metaFile)) {
+      const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+      fs.unlinkSync(metaFile); // delete so it only shows once
+      return meta;
+    }
+  } catch(e) {}
+  return null;
+});
 
 // ── Print ─────────────────────────────────────────────────────────────────
 ipcMain.handle('print-content', async (e, html) => {
