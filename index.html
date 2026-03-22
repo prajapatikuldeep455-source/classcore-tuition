@@ -246,10 +246,9 @@ async function persist(){
   if(IS_ELECTRON){
     const payload={
       students,batches,classFees,stuFeeOvr,attData,
+      cc_users:localStorage.getItem('cc_users')||'',
       username:localStorage.getItem('username')||'admin',
       password:localStorage.getItem('password')||'1234',
-      empUsername:localStorage.getItem('empUsername')||'',
-      empPassword:localStorage.getItem('empPassword')||'',
       tuitionName:localStorage.getItem('tuitionName')||'',
       tuitionAddress:localStorage.getItem('tuitionAddress')||'',
       tuitionLogo:localStorage.getItem('tuitionLogo')||'',
@@ -272,11 +271,10 @@ async function loadAllData(){
       classFees=d.classFees||{};
       stuFeeOvr=d.stuFeeOvr||{};
       attData=d.attData||{};
-      // Restore settings to localStorage for compatibility
+      // Restore all settings to localStorage for compatibility
+      if(d.cc_users) localStorage.setItem('cc_users',d.cc_users);
       if(d.username) localStorage.setItem('username',d.username);
       if(d.password) localStorage.setItem('password',d.password);
-      if(d.empUsername) localStorage.setItem('empUsername',d.empUsername);
-      if(d.empPassword) localStorage.setItem('empPassword',d.empPassword);
       if(d.tuitionName) localStorage.setItem('tuitionName',d.tuitionName);
       if(d.tuitionAddress) localStorage.setItem('tuitionAddress',d.tuitionAddress);
       if(d.tuitionLogo) localStorage.setItem('tuitionLogo',d.tuitionLogo);
@@ -325,7 +323,7 @@ function getUsers(){
   try{const d=localStorage.getItem('cc_users');return d?JSON.parse(d):[{username:'admin',password:'1234',role:'admin',name:'Admin'}];}
   catch{return [{username:'admin',password:'1234',role:'admin',name:'Admin'}];}
 }
-function saveUsers(u){localStorage.setItem('cc_users',JSON.stringify(u));}
+function saveUsers(u){localStorage.setItem('cc_users',JSON.stringify(u));persist();}
 function isAdmin(){return currentUser&&currentUser.role==='admin';}
 function adminOnly(msg){if(!isAdmin()){toast(msg||'Only admin can do this','warn');return true;}return false;}
 
@@ -434,11 +432,13 @@ function renderStus(){
       </div>
     </div>
     ${!list.length?`<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">🎓</div><p>No students. <button onclick="openStuForm(null)" style="color:#E8622A;background:none;border:none;cursor:pointer;font-weight:700">Add one →</button></p></div>`:`
-    <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Annual Fee</th><th>Status</th><th>Actions</th></tr></thead>
+    <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Medium</th><th>School</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Annual Fee</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${list.map((s,i)=>{const idx=students.indexOf(s);return`<tr>
       <td style="color:#78716C;font-size:11px">${i+1}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(idx)}">${ini(s.name)}</div><div><div style="font-weight:600">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">${esc(s.subject||'')}</div></div></div></td>
-      <td style="color:#78716C">${esc(s.roll||'—')}</td><td>${esc(s.cls)}</td><td>${esc(s.batch||'—')}</td>
+      <td style="color:#78716C">${esc(s.roll||'—')}</td><td>${esc(s.cls)}</td>
+      <td><span class="badge badge-gray">${esc(s.medium||'—')}</span></td>
+      <td style="color:#78716C">${esc(s.school||'—')}</td><td>${esc(s.batch||'—')}</td>
       <td style="color:#78716C">${esc(s.mobile||'—')}</td><td>${esc(s.parent||'—')}</td>
       <td style="font-weight:700">${fmt(effFee(s))}</td>
       <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
@@ -470,6 +470,14 @@ function openStuForm(id){
       <div class="fg"><label>Mobile ★ (10 digits)</label><input id="sf-mobile" value="${esc(s?.mobile||'')}" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
       <div class="fg"><label>Parent / Guardian</label><input id="sf-parent" value="${esc(s?.parent||'')}" placeholder="Father / Mother name"></div>
       <div class="fg"><label>Subject</label><input id="sf-subject" value="${esc(s?.subject||'')}" placeholder="e.g. Math, Science"></div>
+      <div class="fg"><label>School Name</label><input id="sf-school" value="${esc(s?.school||'')}" placeholder="e.g. Delhi Public School"></div>
+      <div class="fg"><label>Medium</label><select id="sf-medium">
+        <option value="">— Select Medium —</option>
+        <option value="English"${s?.medium==='English'?' selected':''}>English</option>
+        <option value="Gujarati"${s?.medium==='Gujarati'?' selected':''}>Gujarati</option>
+        <option value="Hindi"${s?.medium==='Hindi'?' selected':''}>Hindi</option>
+        <option value="Semi-English"${s?.medium==='Semi-English'?' selected':''}>Semi-English</option>
+      </select></div>
       <div class="fg"><label>Admission Date</label><input id="sf-admdate" type="date" value="${s?.admDate||''}"></div>
       <div class="fg"><label>Fee Type</label><select id="sf-feetype" onchange="onFeeTypeChange()">
         <option value="">— Select —</option>
@@ -552,6 +560,8 @@ function saveStu(){
     batch:document.getElementById('sf-batch').value||'',
     parent:document.getElementById('sf-parent').value||'',
     subject:document.getElementById('sf-subject').value||'',
+    school:document.getElementById('sf-school').value||'',
+    medium:document.getElementById('sf-medium').value||'',
     admDate:document.getElementById('sf-admdate').value||'',
     feeType:ft,monthlyFees:monthly,annualFees:annual,
     totalFees:total,discount:disc,finalFees:total-disc,
@@ -884,7 +894,7 @@ function showReceiptPrev(s,amount,rcptNo,payDate){
     <div style="padding:18px 28px 0">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#F7F5F0;border-radius:10px;margin-bottom:16px">
         <div class="av av-lg avc0">${ini(s.name)}</div>
-        <div style="flex:1"><div style="font-size:15px;font-weight:700">${esc(s.name)}</div><div style="font-size:12px;color:#78716C">Class ${esc(s.cls)}${s.batch?' · '+esc(s.batch):''}${s.subject?' · '+esc(s.subject):''}</div></div>
+        <div style="flex:1"><div style="font-size:15px;font-weight:700">${esc(s.name)}</div><div style="font-size:12px;color:#78716C">Class ${esc(s.cls)}${s.batch?' · '+esc(s.batch):''}${s.medium?' · '+esc(s.medium)+' Medium':''}${s.school?' · '+esc(s.school):''}${s.subject?' · '+esc(s.subject):''}</div></div>
         ${s.parent?`<div style="text-align:right"><div style="font-size:10.5px;color:#78716C">Guardian</div><div style="font-size:12px;font-weight:600">${esc(s.parent)}</div></div>`:''}
       </div>
     </div>
@@ -918,7 +928,7 @@ function buildReceiptHTML(s,amount,rcptNo,payDate){
   <div class="hdr"><h1>${esc(inst)}</h1>${addr?`<p style="font-size:11px;opacity:.75">${esc(addr)}</p>`:""}
     <div class="rcpt-num"><div><div class="lbl">Fee Receipt</div><div class="val">#${rcptNo}</div></div><div style="text-align:right"><div class="lbl">Date</div><div style="font-size:13px;font-weight:700;margin-top:4px">${dispDate}</div></div></div></div>
   <div class="amount-box"><div><div style="font-size:10px;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Amount Paid</div><div class="amount">&#8377;${Number(amount).toLocaleString("en-IN")}</div></div><div class="status ${isPaid?"paid":"partial"}">${isPaid?"FULLY PAID":"PARTIAL"}</div></div>
-  <div class="student-box"><div class="av">${ini(s.name)}</div><div><div style="font-size:15px;font-weight:700">${esc(s.name)}</div><div style="font-size:12px;color:#78716C">Class ${esc(s.cls)}${s.batch?" - "+esc(s.batch):""}${s.subject?" - "+esc(s.subject):""}</div></div>${s.parent?`<div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:#78716C">Guardian</div><div style="font-size:12px;font-weight:600">${esc(s.parent)}</div></div>`:""}</div>
+  <div class="student-box"><div class="av">${ini(s.name)}</div><div><div style="font-size:15px;font-weight:700">${esc(s.name)}</div><div style="font-size:12px;color:#78716C">Class ${esc(s.cls)}${s.batch?" - "+esc(s.batch):""}${s.subject?" - "+esc(s.subject):""}${s.school?" - "+esc(s.school):""}</div></div>${s.parent?`<div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:#78716C">Guardian</div><div style="font-size:12px;font-weight:600">${esc(s.parent)}</div></div>`:""}</div>
   <div class="tbl-wrap"><table><tr><td>Total Fees</td><td>${fmt(totalFee)}</td></tr><tr><td>This Payment</td><td style="color:#E8622A">${fmt(amount)}</td></tr><tr><td>Total Paid</td><td style="color:#16A34A">${fmt(totalPaid)}</td></tr>${s.mobile?`<tr><td>Mobile</td><td>${esc(s.mobile)}</td></tr>`:""}</table></div>
   <div class="balance-row ${isPaid?"paid-bg":"due-bg"}"><span style="font-weight:700;color:${isPaid?"#16A34A":"#DC2626"}">${isPaid?"Fully Paid":"Balance Due"}</span><span style="font-size:16px;font-weight:900;color:${isPaid?"#16A34A":"#DC2626"}">&#8377;${balance.toLocaleString("en-IN")}</span></div>
   <div class="cut"><span>scissors</span></div>
@@ -945,8 +955,8 @@ function buildStudentListHTML(){
   const list=students.filter(s=>!s.inactive);
   return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Student List</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px;color:#18181B;}h2{margin-bottom:4px;}p{color:#666;font-size:12px;margin-bottom:16px;}table{width:100%;border-collapse:collapse;}th{background:#18181B;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}td{padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;}@media print{body{padding:10px;}}</style></head><body>
   <h2>${esc(inst)}</h2><p>Student List - ${todayStr()} - Total: ${list.length} active students</p>
-  <table><thead><tr><th>#</th><th>Name</th><th>Class</th><th>Batch</th><th>Mobile</th><th>Guardian</th><th>Annual Fee</th><th>Paid</th><th>Pending</th></tr></thead>
-  <tbody>${list.map((s,i)=>{const pen=Math.max(0,effFee(s)-(s.paid||0));return`<tr><td>${i+1}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.cls)}</td><td>${esc(s.batch||'-')}</td><td>${esc(s.mobile||'-')}</td><td>${esc(s.parent||'-')}</td><td>${fmt(effFee(s))}</td><td style="color:#16A34A">${fmt(s.paid)}</td><td style="color:${pen>0?'#DC2626':'#16A34A'}">${fmt(pen)}</td></tr>`;}).join('')}</tbody></table>
+  <table><thead><tr><th>#</th><th>Name</th><th>Class</th><th>School</th><th>Batch</th><th>Mobile</th><th>Guardian</th><th>Annual Fee</th><th>Paid</th><th>Pending</th></tr></thead>
+  <tbody>${list.map((s,i)=>{const pen=Math.max(0,effFee(s)-(s.paid||0));return`<tr><td>${i+1}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.cls)}</td><td>${esc(s.school||'-')}</td><td>${esc(s.batch||'-')}</td><td>${esc(s.mobile||'-')}</td><td>${esc(s.parent||'-')}</td><td>${fmt(effFee(s))}</td><td style="color:#16A34A">${fmt(s.paid)}</td><td style="color:${pen>0?'#DC2626':'#16A34A'}">${fmt(pen)}</td></tr>`;}).join('')}</tbody></table>
   <p style="margin-top:16px;text-align:right">Generated by ClassCore - ${todayStr()}</p></body></html>`;
 }
 async function printStudentList(){
