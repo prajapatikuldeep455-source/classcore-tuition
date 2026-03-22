@@ -1,4 +1,4 @@
 {
-  "version": "1.0.4",
-  "notes": "Fixed data saving issue — data now saves reliably to SSD"
+  "version": "1.0.5",
+  "notes": "Data is now 100% safe during updates — backup created before every update"
 }

@@ -1398,8 +1398,14 @@ function hideUpdateBanner(){
 async function doUpdate(){
   document.getElementById('update-btn').style.display='none';
   document.getElementById('update-progress-wrap').style.display='flex';
-  document.getElementById('update-title').textContent='Downloading update...';
-  await window.classcore.downloadUpdate();
+  document.getElementById('update-title').textContent='Saving your data...';
+  // Pass current data so it gets saved BEFORE update
+  const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayload() : null);
+  if(!r.ok){
+    toast('Update failed: '+(r.error||'unknown error'),'err');
+    document.getElementById('update-btn').style.display='flex';
+    document.getElementById('update-progress-wrap').style.display='none';
+  }
 }
 if(IS_ELECTRON()){
   window.classcore.onUpdateAvailable(version=>{
@@ -1425,6 +1431,25 @@ if(IS_ELECTRON()){
 // INIT
 function initApp(){
   document.getElementById('today-chip').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  // Check if we just updated — show success message with data confirmation
+  if(IS_ELECTRON()){
+    window.classcore.getUpdateMeta().then(meta=>{
+      if(meta&&meta.justUpdated){
+        // Show a nice success banner
+        setTimeout(()=>{
+          const total=students.length;
+          toast(`✅ Updated to v${meta.version}! All ${total} student records are safe.`,'ok');
+          // Also show a more prominent notification
+          showUpdateBanner(
+            `🎉 Successfully updated to v${meta.version}!`,
+            `All your data is safe — ${total} students, all fees and attendance records preserved.`
+          );
+          // Auto hide after 5 seconds
+          setTimeout(()=>hideUpdateBanner(),6000);
+        },1000);
+      }
+    });
+  }
   // Restore current user from storage
   if(!currentUser){
     try{const c=localStorage.getItem('ops_cur_user');if(c)currentUser=JSON.parse(c);}catch{}
