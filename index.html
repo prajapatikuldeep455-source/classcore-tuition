@@ -152,6 +152,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <h2 id="page-title" style="font-size:18px;font-weight:700">Dashboard</h2>
       <div style="display:flex;align-items:center;gap:10px">
         <span id="today-chip" style="font-size:11px;color:#78716C;background:#F7F5F0;border:1px solid #E7E2D9;padding:5px 12px;border-radius:20px"></span>
+        <span id="save-chip" style="display:none;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;transition:.3s"></span>
         <button id="top-btn" class="btn btn-primary" style="display:none" onclick="topBtnAction()"></button>
       </div>
     </div>
@@ -259,21 +260,50 @@ function buildPayload(){
 
 // Save everything to SSD file
 async function persist(){
+  showSaveChip('saving');
   if(IS_ELECTRON()){
     const result = await window.classcore.saveData(buildPayload());
-    if(!result||!result.ok) console.error('Save failed!');
+    if(!result||!result.ok){
+      showSaveChip('error');
+      console.error('Save failed!', result?.error);
+    } else {
+      showSaveChip('saved');
+    }
     return result;
   } else {
     sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
     sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
+    showSaveChip('saved');
     return {ok:true};
   }
 }
 
-// Save data when app is closing (synchronous fallback)
+let saveChipTimer;
+function showSaveChip(state){
+  const chip = document.getElementById('save-chip');
+  if(!chip) return;
+  clearTimeout(saveChipTimer);
+  if(state==='saving'){
+    chip.style.display='inline-block';
+    chip.style.background='#FEF9C3';chip.style.color='#92400E';chip.style.border='1px solid #FDE047';
+    chip.textContent='💾 Saving...';
+  } else if(state==='saved'){
+    chip.style.display='inline-block';
+    chip.style.background='#DCFCE7';chip.style.color='#16A34A';chip.style.border='1px solid #BBF7D0';
+    chip.textContent='✅ Saved';
+    saveChipTimer=setTimeout(()=>{chip.style.display='none';},2000);
+  } else if(state==='error'){
+    chip.style.display='inline-block';
+    chip.style.background='#FEE2E2';chip.style.color='#DC2626';chip.style.border='1px solid #FECACA';
+    chip.textContent='❌ Save failed!';
+  }
+}
+
+// Save data when app is closing — use SYNCHRONOUS save so it completes before close
 window.addEventListener('beforeunload', (e)=>{
+  const payload = buildPayload();
   if(IS_ELECTRON()){
-    window.classcore.saveData(buildPayload());
+    try { window.classcore.saveDataSync(payload); } catch(err) { console.error('Sync save failed', err); }
   } else {
     sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
     sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);

@@ -1,4 +1,4 @@
 {
-  "version": "1.0.3",
-  "notes": "Fixed data saving, added month-wise fees, school name and medium fields"
+  "version": "1.0.4",
+  "notes": "Fixed data saving issue — data now saves reliably to SSD"
 }
