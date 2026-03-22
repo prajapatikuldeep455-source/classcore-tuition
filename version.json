@@ -1,4 +1,4 @@
 {
-  "version": "1.0.7",
-  "notes": "Data is now 100% safe during updates — backup created before every update"
+  "version": "1.0.8",
+  "notes": "Employee section upgraded — full name, mobile, role, auto ID & password. Batch section — teacher assignment, subject fee, notes added."
 }

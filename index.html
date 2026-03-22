@@ -109,6 +109,76 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </head>
 <body>
 
+<!-- LICENSE SCREEN -->
+<div id="license-screen" style="display:none;position:fixed;inset:0;background:#F7F5F0;z-index:99999;align-items:center;justify-content:center;flex-direction:column">
+  <div style="background:#fff;border:1.5px solid #E7E2D9;border-radius:20px;padding:36px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.1)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:28px;font-weight:900;margin-bottom:4px">CLASS<span style="color:#E8622A">CORE</span></div>
+      <div style="font-size:10px;color:#78716C;letter-spacing:2px;text-transform:uppercase">Tuition Management</div>
+    </div>
+
+    <!-- Trial Banner -->
+    <div id="trial-banner" style="display:none;background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:12px 16px;margin-bottom:20px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#92400E">⏳ Free Trial</div>
+      <div id="trial-days" style="font-size:11px;color:#92400E;margin-top:3px"></div>
+    </div>
+
+    <!-- Expired Banner -->
+    <div id="expired-banner" style="display:none;background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:20px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#DC2626">❌ License Expired</div>
+      <div style="font-size:11px;color:#DC2626;margin-top:3px">Please renew your subscription to continue</div>
+    </div>
+
+    <!-- Plans -->
+    <div id="plan-section">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;text-align:center;color:#18181B">Choose Your Plan</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')" style="border:2px solid #E7E2D9;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s">
+          <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px">Monthly</div>
+          <div id="price-monthly" style="font-size:20px;font-weight:900;color:#18181B;margin:6px 0">₹499</div>
+          <div style="font-size:10px;color:#78716C">per month</div>
+        </div>
+        <div class="plan-card" id="plan-yearly" onclick="selectPlan('yearly')" style="border:2px solid #E8622A;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s;background:#FFF7F0;position:relative">
+          <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#E8622A;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</div>
+          <div style="font-size:10px;font-weight:700;color:#E8622A;text-transform:uppercase;letter-spacing:1px">Yearly</div>
+          <div id="price-yearly" style="font-size:20px;font-weight:900;color:#E8622A;margin:6px 0">₹4,499</div>
+          <div style="font-size:10px;color:#78716C">per year</div>
+        </div>
+        <div class="plan-card" id="plan-lifetime" onclick="selectPlan('lifetime')" style="border:2px solid #E7E2D9;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:.15s">
+          <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px">Lifetime</div>
+          <div id="price-lifetime" style="font-size:20px;font-weight:900;color:#18181B;margin:6px 0">₹19,999</div>
+          <div style="font-size:10px;color:#78716C">one time</div>
+        </div>
+      </div>
+
+      <button id="buy-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="buyPlan()">💳 Buy Now — ₹4,499/year</button>
+      <div style="text-align:center;margin-top:10px">
+        <span style="font-size:11px;color:#78716C">Already have a key? </span>
+        <button onclick="showKeyEntry()" style="background:none;border:none;color:#E8622A;font-size:11px;font-weight:700;cursor:pointer">Enter License Key →</button>
+      </div>
+    </div>
+
+    <!-- Key Entry -->
+    <div id="key-section" style="display:none">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;text-align:center">Enter License Key</div>
+      <div class="fg" style="margin-bottom:12px">
+        <input id="license-key-input" placeholder="CCTR-XXXX-XXXX-XXXX" style="text-align:center;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="activateLicenseKey()">🔑 Activate</button>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="showPlans()" style="background:none;border:none;color:#78716C;font-size:11px;cursor:pointer">← Back to plans</button>
+      </div>
+    </div>
+
+    <!-- Trial Button -->
+    <div id="trial-btn-wrap" style="margin-top:14px;text-align:center">
+      <button id="trial-btn" onclick="startTrial()" style="background:none;border:none;color:#78716C;font-size:11px;cursor:pointer;text-decoration:underline">Start 30-day free trial</button>
+    </div>
+
+    <div id="lic-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
+  </div>
+</div>
+
 <div id="login-screen">
   <div class="login-box">
     <div style="font-size:24px;font-weight:900;margin-bottom:4px">CLASS<span style="color:#E8622A">CORE</span></div>
@@ -213,6 +283,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   </div>
 </div>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const BUILTIN_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAE0UlEQVR4nO2dT4scRRyG60/39PzbRbIkYlajoK5GPIiwGFEUPXrIfgX16CleRMRD8IN49AvkkIPxoPHgsqIRI4uiYowaTXazWc06Mz3dVV7rbcGwLNq9vu9ze+mu7t8MzxRUVU+1MUIIIYQQQgghhGDBtl3Af80nm5uQT5082VIl3cC1XYBoFwlAjgQgRwKQIwHIkQDk/O+GgSuvvgHZDT3k3vIYjw9yzDZC9rGGvHHmrYOW2CnUA5AjAciRAORIAHIkADkSgBwJQM6hnwe49/RrkEfHFvpp9gP3eJr7xwZHsUE+SKPz7lqabQyf4x3tNE0bZ97cX8EdQz0AORKAHAlAjgQgRwKQIwHIydou4KBYa2HYN5tUr6S5P+o/nebJ9T+301w7B+vF4+VxmWZfuMfghiG81yhhsr+Ku4V6AHIkADkSgBwJQI4EIEcCkCMByDn08wB1WT+RZlvVK2kO8/r9NN/ty9/T/MjRYjHNlzM7gusb+2yancu+aJTw6f4q7hbqAciRAORIAHIkADkSgBwJQM6hHwaGKp5Ic6wjPLVb3pz+Cg2OhIfSuFj0YDl5JZudS/PXZnghzT1rfztAuZ1DPQA5EoAcCUCOBCBHApAjAciRAOQc+nmAGCI8ll1P5ih1kS1ArKvv0nx1p4R/SF8ZjpbTXBXxqTQHF883SvhyfxV3C/UA5EgAciQAORKAHAlAjgQgp/PDwJdffxvyvEZnP7h87VKa7ax8GK8QT6Xp2y37Q5p7VYTdoYul+QNpzsf2D7hcP8N8yFEPQI4EIEcCkCMByJEA5EgAciQAOa1vFr38AmzqZYLBlzyZxkucKozGDI5AHJXbD6a5tv4+OKHInkujH+XwHQyXRh+muTfwV+H+jx6H5eTejRtYrsWv1OImZCZMZpA/O/uOaRP1AORIAHIkADkSgBwJQI4EIKf15WDrcNxkQw3v+LHGLqV54HBz5ljuwDt+qmhvN673FZw/jd+nuX//4jDNxYnxcWgfa9g8utjavgeuZ0wwSPNHheO+zN00HUI9ADkSgBwJQI4EIEcCkCMByJEA5LQ+D+CsgxqCDU+m2UbzCxw35pk0xxibEuP6awwV5CrAuD1WVQ7Hrb2Ezc3zjeOwvBych/u5GPE7jfHnNI7y/N1GvbVpEfUA5EgAciQAORKAHAlAjgQgp/VhYKxKGKb1Mr+R5sLiZtDOVB+nuQz2rjTXVQ2bRTuLn9FbA88VZzu7cL7f68Ow0E5nW1Bwnu9A+9n0FpzvPbQPgz6cX+RFc/m4VdQDkCMByJEA5EgAciQAORKAHAlATvvzAAF36Xpx4cdv0rwbBvCuX+s8SDubTiGXZjZPs/N4vs8yWL4Nt67D/csLm/AYt/VZAe2dvZLmeR1wniHD5WF/e+8nOP/0S83/N7eKegByJAA5EoAcCUCOBCBHApDT+iZRTdbW1iA3N10K+FCvqWt8qHZ3dxdyluFItyhgVPe39mUJfwY2pjFoGy+MIe/t7UHOc3zIeDbD6128+JHpEuoByJEA5EgAciQAORKAHAlAjgQgp3PzAOvr65Cb43jvG5svN+YFmvMGd2I+n/9jbt7fOfzNRFzNvuPx1dXVfdX3b6MegBwJQI4EIEcCkCMByJEAQgghhBBCCCGEECT8BZt+FXBqUbAOAAAAAElFTkSuQmCC";
 const CLASSES=['Jr.KG','Sr.KG','1','2','3','4','5','6','7','8','9','10','11','12'];
@@ -646,21 +717,36 @@ function makeBatCard(b){
   const full=list.length>=(b.maxStudents||999);
   const avs=list.slice(0,8).map((s,i)=>`<div class="av ${avcC(i)}" style="width:28px;height:28px;font-size:10px;border:2px solid #fff;margin-left:${i?'-8px':'0'}" title="${esc(s.name)}">${ini(s.name)}</div>`).join('');
   const more=list.length>8?`<div class="av" style="width:28px;height:28px;font-size:9px;background:#E7E2D9;color:#78716C;border:2px solid #fff;margin-left:-8px">+${list.length-8}</div>`:'';
+  // Get teacher name
+  const teacher=b.teacher?getUsers().find(u=>u.username===b.teacher):null;
   return`<div class="batch-card">
     <div style="background:linear-gradient(135deg,${b.color} 0%,${b.color}cc 100%);padding:18px 20px 14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div style="font-size:17px;font-weight:800;color:#fff">${esc(b.name)}</div><div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">🕐 ${fmt12(b.startTime)} – ${fmt12(b.endTime)}</div></div>
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#fff">${esc(b.name)}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">🕐 ${fmt12(b.startTime)} – ${fmt12(b.endTime)}</div>
+        </div>
         <div style="display:flex;gap:5px">
           <button onclick="openBatForm('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">✏️</button>
           <button onclick="delBat('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">🗑️</button>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${(b.days||[]).map(d=>`<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px">${d}</span>`).join('')}</div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${(b.days||[]).map(d=>`<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px">${d}</span>`).join('')}
+      </div>
     </div>
     <div style="padding:14px 20px 18px">
-      ${b.subject?`<div style="font-size:12px;color:#78716C;margin-bottom:10px">📚 ${esc(b.subject)}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        ${b.subject?`<div style="font-size:12px;color:#78716C">📚 ${esc(b.subject)}</div>`:''}
+        ${b.subjectFee?`<div style="font-size:12px;color:#E8622A;font-weight:700">💰 ${fmt(b.subjectFee)}/mo</div>`:''}
+        ${teacher?`<div style="font-size:12px;color:#2A9D8F">👨‍🏫 ${esc(teacher.name||teacher.username)}</div>`:''}
+        ${b.notes?`<div style="font-size:11px;color:#78716C;font-style:italic;grid-column:1/-1">📝 ${esc(b.notes)}</div>`:''}
+      </div>
       <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">${list.length} Students</span><span style="color:${full?'#DC2626':'#78716C'}">${full?'🔴 Full':`${b.maxStudents-list.length} seats left`} / ${b.maxStudents}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="font-weight:600">${list.length} Students</span>
+          <span style="color:${full?'#DC2626':'#78716C'}">${full?'🔴 Full':`${b.maxStudents-list.length} seats left`} / ${b.maxStudents}</span>
+        </div>
         <div class="prog"><div class="prog-fill" style="background:${full?'#DC2626':b.color};width:${pct}%"></div></div>
       </div>
       <div style="display:flex;margin-bottom:12px">${avs}${more}</div>
@@ -732,8 +818,11 @@ function openBatForm(id){
   const b=id?batches.find(x=>x.id===id):null;
   const selColor=b?.color||BATCH_COLORS[batches.length%BATCH_COLORS.length];
   window._bc=selColor;
+  // Get teachers for dropdown
+  const teachers=getUsers().filter(u=>u.role!=='admin');
+  const teacherOpts=`<option value="">— No Teacher Assigned —</option>`+teachers.map(t=>`<option value="${esc(t.username)}"${b?.teacher===t.username?' selected':''}>${esc(t.name||t.username)} (${esc(t.role||'Employee')})</option>`).join('');
   document.getElementById('page-batches-form').innerHTML=`
-  <div style="max-width:580px">
+  <div style="max-width:600px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
       <button class="btn btn-ghost btn-sm" onclick="gotoPage('batches')">← Back</button>
       <h2 style="font-size:18px;font-weight:700">${id?'Edit Batch':'Create New Batch'}</h2>
@@ -749,6 +838,9 @@ function openBatForm(id){
       </div>
       <div class="fg"><label>Subject</label><input id="bf-sub" value="${esc(b?.subject||'')}" placeholder="e.g. Mathematics" oninput="updBatPrev()"></div>
       <div class="fg"><label>Max Students</label><input id="bf-max" type="number" value="${b?.maxStudents||20}"></div>
+      <div class="fg"><label>Assign Teacher</label><select id="bf-teacher">${teacherOpts}</select></div>
+      <div class="fg"><label>Subject Fee (₹/month)</label><input id="bf-fee" type="number" value="${b?.subjectFee||''}" placeholder="e.g. 1500"></div>
+      <div class="fg full"><label>Batch Notes</label><input id="bf-notes" value="${esc(b?.notes||'')}" placeholder="e.g. Focus on board exam preparation"></div>
       <div class="fg full"><label>Batch Color</label>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center">
           ${BATCH_COLORS.map(c=>`<div onclick="setBatColor('${c}')" id="bfc${c.slice(1)}" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:${selColor===c?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
@@ -792,7 +884,16 @@ function saveBat(){
   const en=document.getElementById('bf-en').value;if(!en){toast('Set end time','err');return;}
   const days=[...document.querySelectorAll('#bf-days .day-btn.on')].map(e=>e.textContent);
   if(!days.length){toast('Select at least one day','err');return;}
-  const obj={id:editBatId||uid(),name,startTime:st,endTime:en,days,subject:document.getElementById('bf-sub').value||'',maxStudents:parseInt(document.getElementById('bf-max').value)||20,color:window._bc||'#E8622A'};
+  const teacher=document.getElementById('bf-teacher')?.value||'';
+  const subjectFee=parseFloat(document.getElementById('bf-fee')?.value||0)||0;
+  const notes=document.getElementById('bf-notes')?.value||'';
+  const obj={
+    id:editBatId||uid(),name,startTime:st,endTime:en,days,
+    subject:document.getElementById('bf-sub').value||'',
+    maxStudents:parseInt(document.getElementById('bf-max').value)||20,
+    color:window._bc||'#E8622A',
+    teacher, subjectFee, notes
+  };
   if(editBatId){batches=batches.map(x=>x.id===editBatId?obj:x);toast('Batch updated!');}
   else{batches.push(obj);toast('Batch created: '+obj.name);}
   persist();gotoPage('batches');
@@ -1326,50 +1427,176 @@ function clearAll(){
 // ── USER MANAGEMENT ──────────────────────────────────────────────────────
 function renderUserList(){
   const users=getUsers();
+  const ROLE_COLORS={'admin':'#E8622A','Teacher':'#2A9D8F','Receptionist':'#457B9D','Accountant':'#6D6875','Assistant Teacher':'#E9C46A'};
+  const ROLE_LABELS={'admin':'👑 Admin','Teacher':'👨‍🏫 Teacher','Receptionist':'📞 Receptionist','Accountant':'💼 Accountant','Assistant Teacher':'👨‍🎓 Asst. Teacher'};
   return users.map((u,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F7F5F0;border-radius:10px;border:1.5px solid #E7E2D9;margin-bottom:8px">
-      <div class="av ${u.role==='admin'?'avc0':'avc1'}" style="width:34px;height:34px;font-size:12px">${(u.name||u.username).slice(0,2).toUpperCase()}</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F7F5F0;border-radius:10px;border:1.5px solid #E7E2D9;margin-bottom:8px">
+      <div class="av ${u.role==='admin'?'avc0':'avc1'}" style="width:36px;height:36px;font-size:12px">${(u.name||u.username).slice(0,2).toUpperCase()}</div>
       <div style="flex:1">
         <div style="font-weight:700;font-size:13px">${esc(u.name||u.username)}</div>
-        <div style="font-size:11px;color:#78716C">@${esc(u.username)} · <span style="color:${u.role==='admin'?'#E8622A':'#2A9D8F'};font-weight:700">${u.role==='admin'?'Admin':'Employee'}</span></div>
+        <div style="font-size:11px;color:#78716C;margin-top:2px">
+          @${esc(u.username)}
+          ${u.mobile?` · 📱 ${esc(u.mobile)}`:''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+          <span style="background:${ROLE_COLORS[u.role]||'#78716C'}22;color:${ROLE_COLORS[u.role]||'#78716C'};font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">${ROLE_LABELS[u.role]||u.role}</span>
+          <span style="background:#F4F4F5;color:#78716C;font-size:10px;padding:2px 8px;border-radius:10px">ID: ${esc(u.empId||'—')}</span>
+        </div>
       </div>
-      ${u.role!=='admin'?`<button class="btn btn-red btn-xs" onclick="deleteUser('${u.username}')">🗑️ Remove</button>`:'<span style="font-size:11px;color:#78716C">Owner</span>'}
+      <div style="display:flex;gap:5px">
+        ${u.role!=='admin'?`<button class="btn btn-ghost btn-xs" onclick="openEditUser('${u.username}')">✏️</button>`:''}
+        ${u.role!=='admin'?`<button class="btn btn-red btn-xs" onclick="deleteUser('${u.username}')">🗑️</button>`:'<span style="font-size:11px;color:#78716C">Owner</span>'}
+      </div>
     </div>`).join('');
 }
 
+const EMP_ROLES=['Teacher','Receptionist','Accountant','Assistant Teacher'];
+
+function genEmpId(){
+  const users=getUsers();
+  const empCount=users.filter(u=>u.role!=='admin').length+1;
+  return 'EMP'+empCount.toString().padStart(3,'0');
+}
+function genUsername(name){
+  const base=(name||'emp').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)||'emp';
+  const num=Math.floor(100+Math.random()*900);
+  return base+num;
+}
+function genPassword(){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
 function openAddUser(){
-  const html=`<div style="max-width:360px;margin:20px auto">
+  const empId=genEmpId();
+  const html=`<div style="max-width:480px;margin:20px auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button class="btn btn-ghost btn-sm" onclick="renderSettings()">← Back</button>
+      <h2 style="font-size:17px;font-weight:700">➕ Add Employee</h2>
+    </div>
     <div class="card">
-      <div style="font-size:15px;font-weight:700;margin-bottom:16px">➕ Add Employee Account</div>
       <div class="form-grid">
-        <div class="fg full"><label>Full Name</label><input id="nu-name" placeholder="Employee name"></div>
-        <div class="fg"><label>Username ★</label><input id="nu-user" placeholder="e.g. ravi123"></div>
-        <div class="fg"><label>Password ★</label><input id="nu-pass" type="password" placeholder="Set password"></div>
+        <div class="fg full"><label>Full Name ★</label><input id="nu-name" placeholder="e.g. Ravi Patel" oninput="autoFillEmpCreds(this.value)"></div>
+        <div class="fg"><label>Mobile Number</label><input id="nu-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
+        <div class="fg"><label>Role ★</label><select id="nu-role">
+          ${EMP_ROLES.map(r=>`<option value="${r}">${r}</option>`).join('')}
+        </select></div>
+        <div class="fg full" style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;font-weight:700;color:#16A34A;margin-bottom:8px">🪪 Auto-Generated Employee ID</div>
+          <div style="font-size:16px;font-weight:800;color:#18181B;letter-spacing:1px">${empId}</div>
+        </div>
+        <div class="fg"><label>Username ★</label>
+          <input id="nu-user" placeholder="Auto-generated" style="font-family:monospace">
+          <div class="hint">Auto-generated from name. You can change it.</div>
+        </div>
+        <div class="fg"><label>Password ★</label>
+          <div style="display:flex;gap:6px">
+            <input id="nu-pass" placeholder="Auto-generated" style="font-family:monospace;flex:1">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('nu-pass').value=genPassword()" title="Generate new password">🔄</button>
+          </div>
+          <div class="hint">Auto-generated. You can change it.</div>
+        </div>
       </div>
       <div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin:12px 0">
-        ⚠️ Employee can: Add students, Collect fees, Mark attendance<br>
-        🔒 Employee cannot: Delete students, Edit payments, Settings, Export data
+        ⚠️ Can do: Add students, Collect fees, Mark attendance<br>
+        🔒 Cannot: Delete records, Edit payments, Access Settings
       </div>
       <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="btn btn-ghost" onclick="gotoPage('settings')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveNewUser()">💾 Create Account</button>
+        <button class="btn btn-ghost" onclick="renderSettings()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewUser('${empId}')">💾 Create Account</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('page-settings').innerHTML=html;
+  // Auto fill default credentials
+  document.getElementById('nu-pass').value=genPassword();
+}
+
+function autoFillEmpCreds(name){
+  const userEl=document.getElementById('nu-user');
+  if(userEl&&!userEl.dataset.manual){
+    userEl.value=genUsername(name);
+  }
+}
+
+function openEditUser(username){
+  const users=getUsers();
+  const u=users.find(x=>x.username===username);
+  if(!u)return;
+  const html=`<div style="max-width:480px;margin:20px auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button class="btn btn-ghost btn-sm" onclick="renderSettings()">← Back</button>
+      <h2 style="font-size:17px;font-weight:700">✏️ Edit Employee</h2>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="fg full"><label>Full Name</label><input id="eu-name" value="${esc(u.name||'')}"></div>
+        <div class="fg"><label>Mobile Number</label><input id="eu-mobile" value="${esc(u.mobile||'')}" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
+        <div class="fg"><label>Role</label><select id="eu-role">
+          ${EMP_ROLES.map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r}</option>`).join('')}
+        </select></div>
+        <div class="fg full" style="background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:10px;padding:12px 14px">
+          <div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px">🪪 Employee ID</div>
+          <div style="font-size:15px;font-weight:800;color:#18181B">${esc(u.empId||'—')}</div>
+        </div>
+        <div class="fg"><label>New Username</label><input id="eu-user" placeholder="Leave blank to keep: ${esc(u.username)}" style="font-family:monospace"></div>
+        <div class="fg"><label>New Password</label>
+          <div style="display:flex;gap:6px">
+            <input id="eu-pass" placeholder="Leave blank to keep current" style="font-family:monospace;flex:1">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('eu-pass').value=genPassword()">🔄</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-ghost" onclick="renderSettings()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditUser('${username}')">💾 Save Changes</button>
       </div>
     </div>
   </div>`;
   document.getElementById('page-settings').innerHTML=html;
 }
 
-function saveNewUser(){
-  const name=(document.getElementById('nu-name')?.value||'').trim();
-  const u=(document.getElementById('nu-user')?.value||'').trim();
-  const p=(document.getElementById('nu-pass')?.value||'').trim();
-  if(!u){toast('Username required','err');return;}
-  if(!p){toast('Password required','err');return;}
+function saveEditUser(oldUsername){
   const users=getUsers();
-  if(users.find(x=>x.username===u)){toast('Username already exists','err');return;}
-  users.push({username:u,password:p,role:'employee',name:name||u});
+  const idx=users.findIndex(x=>x.username===oldUsername);
+  if(idx===-1)return;
+  const name=(document.getElementById('eu-name')?.value||'').trim();
+  const mobile=(document.getElementById('eu-mobile')?.value||'').trim();
+  const role=document.getElementById('eu-role')?.value||'Teacher';
+  const newUser=(document.getElementById('eu-user')?.value||'').trim();
+  const newPass=(document.getElementById('eu-pass')?.value||'').trim();
+  if(newUser&&newUser!==oldUsername&&users.find(x=>x.username===newUser)){toast('Username already taken','err');return;}
+  users[idx]={
+    ...users[idx],
+    name:name||users[idx].name,
+    mobile:mobile||users[idx].mobile||'',
+    role,
+    username:newUser||users[idx].username,
+    password:newPass||users[idx].password,
+  };
   saveUsers(users);
-  toast('Employee account created!');
+  toast('Employee updated!');
+  renderSettings();
+}
+
+function saveNewUser(empId){
+  const name=(document.getElementById('nu-name')?.value||'').trim();
+  const mobile=(document.getElementById('nu-mobile')?.value||'').trim();
+  const role=document.getElementById('nu-role')?.value||'Teacher';
+  let u=(document.getElementById('nu-user')?.value||'').trim();
+  let p=(document.getElementById('nu-pass')?.value||'').trim();
+  if(!name){toast('Full name required','err');return;}
+  if(!u){u=genUsername(name);}
+  if(!p){p=genPassword();}
+  const users=getUsers();
+  if(users.find(x=>x.username===u)){toast('Username already exists — try another','err');return;}
+  users.push({
+    username:u, password:p, role, name,
+    mobile:mobile||'', empId:empId||genEmpId(),
+    joinDate:todayStr()
+  });
+  saveUsers(users);
+  toast(`✅ ${name} added! ID: ${empId} · Login: ${u} / ${p}`);
   renderSettings();
 }
 
@@ -1382,7 +1609,190 @@ function deleteUser(username){
   if(wrap)wrap.innerHTML=renderUserList();
 }
 
-// ── AUTO UPDATE ────────────────────────────────────────────────────────────
+// ── LICENSE SYSTEM ─────────────────────────────────────────────────────────
+const PLANS = {
+  monthly:  { price: 49900,   label: '₹499/month',    days: 30    },
+  yearly:   { price: 449900,  label: '₹4,499/year',   days: 365   },
+  lifetime: { price: 1999900, label: '₹19,999 once',  days: 36500 }
+};
+const RZPKEY = 'rzp_live_XXXXXXXXXXXXXXXX'; // Replace with your Razorpay Key ID
+let selPlan = 'yearly';
+
+function getLicense(){ try{ return JSON.parse(localStorage.getItem('cc_license')||'null'); }catch{ return null; } }
+function saveLicense(lic){ localStorage.setItem('cc_license', JSON.stringify(lic)); }
+
+function checkLicense(){
+  const lic = getLicense();
+  const now = Date.now();
+
+  // No license — check trial
+  if(!lic){
+    const trialStart = parseInt(localStorage.getItem('cc_trial_start')||'0');
+    if(!trialStart) return 'none'; // never started
+    const trialDays = Math.floor((now - trialStart) / 86400000);
+    if(trialDays < 30) return { status:'trial', daysLeft: 30 - trialDays };
+    return { status:'expired' };
+  }
+
+  // Lifetime license
+  if(lic.plan === 'lifetime') return { status:'active', plan:'lifetime' };
+
+  // Check expiry
+  if(lic.expiry && now < lic.expiry){
+    const daysLeft = Math.floor((lic.expiry - now) / 86400000);
+    return { status:'active', plan:lic.plan, daysLeft };
+  }
+  return { status:'expired', plan:lic.plan };
+}
+
+function showLicenseScreen(){
+  const scr = document.getElementById('license-screen');
+  scr.style.display = 'flex';
+  const lic = checkLicense();
+
+  document.getElementById('trial-banner').style.display = 'none';
+  document.getElementById('expired-banner').style.display = 'none';
+  document.getElementById('trial-btn-wrap').style.display = 'block';
+  document.getElementById('trial-btn').style.display = 'inline';
+
+  if(lic === 'none'){
+    // Never started — show trial option
+    document.getElementById('trial-btn').textContent = 'Start 30-day free trial';
+  } else if(lic.status === 'trial'){
+    document.getElementById('trial-banner').style.display = 'block';
+    document.getElementById('trial-days').textContent = lic.daysLeft + ' days remaining in your free trial';
+    document.getElementById('trial-btn').textContent = 'Continue with trial (' + lic.daysLeft + ' days left)';
+  } else if(lic.status === 'expired'){
+    document.getElementById('expired-banner').style.display = 'block';
+    document.getElementById('trial-btn-wrap').style.display = 'none';
+  }
+  selectPlan('yearly');
+}
+
+function selectPlan(plan){
+  selPlan = plan;
+  ['monthly','yearly','lifetime'].forEach(p=>{
+    const el = document.getElementById('plan-'+p);
+    if(p === plan){
+      el.style.borderColor = '#E8622A';
+      el.style.background = '#FFF7F0';
+    } else {
+      el.style.borderColor = '#E7E2D9';
+      el.style.background = '#fff';
+    }
+  });
+  const p = PLANS[plan];
+  document.getElementById('buy-btn').textContent = '💳 Buy Now — ' + p.label;
+}
+
+function showKeyEntry(){
+  document.getElementById('plan-section').style.display = 'none';
+  document.getElementById('key-section').style.display = 'block';
+  document.getElementById('trial-btn-wrap').style.display = 'none';
+}
+
+function showPlans(){
+  document.getElementById('plan-section').style.display = 'block';
+  document.getElementById('key-section').style.display = 'none';
+  document.getElementById('trial-btn-wrap').style.display = 'block';
+}
+
+function startTrial(){
+  const existing = localStorage.getItem('cc_trial_start');
+  if(!existing) localStorage.setItem('cc_trial_start', Date.now().toString());
+  hideLicenseScreen();
+}
+
+function hideLicenseScreen(){
+  document.getElementById('license-screen').style.display = 'none';
+  // Now show login screen
+  if(localStorage.getItem('ops_logged')){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    initApp();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+  }
+}
+
+// Generate a license key (for your use — admin tool)
+function generateKey(plan, customerName){
+  const expiry = plan === 'lifetime' ? 9999999999999 : Date.now() + PLANS[plan].days * 86400000;
+  const data = btoa(JSON.stringify({ plan, expiry, name: customerName, issued: Date.now() }));
+  const hash = data.slice(0, 8).toUpperCase().replace(/[^A-Z0-9]/g,'X');
+  return 'CCTR-' + hash.slice(0,4) + '-' + hash.slice(4,8) + '-' + btoa(expiry.toString()).slice(0,4).toUpperCase() + '-' + btoa(customerName||'USER').slice(0,4).toUpperCase();
+}
+
+// Activate a license key entered by user
+function activateLicenseKey(){
+  const key = (document.getElementById('license-key-input').value||'').trim().toUpperCase();
+  if(!key || key.length < 10){ showLicMsg('Enter a valid license key','err'); return;}
+
+  // Check against GitHub license list
+  verifyKeyOnline(key).then(result => {
+    if(result.valid){
+      saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name });
+      showLicMsg('✅ License activated!', 'ok');
+      setTimeout(()=>hideLicenseScreen(), 1000);
+    } else {
+      showLicMsg('❌ Invalid or expired key. Contact support.', 'err');
+    }
+  }).catch(()=>{
+    showLicMsg('⚠️ Cannot verify online. Check internet connection.', 'warn');
+  });
+}
+
+// Verify key against GitHub license list
+async function verifyKeyOnline(key){
+  try{
+    const url = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json';
+    const r = await fetch(url + '?t=' + Date.now());
+    const licenses = await r.json();
+    const lic = licenses[key];
+    if(!lic) return { valid: false };
+    if(lic.plan !== 'lifetime' && Date.now() > lic.expiry) return { valid: false };
+    return { valid: true, ...lic };
+  }catch(e){ throw e; }
+}
+
+function showLicMsg(msg, type){
+  const el = document.getElementById('lic-msg');
+  el.textContent = msg;
+  el.style.color = type==='err'?'#DC2626':type==='warn'?'#E8622A':'#16A34A';
+}
+
+// Razorpay payment
+function buyPlan(){
+  const plan = PLANS[selPlan];
+  if(RZPKEY.includes('XXXXX')){
+    alert('Razorpay not configured yet.\nAdd your Razorpay Key ID to enable online payments.\nFor now, contact admin for a license key.');
+    showKeyEntry();
+    return;
+  }
+  const options = {
+    key: RZPKEY,
+    amount: plan.price,
+    currency: 'INR',
+    name: 'ClassCore Tuition',
+    description: selPlan.charAt(0).toUpperCase()+selPlan.slice(1)+' Subscription',
+    theme: { color: '#E8622A' },
+    handler: function(response){
+      // Payment successful — activate license
+      const expiry = selPlan === 'lifetime' ? 9999999999999 : Date.now() + plan.days * 86400000;
+      const key = 'CCTR-' + response.razorpay_payment_id.slice(-8).toUpperCase();
+      saveLicense({ key, plan: selPlan, expiry, paymentId: response.razorpay_payment_id });
+      showLicMsg('✅ Payment successful! License activated!', 'ok');
+      setTimeout(()=>hideLicenseScreen(), 1500);
+    },
+    modal: { ondismiss: ()=>{ showLicMsg('Payment cancelled', 'warn'); } }
+  };
+  const rzp = new window.Razorpay(options);
+  rzp.open();
+}
+
+// ── END LICENSE SYSTEM ─────────────────────────────────────────────────────
+
+
 function showUpdateBanner(msg, sub){
   const b=document.getElementById('update-banner');
   document.getElementById('update-title').textContent=msg;
@@ -1470,6 +1880,29 @@ function initApp(){
 
 window.addEventListener('DOMContentLoaded',async ()=>{
   await loadAllData();
+
+  // Check license first
+  const licStatus = checkLicense();
+  const isLicValid = licStatus === 'none' || licStatus.status === 'trial' || licStatus.status === 'active';
+
+  if(!isLicValid){
+    // Show license screen (expired or never set)
+    showLicenseScreen();
+    return;
+  }
+
+  // Show trial warning if less than 7 days left
+  if(licStatus.status === 'trial' && licStatus.daysLeft <= 7){
+    showLicenseScreen();
+    return;
+  }
+
+  // If trial not started yet — show license screen
+  if(licStatus === 'none'){
+    showLicenseScreen();
+    return;
+  }
+
   if(localStorage.getItem('ops_logged')){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
@@ -1478,7 +1911,6 @@ window.addEventListener('DOMContentLoaded',async ()=>{
   document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('l-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
-  // Show data file path in settings if running in Electron
   if(IS_ELECTRON()){
     const p=await window.classcore.getDataPath();
     window._dataPath=p;
