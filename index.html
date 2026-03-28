@@ -6,14 +6,30 @@
 <title>ClassCore — Tuition Management</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:#F7F5F0;color:#18181B;-webkit-font-smoothing:antialiased;}
-::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:#F7F5F0;}::-webkit-scrollbar-thumb{background:#D4CCBF;border-radius:3px;}
+:root{
+  --primary:#E8622A;
+  --primary-dark:#CF5522;
+  --primary-light:#FFF4EE;
+  --sidebar-bg:#18181B;
+  --sidebar-text:rgba(255,255,255,.55);
+  --sidebar-active:var(--primary);
+  --body-bg:#F7F5F0;
+  --card-bg:#fff;
+  --text-main:#18181B;
+  --text-muted:#78716C;
+  --border:#E7E2D9;
+  --input-bg:#F7F5F0;
+  --topbar-bg:#fff;
+  --scrollbar:#D4CCBF;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--body-bg);color:var(--text-main);-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:var(--body-bg);}::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:3px;}
 input,select,textarea,button{font-family:inherit;}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 #app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:225px;background:#18181B;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar{width:225px;background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.topbar{height:60px;background:#fff;border-bottom:1.5px solid #E7E2D9;display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0;}
+.topbar{height:60px;background:var(--topbar-bg);border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0;}
 .content{flex:1;overflow-y:auto;padding:28px;}
 .page{display:none;}.page.active{display:block;}
 .sb-logo{padding:24px 18px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
@@ -23,18 +39,18 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 .sb-nav{padding:14px 10px;flex:1;}
 .sb-sec{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;padding:10px 10px 4px;margin-top:4px;}
 .nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);transition:.15s;margin-bottom:2px;user-select:none;}
-.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}.nav-item.active{background:#E8622A;color:#fff;}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff;}.nav-item.active{background:var(--sidebar-active);color:#fff;}
 .sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.1);}
 .btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700;font-size:13px;transition:.15s;display:inline-flex;align-items:center;gap:5px;}
-.btn-primary{background:#E8622A;color:#fff;}.btn-primary:hover{background:#CF5522;}
+.btn-primary{background:var(--primary);color:#fff;}.btn-primary:hover{background:var(--primary-dark);}
 .btn-ink{background:#18181B;color:#fff;}.btn-ink:hover{background:#2d2d40;}
 .btn-teal{background:#2A9D8F;color:#fff;}.btn-teal:hover{background:#22857A;}
 .btn-ghost{background:transparent;border:1.5px solid #CFC8BB;color:#18181B;}.btn-ghost:hover{background:#F7F5F0;}
 .btn-red{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;}.btn-red:hover{background:#DC2626;color:#fff;}
 .btn-green{background:#DCFCE7;color:#16A34A;border:1px solid #BBF7D0;}.btn-green:hover{background:#16A34A;color:#fff;}
 .btn-sm{padding:6px 13px;font-size:12px;}.btn-xs{padding:4px 9px;font-size:11px;border-radius:6px;}
-.card{background:#fff;border:1.5px solid #E7E2D9;border-radius:14px;padding:20px;}
-.stat-card{background:#fff;border:1.5px solid #E7E2D9;border-radius:14px;padding:20px;position:relative;overflow:hidden;}
+.card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:20px;}
+.stat-card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
 .stat-stripe{position:absolute;top:0;left:0;right:0;height:3px;}
 .stat-val{font-size:28px;font-weight:800;letter-spacing:-.5px;margin:8px 0 3px;}
 .stat-lbl{font-size:11.5px;color:#78716C;font-weight:500;}.stat-sub{font-size:11px;margin-top:6px;font-weight:500;}
@@ -45,10 +61,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 .form-grid .full{grid-column:1/-1;}
 .fg{display:flex;flex-direction:column;gap:5px;}
 .fg label{font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;}
-.fg input,.fg select,.fg textarea{background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;color:#18181B;font-size:13.5px;padding:9px 12px;outline:none;transition:.15s;width:100%;}
+.fg input,.fg select,.fg textarea{background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text-main);font-size:13.5px;padding:9px 12px;outline:none;transition:.15s;width:100%;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#E8622A;background:#fff;}
 .fg .hint{font-size:11px;color:#2A9D8F;margin-top:2px;}
-.table-wrap{background:#fff;border:1.5px solid #E7E2D9;border-radius:14px;overflow:hidden;margin-bottom:22px;}
+.table-wrap{background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px;}
 .table-bar{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E7E2D9;flex-wrap:wrap;gap:8px;}
 table{width:100%;border-collapse:collapse;}
 thead tr{background:#F7F5F0;}
@@ -108,6 +124,34 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </style>
 </head>
 <body>
+
+<!-- REGISTRATION SCREEN -->
+<div id="reg-screen" style="display:none;position:fixed;inset:0;background:#F7F5F0;z-index:99999;align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+  <div style="background:#fff;border:1.5px solid #E7E2D9;border-radius:20px;padding:32px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.1);margin:auto">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:28px;font-weight:900;margin-bottom:4px">CLASS<span style="color:#E8622A">CORE</span></div>
+      <div style="font-size:10px;color:#78716C;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Tuition Management</div>
+      <div style="font-size:13px;color:#78716C">Create your account to get started</div>
+    </div>
+    <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:12px;color:#16A34A;text-align:center">
+      🎉 30-day free trial — No payment needed
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>Full Name ★</label><input id="reg-name" placeholder="e.g. Ramesh Patel"></div>
+    <div class="fg" style="margin-bottom:12px"><label>Email Address ★</label><input id="reg-email" type="email" placeholder="you@email.com"></div>
+    <div class="fg" style="margin-bottom:12px"><label>Mobile Number ★</label><input id="reg-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
+    <div class="fg" style="margin-bottom:16px"><label>Institute / Tuition Name</label><input id="reg-institute" placeholder="e.g. ABC Tuition Center"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="doRegister()">🚀 Start Free Trial</button>
+    <div style="text-align:center;margin-top:12px">
+      <span style="font-size:11px;color:#78716C">Already have a license key? </span>
+      <button onclick="showRegKeyEntry()" style="background:none;border:none;color:#E8622A;font-size:11px;font-weight:700;cursor:pointer">Enter Key →</button>
+    </div>
+    <div id="reg-key-section" style="display:none;margin-top:14px;border-top:1px solid #E7E2D9;padding-top:14px">
+      <input id="reg-key-input" placeholder="CCTR-XXXX-XXXX-XXXX" style="width:100%;text-align:center;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;padding:10px;outline:none;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRegWithKey()">🔑 Activate Key</button>
+    </div>
+    <div id="reg-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
+  </div>
+</div>
 
 <!-- LICENSE SCREEN -->
 <div id="license-screen" style="display:none;position:fixed;inset:0;background:#F7F5F0;z-index:99999;align-items:center;justify-content:center;flex-direction:column">
@@ -196,6 +240,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div class="nav-item active" data-page="dashboard" onclick="gotoPage('dashboard')">📊 Dashboard</div>
       <div class="nav-item" data-page="students" onclick="gotoPage('students')">🎓 Students</div>
       <div class="nav-item" data-page="batches" onclick="gotoPage('batches')">🕐 Batches</div>
+      <div class="nav-item" data-page="courses" onclick="gotoPage('courses')">📚 Courses</div>
       <div class="nav-item" data-page="fees" onclick="gotoPage('fees')">💰 Fees</div>
       <div class="nav-item" data-page="attendance" onclick="gotoPage('attendance')">✅ Attendance</div>
       <div class="nav-item" data-page="settings" onclick="gotoPage('settings')">⚙️ Settings</div>
@@ -227,6 +272,8 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div id="page-students-form" class="page"></div>
       <div id="page-batches" class="page"></div>
       <div id="page-batches-form" class="page"></div>
+      <div id="page-courses" class="page"></div>
+      <div id="page-courses-form" class="page"></div>
       <div id="page-fees" class="page"></div>
       <div id="page-attendance" class="page"></div>
       <div id="page-settings" class="page"></div>
@@ -304,6 +351,7 @@ function ld(k,fb){try{const d=localStorage.getItem(k);return d?JSON.parse(d):fb;
 function sv(k,v){localStorage.setItem(k,JSON.stringify(v));}
 
 let students=[];
+let courses=[];
 let batches=[];
 let classFees={};
 let stuFeeOvr={};
@@ -312,7 +360,7 @@ let monthFees={}; // month-wise fee tracking: {studentId: {2025-01: {amount, pai
 
 function buildPayload(){
   return {
-    students,batches,classFees,stuFeeOvr,attData,monthFees,
+    students,batches,courses,classFees,stuFeeOvr,attData,monthFees,
     cc_users:localStorage.getItem('cc_users')||'',
     username:localStorage.getItem('username')||'admin',
     password:localStorage.getItem('password')||'1234',
@@ -383,6 +431,7 @@ async function loadAllData(){
     if(d){
       students=d.students||SEED_S;
       batches=d.batches||SEED_B;
+      courses=d.courses||[];
       classFees=d.classFees||{};
       stuFeeOvr=d.stuFeeOvr||{};
       attData=d.attData||{};
@@ -396,11 +445,12 @@ async function loadAllData(){
       if(d.rcptNo) localStorage.setItem('rcptNo',d.rcptNo);
       if(d.ops_logged) localStorage.setItem('ops_logged',d.ops_logged);
     } else {
-      students=SEED_S;batches=SEED_B;classFees={};stuFeeOvr={};attData={};monthFees={};
+      students=SEED_S;batches=SEED_B;courses=[];classFees={};stuFeeOvr={};attData={};monthFees={};
     }
   } else {
     students=ld('ops_s',SEED_S);
-    batches=ld('ops_b',SEED_B);
+    batches=ld("ops_b",SEED_B);
+    courses=ld("ops_c",[]);
     classFees=ld('ops_cf',{});
     stuFeeOvr=ld('ops_sfo',{});
     attData=ld('ops_att',{});
@@ -462,8 +512,8 @@ function doLogout(){localStorage.removeItem('ops_logged');localStorage.removeIte
 // NAV
 let curPage='dashboard';
 let editStuId=null,editBatId=null;
-const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',fees:'Fees',attendance:'Attendance',settings:'Settings'};
-const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)}};
+const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',courses:'Courses','courses-form':'Course Form',fees:'Fees',attendance:'Attendance',settings:'Settings'};
+const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)}};
 
 function gotoPage(pg){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -476,7 +526,7 @@ function gotoPage(pg){
   const tb=document.getElementById('top-btn');
   if(TOP_BTNS[pg]){tb.textContent=TOP_BTNS[pg].lbl;tb.style.display='flex';}
   else tb.style.display='none';
-  const renders={dashboard:renderDash,students:renderStus,batches:renderBats,fees:renderFees,attendance:renderAtt,settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}};
+  const renders={dashboard:renderDash,students:renderStus,batches:renderBats,courses:renderCourses,fees:renderFees,attendance:renderAtt,settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}};
   if(renders[pg])renders[pg]();
 }
 function topBtnAction(){if(TOP_BTNS[curPage])TOP_BTNS[curPage].fn();}
@@ -640,7 +690,11 @@ function prefillClsFee(){
   if(!hint)return;
   if(cf!=null){
     const ft=document.getElementById('sf-feetype')?.value;
-    if(ft==='monthly'&&!editStuId){const m=document.getElementById('sf-monthly');if(m&&!m.value)m.value=cf;}
+    // Only prefill if adding new student AND field is empty
+    if(ft==='monthly'&&!editStuId){
+      const m=document.getElementById('sf-monthly');
+      if(m&&!m.value)m.value=cf;
+    }
     hint.textContent='Class default: ₹'+cf+'/month';
   }else hint.textContent=cls?'No class default set':'';
 }
@@ -662,7 +716,7 @@ function saveStu(){
   const cls=document.getElementById('sf-cls').value;
   if(!cls){toast('Please select a class','err');return;}
   const mobile=(document.getElementById('sf-mobile').value||'').trim();
-  if(mobile&&mobile.length!==10){toast('Enter valid 10-digit mobile or leave blank','err');return;}
+  if(mobile&&mobile.length!==10){toast('Mobile must be 10 digits or leave blank','err');return;}
   const ft=document.getElementById('sf-feetype').value;
   const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
   const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
@@ -1279,6 +1333,7 @@ function renderSettings(){
 
   document.getElementById('page-settings').innerHTML =
     '<div style="max-width:520px">' +
+    renderThemePicker() +
 
     '<div class="card" style="margin-bottom:18px">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">🔐 Change Login Credentials</div>' +
@@ -1376,7 +1431,7 @@ function updSbInst(){
   document.getElementById('sb-inst-name').textContent=localStorage.getItem('tuitionName')||'Tuition Management';
 }
 async function exportData(){
-  const data={students,batches,classFees,stuFeeOvr,attData,exported:new Date().toISOString()};
+  const data={students,batches,courses,classFees,stuFeeOvr,attData,exported:new Date().toISOString()};
   if(IS_ELECTRON()){
     const r=await window.classcore.exportBackup(data);
     if(r.ok) toast('Backup exported!');
@@ -1604,6 +1659,217 @@ function deleteUser(username){
   if(wrap)wrap.innerHTML=renderUserList();
 }
 
+// ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────
+// Replace this URL with your Google Apps Script Web App URL after setup
+const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbxAscTpNm9BCfI4S4C9gCPd9CrXj5RWvRDkPM8CnfYw9oqCg7v19M7QeP6dUYnpnvA-/exec';
+
+// Generate device fingerprint to prevent trial abuse
+async function getDeviceId(){
+  const stored = localStorage.getItem('cc_device_id');
+  if(stored) return stored;
+  // Create fingerprint from browser properties
+  const fp = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    navigator.hardwareConcurrency,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  ].join('|');
+  // Simple hash
+  let hash = 0;
+  for(let i=0;i<fp.length;i++){hash=((hash<<5)-hash)+fp.charCodeAt(i);hash|=0;}
+  const id = 'DEV-' + Math.abs(hash).toString(36).toUpperCase().padEnd(8,'0').slice(0,8);
+  localStorage.setItem('cc_device_id', id);
+  return id;
+}
+
+async function sendToSheets(action, data){
+  if(!GSHEET_URL || GSHEET_URL.includes('YOUR_GOOGLE')) return {ok:false,msg:'Sheets not configured'};
+  try{
+    const deviceId = await getDeviceId();
+    const payload = { action, deviceId, timestamp: new Date().toISOString(), ...data };
+    const r = await fetch(GSHEET_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    return await r.json();
+  }catch(e){
+    console.log('Sheets error:', e.message);
+    return {ok:false,msg:e.message};
+  }
+}
+
+async function checkStatusFromSheets(email, mobile){
+  if(!GSHEET_URL || GSHEET_URL.includes('YOUR_GOOGLE')) return null;
+  try{
+    const deviceId = await getDeviceId();
+    const url = GSHEET_URL + '?action=check&email=' + encodeURIComponent(email) + '&mobile=' + encodeURIComponent(mobile) + '&deviceId=' + deviceId;
+    const r = await fetch(url);
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+// ── REGISTRATION SYSTEM ────────────────────────────────────────────────────
+function getRegistration(){
+  try{ return JSON.parse(localStorage.getItem('cc_registration')||'null'); }catch{ return null; }
+}
+function saveRegistration(reg){ localStorage.setItem('cc_registration', JSON.stringify(reg)); }
+
+function showRegScreen(){
+  const reg = getRegistration();
+  if(reg){
+    // Already registered — go straight to license check
+    checkAndShowLicense();
+    return;
+  }
+  const scr = document.getElementById('reg-screen');
+  scr.style.display = 'flex';
+}
+
+function showRegKeyEntry(){
+  const s = document.getElementById('reg-key-section');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+function setRegMsg(msg, type){
+  const el = document.getElementById('reg-msg');
+  el.textContent = msg;
+  el.style.color = type==='err'?'#DC2626':type==='warn'?'#E8622A':'#16A34A';
+}
+
+async function doRegister(){
+  const name = (document.getElementById('reg-name').value||'').trim();
+  const email = (document.getElementById('reg-email').value||'').trim().toLowerCase();
+  const mobile = (document.getElementById('reg-mobile').value||'').trim();
+  const institute = (document.getElementById('reg-institute').value||'').trim();
+
+  if(!name){ setRegMsg('Please enter your full name','err'); return; }
+  if(!email || !email.includes('@')){ setRegMsg('Please enter a valid email','err'); return; }
+  if(!mobile || mobile.length !== 10){ setRegMsg('Please enter a valid 10-digit mobile','err'); return; }
+
+  setRegMsg('⏳ Registering...', 'warn');
+
+  const deviceId = await getDeviceId();
+  const trialStart = Date.now();
+  const trialEnd = trialStart + 30 * 86400000;
+
+  // Save registration locally
+  const reg = { name, email, mobile, institute, deviceId, trialStart, trialEnd, registeredAt: new Date().toISOString() };
+  saveRegistration(reg);
+  localStorage.setItem('cc_trial_start', trialStart.toString());
+
+  // Save institute name
+  localStorage.setItem('tuitionName', institute || name + "'s Tuition");
+
+  // Send to Google Sheets
+  const result = await sendToSheets('register', {
+    name, email, mobile, institute, deviceId,
+    trialStart: new Date(trialStart).toLocaleDateString('en-IN'),
+    trialEnd: new Date(trialEnd).toLocaleDateString('en-IN'),
+    status: 'trial'
+  });
+
+  if(result.ok === false && result.msg && !result.msg.includes('not configured')){
+    // If sheets say device already used — block
+    if(result.msg.includes('already registered') || result.msg.includes('device')){
+      setRegMsg('❌ This device has already used a trial. Please purchase a license.','err');
+      return;
+    }
+  }
+
+  setRegMsg('✅ Registered! Starting your 30-day trial...', 'ok');
+  setTimeout(()=>{
+    document.getElementById('reg-screen').style.display = 'none';
+    checkAndShowLicense();
+  }, 1200);
+}
+
+async function doRegWithKey(){
+  const name = (document.getElementById('reg-name').value||'').trim();
+  const email = (document.getElementById('reg-email').value||'').trim().toLowerCase();
+  const mobile = (document.getElementById('reg-mobile').value||'').trim();
+  const key = (document.getElementById('reg-key-input').value||'').trim().toUpperCase();
+
+  if(!name || !email || !mobile){ setRegMsg('Please fill name, email and mobile first','err'); return; }
+  if(!key || key.length < 10){ setRegMsg('Enter a valid license key','err'); return; }
+
+  setRegMsg('⏳ Verifying...','warn');
+  const deviceId = await getDeviceId();
+
+  // Save registration
+  const reg = { name, email, mobile, deviceId, registeredAt: new Date().toISOString() };
+  saveRegistration(reg);
+
+  // Verify key
+  verifyKeyOnline(key).then(result => {
+    if(result.valid){
+      saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name || name });
+      // Send to sheets
+      sendToSheets('activate_key', { name, email, mobile, key, plan: result.plan, status: 'active' });
+      setRegMsg('✅ License activated!', 'ok');
+      setTimeout(()=>{
+        document.getElementById('reg-screen').style.display = 'none';
+        checkAndShowLicense();
+      }, 1000);
+    } else {
+      setRegMsg('❌ Invalid key. Contact support.','err');
+    }
+  }).catch(()=>{
+    if(key.startsWith('CCTR-') && key.length >= 15){
+      saveLicense({ key, plan: 'yearly', expiry: Date.now() + 365*86400000, name });
+      sendToSheets('activate_key', { name, email, mobile, key, plan: 'yearly', status: 'active_offline' });
+      setRegMsg('✅ License activated (offline)!','ok');
+      setTimeout(()=>{
+        document.getElementById('reg-screen').style.display = 'none';
+        checkAndShowLicense();
+      }, 1000);
+    } else {
+      setRegMsg('❌ Invalid key format','err');
+    }
+  });
+}
+
+function checkAndShowLicense(){
+  const licStatus = checkLicense();
+  if(licStatus === 'none'){
+    // Should not happen after registration — start trial
+    const reg = getRegistration();
+    if(reg && !localStorage.getItem('cc_trial_start')){
+      localStorage.setItem('cc_trial_start', Date.now().toString());
+    }
+    showLicenseScreen();
+    return;
+  }
+  if(licStatus.status === 'active'){
+    // Good — show login
+    if(localStorage.getItem('ops_logged')){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      initApp();
+    } else {
+      document.getElementById('login-screen').style.display='flex';
+    }
+    return;
+  }
+  if(licStatus.status === 'trial'){
+    if(licStatus.daysLeft <= 7){
+      showLicenseScreen();
+    } else {
+      if(localStorage.getItem('ops_logged')){
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('app').style.display='flex';
+        initApp();
+      } else {
+        document.getElementById('login-screen').style.display='flex';
+      }
+    }
+    return;
+  }
+  // Expired
+  showLicenseScreen();
+}
+
 // ── LICENSE SYSTEM ─────────────────────────────────────────────────────────
 const PLANS = {
   monthly:  { price: 49900,   label: '₹499/month',    days: 30    },
@@ -1701,13 +1967,21 @@ function startTrial(){
 
 function hideLicenseScreen(){
   document.getElementById('license-screen').style.display = 'none';
-  // Now show login screen
   if(localStorage.getItem('ops_logged')){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
     initApp();
   } else {
     document.getElementById('login-screen').style.display='flex';
+  }
+  // Report activation to sheets
+  const reg = getRegistration();
+  const lic = getLicense();
+  if(reg && lic){
+    sendToSheets('license_activated', {
+      email: reg.email, mobile: reg.mobile, name: reg.name,
+      plan: lic.plan, key: lic.key || '', status: 'active'
+    });
   }
 }
 
@@ -1841,8 +2115,304 @@ if(IS_ELECTRON()){
 }
 
 
+// ── COURSES ────────────────────────────────────────────────────────────────
+let editCourseId=null;
+const COURSE_DURATIONS=['1 Week','2 Weeks','1 Month','2 Months','3 Months','6 Months','1 Year','Self-paced'];
+
+function renderCourses(){
+  const el=document.getElementById('page-courses');
+  if(!courses.length){
+    el.innerHTML=`<div style="text-align:center;padding:80px;color:#78716C"><div style="font-size:52px;margin-bottom:14px">📚</div><p style="font-size:15px;margin-bottom:16px">No courses yet!</p><button class="btn btn-primary" onclick="openCourseForm(null)">＋ Create Course</button></div>`;
+    return;
+  }
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">${courses.map(c=>makeCourseCard(c)).join('')}</div>`;
+}
+
+function makeCourseCard(c){
+  const enrolled=(c.students||[]).length;
+  const teacher=c.teacher?getUsers().find(u=>u.username===c.teacher):null;
+  const color=c.color||'#E8622A';
+  return`<div style="background:#fff;border:1.5px solid #E7E2D9;border-radius:16px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,${color},${color}cc);padding:18px 20px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:17px;font-weight:800;color:#fff">${esc(c.name)}</div>${c.duration?`<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">⏱️ ${esc(c.duration)}</div>`:''}</div>
+        <div style="display:flex;gap:5px">
+          <button onclick="openCourseForm('${c.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">✏️</button>
+          <button onclick="delCourse('${c.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">🗑️</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 18px">
+      ${c.description?`<p style="font-size:12.5px;color:#78716C;margin-bottom:10px;line-height:1.5">${esc(c.description)}</p>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${c.fee?`<div style="background:#FFF4EE;border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:#78716C;text-transform:uppercase;letter-spacing:1px">Course Fee</div><div style="font-size:15px;font-weight:800;color:#E8622A">${fmt(c.fee)}</div></div>`:''}
+        <div style="background:#F7F5F0;border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:#78716C;text-transform:uppercase;letter-spacing:1px">Enrolled</div><div style="font-size:15px;font-weight:800;color:#18181B">${enrolled} Students</div></div>
+        ${teacher?`<div style="background:#F0FDF4;border-radius:8px;padding:8px 10px;grid-column:1/-1"><div style="font-size:9px;color:#78716C;text-transform:uppercase;letter-spacing:1px">Teacher</div><div style="font-size:13px;font-weight:700;color:#16A34A">👨‍🏫 ${esc(teacher.name||teacher.username)}</div></div>`:''}
+      </div>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="openCourseStudents('${c.id}')">👥 Students</button>
+        <button class="btn btn-ink btn-sm" style="flex:1;justify-content:center" onclick="openCourseEnroll('${c.id}')">＋ Enroll</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openCourseForm(id){
+  editCourseId=id;
+  const c=id?courses.find(x=>x.id===id):null;
+  const teachers=getUsers().filter(u=>u.role!=='admin');
+  const teacherOpts=`<option value="">— No Teacher —</option>`+teachers.map(t=>`<option value="${esc(t.username)}"${c?.teacher===t.username?' selected':''}>${esc(t.name||t.username)} (${esc(t.role||'')})</option>`).join('');
+  const colors=['#E8622A','#2A9D8F','#457B9D','#6D6875','#E9C46A','#264653','#E76F51','#18181B'];
+  const selColor=c?.color||'#E8622A';
+  document.getElementById('page-courses-form').innerHTML=`
+  <div style="max-width:580px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
+      <button class="btn btn-ghost btn-sm" onclick="gotoPage('courses')">← Back</button>
+      <h2 style="font-size:18px;font-weight:700">${id?'Edit Course':'Create New Course'}</h2>
+    </div>
+    <div class="card"><div class="form-grid">
+      <div class="fg full"><label>Course Name ★</label><input id="cf2-name" value="${esc(c?.name||'')}" placeholder="e.g. Python Programming, Drawing, Yoga"></div>
+      <div class="fg full"><label>Description</label><textarea id="cf2-desc" style="background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;resize:none;height:80px;font-family:inherit">${esc(c?.description||'')}</textarea></div>
+      <div class="fg"><label>Course Fee (₹)</label><input id="cf2-fee" type="number" value="${c?.fee||''}" placeholder="e.g. 5000"></div>
+      <div class="fg"><label>Duration</label><select id="cf2-duration">
+        <option value="">— Select —</option>
+        ${COURSE_DURATIONS.map(d=>`<option value="${d}"${c?.duration===d?' selected':''}>${d}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Start Date</label><input id="cf2-start" type="date" value="${c?.startDate||''}"></div>
+      <div class="fg"><label>Max Students</label><input id="cf2-max" type="number" value="${c?.maxStudents||''}" placeholder="Unlimited"></div>
+      <div class="fg full"><label>Assign Teacher</label><select id="cf2-teacher">${teacherOpts}</select></div>
+      <div class="fg full"><label>Course Color</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+          ${colors.map(col=>`<div onclick="document.querySelectorAll('.ccsw').forEach(x=>x.style.border='3px solid transparent');this.style.border='3px solid #18181B';document.getElementById('cf2-color').value='${col}'" class="ccsw" style="width:32px;height:32px;border-radius:50%;background:${col};cursor:pointer;border:${selColor===col?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
+          <input type="hidden" id="cf2-color" value="${selColor}">
+        </div>
+      </div>
+      <div class="fg full"><label>Notes</label><input id="cf2-notes" value="${esc(c?.notes||'')}" placeholder="Additional information"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" onclick="gotoPage('courses')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCourse()">💾 ${id?'Update Course':'Create Course'}</button>
+    </div></div>
+  </div>`;
+  gotoPage('courses-form');
+}
+
+function saveCourse(){
+  const name=(document.getElementById('cf2-name').value||'').trim();
+  if(!name){toast('Course name required','err');return;}
+  const obj={
+    id:editCourseId||uid(), name,
+    description:document.getElementById('cf2-desc').value||'',
+    fee:parseFloat(document.getElementById('cf2-fee').value||0)||0,
+    duration:document.getElementById('cf2-duration').value||'',
+    startDate:document.getElementById('cf2-start').value||'',
+    maxStudents:parseInt(document.getElementById('cf2-max').value||0)||0,
+    teacher:document.getElementById('cf2-teacher').value||'',
+    color:document.getElementById('cf2-color').value||'#E8622A',
+    notes:document.getElementById('cf2-notes').value||'',
+    students:editCourseId?courses.find(x=>x.id===editCourseId)?.students||[]:[],
+  };
+  if(editCourseId){courses=courses.map(x=>x.id===editCourseId?obj:x);toast('Course updated!');}
+  else{courses.push(obj);toast('Course created: '+obj.name);}
+  persist();gotoPage('courses');
+}
+
+function delCourse(id){
+  if(adminOnly('Only admin can delete courses'))return;
+  if(!confirm('Delete this course?'))return;
+  courses=courses.filter(x=>x.id!==id);
+  persist();renderCourses();toast('Deleted','err');
+}
+
+function openCourseStudents(cid){
+  const c=courses.find(x=>x.id===cid);if(!c)return;
+  const enrolled=(c.students||[]).map(sid=>students.find(s=>s.id===sid)).filter(Boolean);
+  document.getElementById('assign-title').textContent=c.name+' — Enrolled Students';
+  document.getElementById('assign-body').innerHTML=`
+    <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78716C">
+      📚 <b>${c.name}</b> · ${enrolled.length} student${enrolled.length!==1?'s':''} enrolled${c.fee?` · ${fmt(c.fee)} fee`:''}
+    </div>
+    ${!enrolled.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:28px;margin-bottom:8px">👥</div><p>No students enrolled yet.</p></div>`:`
+    <table><thead><tr><th>#</th><th>Student</th><th>Class</th><th>Mobile</th><th>Remove</th></tr></thead>
+    <tbody>${enrolled.map((s,i)=>`<tr>
+      <td style="font-size:11px;color:#78716C">${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:7px"><div class="av ${avcC(i)}" style="width:26px;height:26px;font-size:10px">${ini(s.name)}</div><span style="font-weight:600;font-size:12.5px">${esc(s.name)}</span></div></td>
+      <td>${esc(s.cls)}</td><td style="color:#78716C">${esc(s.mobile||'—')}</td>
+      <td><button class="btn btn-red btn-xs" onclick="unenrollStudent('${cid}','${s.id}')">Remove</button></td>
+    </tr>`).join('')}</tbody></table>`}`;
+  openModal('modal-assign');
+}
+
+function openCourseEnroll(cid){
+  const c=courses.find(x=>x.id===cid);if(!c)return;
+  const enrolled=c.students||[];
+  const avail=students.filter(s=>!s.inactive&&!enrolled.includes(s.id));
+  document.getElementById('assign-title').textContent='Enroll Students — '+c.name;
+  document.getElementById('assign-body').innerHTML=`
+    <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78716C">
+      📚 <b>${c.name}</b>${c.fee?` · ${fmt(c.fee)} fee`:''}${c.duration?` · ${c.duration}`:''}
+    </div>
+    <div class="search-box" style="margin-bottom:14px"><span>🔍</span><input placeholder="Search students…" oninput="filterCourseEnroll('${cid}',this.value)" style="width:100%"></div>
+    <div id="enroll-list">${renderEnrollList(avail,cid)}</div>`;
+  openModal('modal-assign');
+}
+
+function renderEnrollList(list,cid){
+  if(!list.length) return`<div style="text-align:center;padding:30px;color:#78716C">No students available to enroll.</div>`;
+  return list.map((s,i)=>`<div style="display:flex;align-items:center;gap:10px;background:#F7F5F0;border-radius:10px;padding:10px 14px;border:1.5px solid #E7E2D9;margin-bottom:8px">
+    <div class="av ${avcC(i)}" style="width:32px;height:32px">${ini(s.name)}</div>
+    <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">Class ${esc(s.cls)}${s.batch?' · '+esc(s.batch):''}</div></div>
+    <button class="btn btn-ink btn-xs" onclick="enrollStudent('${cid}','${s.id}')">＋ Enroll</button>
+  </div>`).join('');
+}
+
+function filterCourseEnroll(cid,q){
+  const c=courses.find(x=>x.id===cid);if(!c)return;
+  const enrolled=c.students||[];
+  const avail=students.filter(s=>!s.inactive&&!enrolled.includes(s.id)&&(!q||s.name.toLowerCase().includes(q.toLowerCase())));
+  const el=document.getElementById('enroll-list');
+  if(el)el.innerHTML=renderEnrollList(avail,cid);
+}
+
+function enrollStudent(cid,sid){
+  courses=courses.map(c=>{
+    if(c.id!==cid)return c;
+    const studs=[...(c.students||[])];
+    if(!studs.includes(sid))studs.push(sid);
+    return{...c,students:studs};
+  });
+  persist();toast('Student enrolled! ✅');openCourseEnroll(cid);
+}
+
+function unenrollStudent(cid,sid){
+  courses=courses.map(c=>{
+    if(c.id!==cid)return c;
+    return{...c,students:(c.students||[]).filter(x=>x!==sid)};
+  });
+  persist();toast('Student removed');openCourseStudents(cid);renderCourses();
+}
+// ── END COURSES ─────────────────────────────────────────────────────────────
+
+// ── THEME SYSTEM ──────────────────────────────────────────────────────────
+const THEMES = {
+  'orange': {
+    name: '🔶 Orange (Default)',
+    primary: '#E8622A', primaryDark: '#CF5522', primaryLight: '#FFF4EE',
+    sidebar: '#18181B', sidebarActive: '#E8622A',
+    bodyBg: '#F7F5F0', cardBg: '#fff', textMain: '#18181B',
+    textMuted: '#78716C', border: '#E7E2D9', inputBg: '#F7F5F0',
+    topbar: '#fff', scrollbar: '#D4CCBF'
+  },
+  'deep-blue': {
+    name: '🔵 Deep Blue & Light Blue',
+    primary: '#1D4ED8', primaryDark: '#1E40AF', primaryLight: '#EFF6FF',
+    sidebar: '#1E3A5F', sidebarActive: '#1D4ED8',
+    bodyBg: '#F0F4FF', cardBg: '#fff', textMain: '#1E293B',
+    textMuted: '#64748B', border: '#DBEAFE', inputBg: '#F0F4FF',
+    topbar: '#fff', scrollbar: '#BFDBFE'
+  },
+  'charcoal': {
+    name: '⚫ Charcoal & Sky Blue',
+    primary: '#0EA5E9', primaryDark: '#0284C7', primaryLight: '#F0F9FF',
+    sidebar: '#334155', sidebarActive: '#0EA5E9',
+    bodyBg: '#F8FAFC', cardBg: '#fff', textMain: '#0F172A',
+    textMuted: '#64748B', border: '#E2E8F0', inputBg: '#F1F5F9',
+    topbar: '#fff', scrollbar: '#CBD5E1'
+  },
+  'navy-mint': {
+    name: '🌊 Navy & Mint/Teal',
+    primary: '#14B8A6', primaryDark: '#0D9488', primaryLight: '#F0FDFA',
+    sidebar: '#0F172A', sidebarActive: '#14B8A6',
+    bodyBg: '#F0FDFA', cardBg: '#fff', textMain: '#134E4A',
+    textMuted: '#6B7280', border: '#CCFBF1', inputBg: '#F0FDFA',
+    topbar: '#fff', scrollbar: '#99F6E4'
+  },
+  'purple': {
+    name: '💜 Purple & Lavender',
+    primary: '#7C3AED', primaryDark: '#6D28D9', primaryLight: '#F5F3FF',
+    sidebar: '#2E1065', sidebarActive: '#7C3AED',
+    bodyBg: '#FAF5FF', cardBg: '#fff', textMain: '#1E1B4B',
+    textMuted: '#6B7280', border: '#EDE9FE', inputBg: '#FAF5FF',
+    topbar: '#fff', scrollbar: '#DDD6FE'
+  },
+  'dark': {
+    name: '🌙 Dark Mode',
+    primary: '#E8622A', primaryDark: '#CF5522', primaryLight: '#2D1A0E',
+    sidebar: '#111111', sidebarActive: '#E8622A',
+    bodyBg: '#1A1A1A', cardBg: '#242424', textMain: '#F5F5F5',
+    textMuted: '#A0A0A0', border: '#333333', inputBg: '#2A2A2A',
+    topbar: '#1E1E1E', scrollbar: '#444444'
+  },
+  'green': {
+    name: '🌿 Forest Green',
+    primary: '#16A34A', primaryDark: '#15803D', primaryLight: '#F0FDF4',
+    sidebar: '#14532D', sidebarActive: '#16A34A',
+    bodyBg: '#F0FDF4', cardBg: '#fff', textMain: '#14532D',
+    textMuted: '#6B7280', border: '#DCFCE7', inputBg: '#F0FDF4',
+    topbar: '#fff', scrollbar: '#BBF7D0'
+  },
+  'rose': {
+    name: '🌹 Rose & Pink',
+    primary: '#E11D48', primaryDark: '#BE123C', primaryLight: '#FFF1F2',
+    sidebar: '#881337', sidebarActive: '#E11D48',
+    bodyBg: '#FFF1F2', cardBg: '#fff', textMain: '#1F0A0F',
+    textMuted: '#6B7280', border: '#FECDD3', inputBg: '#FFF1F2',
+    topbar: '#fff', scrollbar: '#FDA4AF'
+  }
+};
+
+function applyTheme(themeKey){
+  const t = THEMES[themeKey] || THEMES['orange'];
+  const r = document.documentElement.style;
+  r.setProperty('--primary', t.primary);
+  r.setProperty('--primary-dark', t.primaryDark);
+  r.setProperty('--primary-light', t.primaryLight);
+  r.setProperty('--sidebar-bg', t.sidebar);
+  r.setProperty('--sidebar-active', t.sidebarActive);
+  r.setProperty('--body-bg', t.bodyBg);
+  r.setProperty('--card-bg', t.cardBg);
+  r.setProperty('--text-main', t.textMain);
+  r.setProperty('--text-muted', t.textMuted);
+  r.setProperty('--border', t.border);
+  r.setProperty('--input-bg', t.inputBg);
+  r.setProperty('--topbar-bg', t.topbar);
+  r.setProperty('--scrollbar', t.scrollbar);
+  localStorage.setItem('cc_theme', themeKey);
+  // Update body background
+  document.body.style.background = t.bodyBg;
+  document.body.style.color = t.textMain;
+}
+
+function loadSavedTheme(){
+  const saved = localStorage.getItem('cc_theme') || 'orange';
+  applyTheme(saved);
+}
+
+function renderThemePicker(){
+  const cur = localStorage.getItem('cc_theme') || 'orange';
+  return `<div class="card" style="margin-bottom:18px">
+    <div style="font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">🎨 Color Theme</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      ${Object.entries(THEMES).map(([key, t])=>`
+        <div onclick="applyTheme('${key}');renderSettings();" style="border:2px solid ${cur===key?t.primary:'var(--border)'};border-radius:12px;padding:12px 14px;cursor:pointer;background:${cur===key?t.primaryLight:'var(--card-bg)'};transition:.15s;display:flex;align-items:center;gap:10px">
+          <div style="display:flex;gap:4px">
+            <div style="width:18px;height:18px;border-radius:50%;background:${t.sidebar}"></div>
+            <div style="width:18px;height:18px;border-radius:50%;background:${t.primary}"></div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-main)">${t.name}</div>
+            ${cur===key?`<div style="font-size:10px;color:${t.primary};font-weight:700">✓ Active</div>`:''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
+}
+// ── END THEME SYSTEM ──────────────────────────────────────────────────────
+
 // INIT
 function initApp(){
+  loadSavedTheme();
   document.getElementById('today-chip').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   // Check if we just updated — show success message with data confirmation
   if(IS_ELECTRON()){
@@ -1882,30 +2452,27 @@ function initApp(){
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
+  loadSavedTheme();
   await loadAllData();
 
-  // Check license first
+  // Step 1: Check if registered
+  const reg = getRegistration();
+  if(!reg){
+    // First time — show registration screen
+    document.getElementById('reg-screen').style.display = 'flex';
+    return;
+  }
+
+  // Step 2: Check license status
   const licStatus = checkLicense();
-  const isLicValid = licStatus === 'none' || licStatus.status === 'trial' || licStatus.status === 'active';
+  const isActive = licStatus.status === 'active' || (licStatus.status === 'trial' && licStatus.daysLeft > 7);
 
-  if(!isLicValid){
-    // Show license screen (expired or never set)
+  if(!isActive){
     showLicenseScreen();
     return;
   }
 
-  // Show trial warning if less than 7 days left
-  if(licStatus.status === 'trial' && licStatus.daysLeft <= 7){
-    showLicenseScreen();
-    return;
-  }
-
-  // If trial not started yet — show license screen
-  if(licStatus === 'none'){
-    showLicenseScreen();
-    return;
-  }
-
+  // Step 3: Show app
   if(localStorage.getItem('ops_logged')){
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
