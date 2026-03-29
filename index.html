@@ -219,15 +219,92 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <div id="login-screen">
-  <div class="login-box">
-    <div style="font-size:24px;font-weight:900;margin-bottom:4px">CLASS<span style="color:#E8622A">CORE</span></div>
-    <div style="font-size:10px;color:#78716C;letter-spacing:2px;text-transform:uppercase;margin-bottom:28px">Tuition Management</div>
-    <div class="fg" style="margin-bottom:12px"><label>Username</label><input id="l-user" placeholder="Enter username"></div>
-    <div class="fg" style="margin-bottom:16px"><label>Password</label><input id="l-pass" type="password" placeholder="Enter password"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()">Login →</button>
-    <p style="font-size:11px;color:#78716C;margin-top:14px;text-align:center">Default: admin / 1234</p>
+  <div style="display:flex;height:100vh;background:#F7F5F0;align-items:center;justify-content:center;padding:24px">
+    <div style="background:#fff;border:1.5px solid #E7E2D9;border-radius:24px;padding:40px;width:360px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.1)">
+      <!-- Animated illustration -->
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:52px;margin-bottom:12px;animation:bounce 2s infinite">
+          ✏️
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+          <span style="font-size:22px;animation:float 2s ease-in-out infinite">📚</span>
+          <span style="font-size:22px;animation:float 2s ease-in-out infinite .3s">🖊️</span>
+          <span style="font-size:22px;animation:float 2s ease-in-out infinite .6s">📐</span>
+          <span style="font-size:22px;animation:float 2s ease-in-out infinite .9s">📏</span>
+        </div>
+        <div style="font-size:22px;font-weight:900;margin-bottom:3px">CLASS<span style="color:#E8622A">CORE</span></div>
+        <div style="font-size:10px;color:#78716C;letter-spacing:2px;text-transform:uppercase">Tuition Management</div>
+      </div>
+      <div class="fg" style="margin-bottom:12px"><label>Username</label><input id="l-user" placeholder="Enter your username" autocomplete="username"></div>
+      <div class="fg" style="margin-bottom:6px"><label>Password</label><input id="l-pass" type="password" placeholder="Enter your password" autocomplete="current-password"></div>
+      <div style="text-align:right;margin-bottom:16px">
+        <button onclick="showForgotPassword()" style="background:none;border:none;color:#E8622A;font-size:11px;font-weight:600;cursor:pointer">Forgot password?</button>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="doLogin()">Login →</button>
+      <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #E7E2D9">
+        <span style="font-size:12px;color:#78716C">New user? </span>
+        <button onclick="showRegFromLogin()" style="background:none;border:none;color:#E8622A;font-size:12px;font-weight:700;cursor:pointer">Register & Start Free Trial →</button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- FORCE CHANGE PASSWORD SCREEN -->
+<div id="force-change-screen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:32px;width:380px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.2)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:32px;margin-bottom:8px">🔐</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Set Your Password</div>
+      <div style="font-size:12px;color:#78716C">Please create your own username and password before continuing</div>
+    </div>
+    <div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px">
+      ⚠️ You must change your temporary credentials before first use
+    </div>
+    <div class="fg" style="margin-bottom:12px"><label>New Username ★</label><input id="fc-user" placeholder="Choose a username"></div>
+    <div class="fg" style="margin-bottom:12px"><label>New Password ★</label><input id="fc-pass" type="password" placeholder="Min 6 characters"></div>
+    <div class="fg" style="margin-bottom:16px"><label>Confirm Password ★</label><input id="fc-pass2" type="password" placeholder="Re-enter password"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="saveForceChange()">✅ Save & Continue</button>
+    <div id="fc-msg" style="margin-top:10px;font-size:12px;text-align:center;color:#DC2626"></div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD SCREEN -->
+<div id="forgot-screen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:32px;width:380px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.2)">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:32px;margin-bottom:8px">🔑</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Reset Password</div>
+      <div style="font-size:12px;color:#78716C">Enter your registered email and mobile to receive OTP</div>
+    </div>
+
+    <!-- Step 1: Verify identity -->
+    <div id="fp-step1">
+      <div class="fg" style="margin-bottom:12px"><label>Registered Email ★</label><input id="fp-email" type="email" placeholder="your@email.com"></div>
+      <div class="fg" style="margin-bottom:16px"><label>Registered Mobile ★</label><input id="fp-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="sendForgotOTP()">📧 Send OTP to Email</button>
+    </div>
+
+    <!-- Step 2: Enter OTP -->
+    <div id="fp-step2" style="display:none">
+      <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 14px;font-size:12px;color:#16A34A;margin-bottom:16px;text-align:center">
+        ✅ OTP sent to your email! Check inbox.
+      </div>
+      <div class="fg" style="margin-bottom:12px"><label>Enter OTP ★</label><input id="fp-otp" placeholder="6-digit OTP" maxlength="6" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:4px"></div>
+      <div class="fg" style="margin-bottom:12px"><label>New Username</label><input id="fp-newuser" placeholder="Leave blank to keep current"></div>
+      <div class="fg" style="margin-bottom:12px"><label>New Password ★</label><input id="fp-newpass" type="password" placeholder="Min 6 characters"></div>
+      <div class="fg" style="margin-bottom:16px"><label>Confirm Password ★</label><input id="fp-newpass2" type="password" placeholder="Re-enter password"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="verifyForgotOTP()">✅ Reset Password</button>
+    </div>
+
+    <button onclick="document.getElementById('forgot-screen').style.display='none'" style="width:100%;background:none;border:none;color:#78716C;font-size:12px;cursor:pointer;margin-top:12px">← Back to Login</button>
+    <div id="fp-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
+  </div>
+</div>
+
+<style>
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+</style>
 
 <div id="app" style="display:none">
   <div class="sidebar">
@@ -347,7 +424,7 @@ const SEED_B=[
 // Check IS_ELECTRON lazily so preload has time to expose the API
 function IS_ELECTRON(){ return typeof window.classcore !== 'undefined'; }
 
-function ld(k,fb){try{const d=localStorage.getItem(k);return d?JSON.parse(d):fb;}catch{return fb;}}
+function ld(k,fb){try{const d=localStorage.getItem(k);return d?JSON.parse(d):fb;}catch(e){console.warn('ld parse error',k,e.message);return fb;}}
 function sv(k,v){localStorage.setItem(k,JSON.stringify(v));}
 
 let students=[];
@@ -485,8 +562,15 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 let currentUser=null;
 
 function getUsers(){
-  try{const d=localStorage.getItem('cc_users');return d?JSON.parse(d):[{username:'admin',password:'1234',role:'admin',name:'Admin'}];}
-  catch{return [{username:'admin',password:'1234',role:'admin',name:'Admin'}];}
+  try{
+    const d=localStorage.getItem('cc_users');
+    if(!d) return [{username:'admin',password:'classcore@123',role:'admin',name:'Admin',mustChange:true}];
+    const parsed=JSON.parse(d);
+    return Array.isArray(parsed)?parsed:[{username:'admin',password:'classcore@123',role:'admin',name:'Admin',mustChange:true}];
+  }catch(e){
+    console.warn('getUsers error:',e.message);
+    return [{username:'admin',password:'classcore@123',role:'admin',name:'Admin',mustChange:true}];
+  }
 }
 function saveUsers(u){localStorage.setItem('cc_users',JSON.stringify(u));persist();}
 function isAdmin(){return currentUser&&currentUser.role==='admin';}
@@ -495,12 +579,23 @@ function adminOnly(msg){if(!isAdmin()){toast(msg||'Only admin can do this','warn
 function doLogin(){
   const u=(document.getElementById('l-user').value||'').trim();
   const p=document.getElementById('l-pass').value||'';
+  // Check for force-change password flag
   const users=getUsers();
   const found=users.find(x=>x.username===u&&x.password===p);
   if(found){
+    // Check if first-time login (must change password)
+    if(found.mustChange){
+      showForceChangePassword(found);
+      return;
+    }
     currentUser={username:found.username,role:found.role,name:found.name||found.username};
     localStorage.setItem('ops_logged','1');
     localStorage.setItem('ops_cur_user',JSON.stringify(currentUser));
+    // Sync legacy localStorage
+    if(found.role==='admin'){
+      localStorage.setItem('username',found.username);
+      localStorage.setItem('password',found.password);
+    }
     persist();
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='flex';
@@ -508,6 +603,162 @@ function doLogin(){
   }else toast('Wrong username or password','err');
 }
 function doLogout(){localStorage.removeItem('ops_logged');localStorage.removeItem('ops_cur_user');currentUser=null;location.reload();}
+
+// ── FORCE CHANGE PASSWORD (first login) ────────────────────────────────────
+let _pendingUser = null;
+function showForceChangePassword(user){
+  _pendingUser = user;
+  document.getElementById('force-change-screen').style.display='flex';
+}
+function saveForceChange(){
+  const u=(document.getElementById('fc-user').value||'').trim();
+  const p=(document.getElementById('fc-pass').value||'').trim();
+  const p2=(document.getElementById('fc-pass2').value||'').trim();
+  const msg=document.getElementById('fc-msg');
+  if(!u){msg.textContent='Username required';return;}
+  if(!p||p.length<6){msg.textContent='Password must be at least 6 characters';return;}
+  if(p!==p2){msg.textContent='Passwords do not match';return;}
+  const users=getUsers();
+  // Check username not taken by someone else
+  if(users.find(x=>x.username===u&&x.username!==_pendingUser.username)){
+    msg.textContent='Username already taken';return;
+  }
+  const idx=users.findIndex(x=>x.username===_pendingUser.username);
+  if(idx===-1){msg.textContent='User not found';return;}
+  users[idx].username=u;
+  users[idx].password=p;
+  users[idx].mustChange=false;
+  saveUsers(users);
+  if(_pendingUser.role==='admin'){
+    localStorage.setItem('username',u);
+    localStorage.setItem('password',p);
+  }
+  document.getElementById('force-change-screen').style.display='none';
+  // Now login
+  currentUser={username:u,role:users[idx].role,name:users[idx].name||u};
+  localStorage.setItem('ops_logged','1');
+  localStorage.setItem('ops_cur_user',JSON.stringify(currentUser));
+  persist();
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initApp();
+  toast('✅ Password set! Welcome to ClassCore!');
+}
+
+// ── FORGOT PASSWORD (OTP via email) ────────────────────────────────────────
+let _otpCode = '';
+let _otpEmail = '';
+let _otpMobile = '';
+
+function showForgotPassword(){
+  document.getElementById('forgot-screen').style.display='flex';
+  document.getElementById('fp-step1').style.display='block';
+  document.getElementById('fp-step2').style.display='none';
+  document.getElementById('fp-msg').textContent='';
+}
+
+async function sendForgotOTP(){
+  const email=(document.getElementById('fp-email').value||'').trim().toLowerCase();
+  const mobile=(document.getElementById('fp-mobile').value||'').trim();
+  const msg=document.getElementById('fp-msg');
+
+  if(!email||!email.includes('@')){msg.style.color='#DC2626';msg.textContent='Enter valid email';return;}
+  if(!mobile||mobile.length!==10){msg.style.color='#DC2626';msg.textContent='Enter valid 10-digit mobile';return;}
+
+  msg.style.color='#E8622A';msg.textContent='⏳ Verifying...';
+
+  // Check against Google Sheets
+  const result = await sendToSheets('check_reset', { email, mobile });
+
+  if(result && result.ok === false && !result.msg?.includes('not configured')){
+    msg.style.color='#DC2626';
+    msg.textContent='❌ Email and mobile not found in our records';
+    return;
+  }
+
+  // Generate 6-digit OTP
+  _otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  _otpEmail = email;
+  _otpMobile = mobile;
+
+  // Send OTP via Google Sheets (which sends email)
+  const sent = await sendToSheets('send_otp', {
+    email, mobile,
+    otp: _otpCode,
+    otpExpiry: Date.now() + 10 * 60 * 1000 // 10 minutes
+  });
+
+  if(sent && sent.ok === false && !sent.msg?.includes('not configured')){
+    msg.style.color='#DC2626';
+    msg.textContent='❌ Could not send OTP. Try again.';
+    return;
+  }
+
+  // Show OTP step
+  document.getElementById('fp-step1').style.display='none';
+  document.getElementById('fp-step2').style.display='block';
+  msg.textContent='';
+  // Store OTP locally as fallback
+  localStorage.setItem('_fp_otp', JSON.stringify({code:_otpCode,exp:Date.now()+600000,email}));
+}
+
+function verifyForgotOTP(){
+  const otp=(document.getElementById('fp-otp').value||'').trim();
+  const newUser=(document.getElementById('fp-newuser').value||'').trim();
+  const newPass=(document.getElementById('fp-newpass').value||'').trim();
+  const newPass2=(document.getElementById('fp-newpass2').value||'').trim();
+  const msg=document.getElementById('fp-msg');
+
+  if(!otp||otp.length!==6){msg.style.color='#DC2626';msg.textContent='Enter 6-digit OTP';return;}
+  if(!newPass||newPass.length<6){msg.style.color='#DC2626';msg.textContent='Password must be at least 6 characters';return;}
+  if(newPass!==newPass2){msg.style.color='#DC2626';msg.textContent='Passwords do not match';return;}
+
+  // Verify OTP
+  const stored = JSON.parse(localStorage.getItem('_fp_otp')||'null');
+  const validOTP = (otp===_otpCode) || (stored&&stored.code===otp&&Date.now()<stored.exp&&stored.email===_otpEmail);
+
+  if(!validOTP){msg.style.color='#DC2626';msg.textContent='❌ Invalid or expired OTP';return;}
+
+  // Reset password for admin (or find user by email)
+  const users=getUsers();
+  const reg=getRegistration();
+  let targetUser=null;
+  // Find by registration email
+  if(reg&&reg.email===_otpEmail){
+    targetUser=users.find(x=>x.role==='admin');
+  }
+  // Or find employee by stored email
+  if(!targetUser){
+    targetUser=users.find(x=>x.email===_otpEmail);
+  }
+  if(!targetUser) targetUser=users[0]; // fallback to first admin
+
+  if(!targetUser){msg.style.color='#DC2626';msg.textContent='User not found';return;}
+
+  const idx=users.indexOf(targetUser);
+  if(newUser) users[idx].username=newUser;
+  users[idx].password=newPass;
+  users[idx].mustChange=false;
+  saveUsers(users);
+  if(users[idx].role==='admin'){
+    localStorage.setItem('username',users[idx].username);
+    localStorage.setItem('password',newPass);
+  }
+  localStorage.removeItem('_fp_otp');
+  persist();
+
+  msg.style.color='#16A34A';
+  msg.textContent='✅ Password reset! You can now login.';
+  setTimeout(()=>{
+    document.getElementById('forgot-screen').style.display='none';
+    document.getElementById('l-user').value=users[idx].username;
+    document.getElementById('l-pass').value='';
+    document.getElementById('l-pass').focus();
+  },1500);
+
+  // Notify sheets
+  sendToSheets('password_reset', {email:_otpEmail, mobile:_otpMobile});
+}
 
 // NAV
 let curPage='dashboard';
@@ -716,7 +967,7 @@ function saveStu(){
   const cls=document.getElementById('sf-cls').value;
   if(!cls){toast('Please select a class','err');return;}
   const mobile=(document.getElementById('sf-mobile').value||'').trim();
-  if(mobile&&mobile.length!==10){toast('Mobile must be 10 digits or leave blank','err');return;}
+  if(mobile && (mobile.length!==10 || !/^\d{10}$/.test(mobile))){toast('Mobile must be exactly 10 digits','err');return;}
   const ft=document.getElementById('sf-feetype').value;
   const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
   const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
@@ -1391,11 +1642,53 @@ function saveLogin(){
   const u=(document.getElementById('set-user')?.value||'').trim();
   const p=(document.getElementById('set-pass')?.value||'').trim();
   if(!u&&!p){toast('Enter a new username or password','warn');return;}
-  if(u) localStorage.setItem('username',u);
-  if(p) localStorage.setItem('password',p);
+  if(p&&p.length<6){toast('Password must be at least 6 characters','warn');return;}
+
+  const users=getUsers();
+  const adminIdx=users.findIndex(x=>x.role==='admin');
+  if(adminIdx===-1){toast('Admin user not found','err');return;}
+
+  // Check username not already taken
+  const newU = u || users[adminIdx].username;
+  const newP = p || users[adminIdx].password;
+  if(u && u !== users[adminIdx].username && users.find(x=>x.username===u)){
+    toast('Username already taken','err');return;
+  }
+
+  // Update cc_users
+  users[adminIdx].username = newU;
+  users[adminIdx].password = newP;
+  users[adminIdx].mustChange = false;
+
+  // Save to localStorage immediately
+  localStorage.setItem('cc_users', JSON.stringify(users));
+  // Keep legacy keys in sync
+  localStorage.setItem('username', newU);
+  localStorage.setItem('password', newP);
+  // Update current session
+  if(currentUser && currentUser.role==='admin'){
+    currentUser.username = newU;
+    localStorage.setItem('ops_cur_user', JSON.stringify(currentUser));
+  }
+
+  // Clear fields
   document.getElementById('set-user').value='';
   document.getElementById('set-pass').value='';
-  persist().then(()=>{toast('Login credentials updated successfully!');renderSettings();});
+
+  // Sync save to SSD file immediately
+  if(IS_ELECTRON()){
+    try{ window.classcore.saveDataSync(buildPayload()); }
+    catch(e){ console.warn('saveDataSync error:',e.message); }
+  } else {
+    sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+    sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
+  }
+
+  // Then also async save
+  persist().then(()=>{
+    toast('✅ Login credentials updated successfully!');
+    renderSettings();
+  });
 }
 function saveInstitute(){
   localStorage.setItem('tuitionName', document.getElementById('set-name').value||'ClassCore Tuition');
@@ -1661,7 +1954,7 @@ function deleteUser(username){
 
 // ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────
 // Replace this URL with your Google Apps Script Web App URL after setup
-const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbxAscTpNm9BCfI4S4C9gCPd9CrXj5RWvRDkPM8CnfYw9oqCg7v19M7QeP6dUYnpnvA-/exec';
+const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbxazHXsZ4B67DXx7GdSuqRDDwZ-6LRR0581MqVM5d6ZCUO-1Zj7Mu_jTdimyMC8Jh52/exec';
 
 // Generate device fingerprint to prevent trial abuse
 async function getDeviceId(){
@@ -1727,6 +2020,11 @@ function showRegScreen(){
   scr.style.display = 'flex';
 }
 
+function showRegFromLogin(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('reg-screen').style.display='flex';
+}
+
 function showRegKeyEntry(){
   const s = document.getElementById('reg-key-section');
   s.style.display = s.style.display === 'none' ? 'block' : 'none';
@@ -1754,35 +2052,53 @@ async function doRegister(){
   const trialStart = Date.now();
   const trialEnd = trialStart + 30 * 86400000;
 
+  // Generate temp login credentials
+  const tempUser = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8) + Math.floor(100+Math.random()*900);
+  const tempPass = genPassword();
+
   // Save registration locally
   const reg = { name, email, mobile, institute, deviceId, trialStart, trialEnd, registeredAt: new Date().toISOString() };
   saveRegistration(reg);
   localStorage.setItem('cc_trial_start', trialStart.toString());
-
-  // Save institute name
   localStorage.setItem('tuitionName', institute || name + "'s Tuition");
 
-  // Send to Google Sheets
+  // Set up admin user with temp credentials + mustChange flag
+  const users = getUsers();
+  const adminIdx = users.findIndex(x=>x.role==='admin');
+  if(adminIdx !== -1){
+    users[adminIdx].username = tempUser;
+    users[adminIdx].password = tempPass;
+    users[adminIdx].mustChange = true;
+    users[adminIdx].name = name;
+    users[adminIdx].email = email;
+  } else {
+    users.push({ username:tempUser, password:tempPass, role:'admin', name, email, mustChange:true });
+  }
+  localStorage.setItem('cc_users', JSON.stringify(users));
+  localStorage.setItem('username', tempUser);
+  localStorage.setItem('password', tempPass);
+
+  // Send to Google Sheets + send welcome email
   const result = await sendToSheets('register', {
     name, email, mobile, institute, deviceId,
     trialStart: new Date(trialStart).toLocaleDateString('en-IN'),
     trialEnd: new Date(trialEnd).toLocaleDateString('en-IN'),
-    status: 'trial'
+    status: 'trial',
+    tempUser, tempPass
   });
 
-  if(result.ok === false && result.msg && !result.msg.includes('not configured')){
-    // If sheets say device already used — block
+  if(result && result.ok === false && result.msg && !result.msg.includes('not configured')){
     if(result.msg.includes('already registered') || result.msg.includes('device')){
       setRegMsg('❌ This device has already used a trial. Please purchase a license.','err');
       return;
     }
   }
 
-  setRegMsg('✅ Registered! Starting your 30-day trial...', 'ok');
+  setRegMsg('✅ Registered! Check your email for login details.', 'ok');
   setTimeout(()=>{
     document.getElementById('reg-screen').style.display = 'none';
     checkAndShowLicense();
-  }, 1200);
+  }, 1500);
 }
 
 async function doRegWithKey(){
@@ -1917,7 +2233,6 @@ function showLicenseScreen(){
   document.getElementById('trial-btn').style.display = 'inline';
 
   if(lic === 'none'){
-    // Never started — show trial option
     document.getElementById('trial-btn').textContent = 'Start 30-day free trial';
   } else if(lic.status === 'trial'){
     document.getElementById('trial-banner').style.display = 'block';
@@ -1926,6 +2241,15 @@ function showLicenseScreen(){
   } else if(lic.status === 'expired'){
     document.getElementById('expired-banner').style.display = 'block';
     document.getElementById('trial-btn-wrap').style.display = 'none';
+    // Show which plan expired
+    const savedLic = getLicense();
+    if(savedLic && savedLic.plan){
+      document.getElementById('expired-banner').innerHTML =
+        '<div style="font-size:13px;font-weight:700;color:#DC2626">❌ ' +
+        (savedLic.plan === 'trial' ? 'Free Trial' : savedLic.plan.charAt(0).toUpperCase()+savedLic.plan.slice(1)+' Plan') +
+        ' Expired</div>' +
+        '<div style="font-size:11px;color:#DC2626;margin-top:3px">Please renew your subscription to continue</div>';
+    }
   }
   selectPlan('yearly');
 }
@@ -1960,6 +2284,13 @@ function showPlans(){
 }
 
 function startTrial(){
+  const reg = getRegistration();
+  if(!reg){
+    // Not registered — go to registration
+    document.getElementById('license-screen').style.display='none';
+    document.getElementById('reg-screen').style.display='flex';
+    return;
+  }
   const existing = localStorage.getItem('cc_trial_start');
   if(!existing) localStorage.setItem('cc_trial_start', Date.now().toString());
   hideLicenseScreen();
@@ -1995,41 +2326,68 @@ function generateKey(plan, customerName){
 
 function activateLicenseKey(){
   const key = (document.getElementById('license-key-input').value||'').trim().toUpperCase();
-  if(!key || key.length < 10){ showLicMsg('Enter a valid license key','err'); return;}
+  if(!key || key.length < 15){ showLicMsg('Enter a valid license key (CCTR-XXXX-XXXX-XXXX)','err'); return; }
+  if(!key.startsWith('CCTR-')){ showLicMsg('❌ Invalid key format — must start with CCTR-','err'); return; }
 
-  showLicMsg('⏳ Verifying...','warn');
+  showLicMsg('⏳ Verifying key with server...','warn');
 
-  // Try online verification first, fall back to offline
   verifyKeyOnline(key).then(result => {
     if(result.valid){
-      saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name });
-      showLicMsg('✅ License activated!', 'ok');
-      setTimeout(()=>hideLicenseScreen(), 1000);
+      // Save license with correct expiry from server
+      saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name || '' });
+      const planLabel = result.plan === 'lifetime' ? 'Lifetime' : result.plan === 'yearly' ? '1 Year' : '1 Month';
+      showLicMsg('✅ License activated! Plan: ' + planLabel, 'ok');
+      // Update Google Sheets
+      const reg = getRegistration();
+      if(reg) sendToSheets('activate_key', { email: reg.email, mobile: reg.mobile, name: reg.name, key, plan: result.plan, status: 'active' });
+      setTimeout(()=>hideLicenseScreen(), 1200);
     } else {
-      showLicMsg('❌ Invalid or expired key. Contact support.', 'err');
+      showLicMsg('❌ ' + (result.reason || 'Invalid or expired key. Contact support.'), 'err');
     }
-  }).catch(()=>{
-    // Offline fallback — accept any CCTR- key format and activate with 1 year
-    if(key.startsWith('CCTR-') && key.length >= 15){
-      saveLicense({ key, plan: 'yearly', expiry: Date.now() + 365*86400000, name: 'Customer', offline: true });
-      showLicMsg('✅ License activated (offline mode)!', 'ok');
-      setTimeout(()=>hideLicenseScreen(), 1000);
-    } else {
-      showLicMsg('❌ Invalid key format. Must start with CCTR-', 'err');
-    }
+  }).catch((err)=>{
+    // No internet — cannot verify, show message
+    showLicMsg('⚠️ No internet connection. Please connect to verify your key.', 'warn');
+    console.warn('Key verification failed:', err.message);
   });
 }
 
-// Verify key against GitHub license list
+// Verify key against GitHub licenses.json
+// Key is valid only if:
+// 1. It exists in licenses.json
+// 2. Approved = YES (you set this in keygen.html → GitHub upload)
+// 3. Expiry date has not passed (monthly=30 days, yearly=365 days)
 async function verifyKeyOnline(key){
+  // First try Google Sheets (most up to date)
+  try{
+    if(GSHEET_URL && !GSHEET_URL.includes('YOUR_GOOGLE')){
+      const url = GSHEET_URL + '?action=verify_key&key=' + encodeURIComponent(key);
+      const r = await fetch(url, {cache:'no-store'});
+      if(r.ok){
+        const data = await r.json();
+        if(data.ok !== false){
+          if(data.valid) return { valid:true, plan:data.plan, expiry:data.expiry, name:data.name||'' };
+          return { valid:false, reason: data.msg || 'Key invalid or not approved' };
+        }
+      }
+    }
+  }catch(e){ console.warn('Sheets verify failed, trying GitHub:', e.message); }
+
+  // Fallback: check GitHub licenses.json
   const url = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t='+Date.now();
   const resp = await fetch(url, {cache:'no-store'});
-  if(!resp.ok) throw new Error('Network error');
-  const licenses = await resp.json();
+  if(!resp.ok) throw new Error('Network error: '+resp.status);
+  let licenses;
+  try{ licenses = await resp.json(); }
+  catch(e){ throw new Error('Invalid license data from server'); }
+  if(!licenses || typeof licenses !== 'object') throw new Error('Invalid license format');
   const lic = licenses[key];
-  if(!lic) return { valid: false };
-  if(lic.plan !== 'lifetime' && Date.now() > lic.expiry) return { valid: false };
-  return { valid: true, ...lic };
+  if(!lic) return { valid:false, reason:'Key not found' };
+  // Check expiry for monthly/yearly
+  if(lic.plan !== 'lifetime'){
+    if(!lic.expiry) return { valid:false, reason:'Key has no expiry date' };
+    if(Date.now() > lic.expiry) return { valid:false, reason:'Key has expired — please renew' };
+  }
+  return { valid:true, plan:lic.plan, expiry:lic.expiry||9999999999999, name:lic.name||'' };
 }
 
 function showLicMsg(msg, type){
