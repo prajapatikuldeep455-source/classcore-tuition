@@ -576,6 +576,37 @@ function saveUsers(u){localStorage.setItem('cc_users',JSON.stringify(u));persist
 function isAdmin(){return currentUser&&currentUser.role==='admin';}
 function adminOnly(msg){if(!isAdmin()){toast(msg||'Only admin can do this','warn');return true;}return false;}
 
+// ── PERMISSION SYSTEM ─────────────────────────────────────────────────────
+// Default permissions for employees (admin always has ALL permissions)
+const DEFAULT_PERMS = {
+  add_students:    true,
+  edit_students:   true,
+  delete_students: false,
+  collect_fees:    true,
+  delete_payments: false,
+  mark_attendance: true,
+  view_fees:       true,
+  manage_batches:  false,
+  manage_courses:  false,
+};
+
+function hasPermission(perm){
+  if(isAdmin()) return true; // Admin can always do everything
+  const users = getUsers();
+  const me = users.find(u=>u.username===currentUser?.username);
+  if(!me) return false;
+  const perms = me.permissions || DEFAULT_PERMS;
+  return perms[perm] === true;
+}
+
+function canDo(perm, msg){
+  if(!hasPermission(perm)){
+    toast(msg || 'You do not have permission for this action','warn');
+    return false;
+  }
+  return true;
+}
+
 function doLogin(){
   const u=(document.getElementById('l-user').value||'').trim();
   const p=document.getElementById('l-pass').value||'';
@@ -865,6 +896,8 @@ function renderStus(){
 
 // STUDENT FORM
 function openStuForm(id){
+  if(id && !canDo('edit_students','You cannot edit students')) return;
+  if(!id && !canDo('add_students','You cannot add students')) return;
   editStuId=id;
   const s=id?students.find(x=>x.id===id):null;
   const batOpts=batches.map(b=>`<option value="${esc(b.name)}"${s?.batch===b.name?' selected':''}>${esc(b.name)} (${fmt12(b.startTime)}–${fmt12(b.endTime)})</option>`).join('');
@@ -998,7 +1031,7 @@ function saveStu(){
 }
 
 function delStu(id){
-  if(adminOnly('Only admin can delete students'))return;
+  if(!canDo('delete_students','You do not have permission to delete students')) return;
   if(!confirm('Delete this student and their records?'))return;
   students=students.filter(x=>x.id!==id);delete stuFeeOvr[id];
   persist();renderStus();toast('Deleted','err');
@@ -1241,24 +1274,35 @@ function makeFeeRows(list){
     const pen=Math.max(0,effFee(s)-(s.paid||0));
     const idx=students.indexOf(s);
     const monthly=s.monthlyFees||Math.round(effFee(s)/12)||0;
-    // Check if already paid for selected month
     const paidMonths=(s.history||[]).filter(h=>h.month).map(h=>h.month);
-    const alreadyPaid=selMonth&&paidMonths.includes(selMonth);
-    return`<tr>
+    // Determine which month is selected in the row dropdown
+    const defaultMonth=selMonth||MONTHS[new Date().getMonth()];
+    const rowMonth=defaultMonth;
+    const alreadyPaid=paidMonths.includes(rowMonth);
+    // Find next unpaid month to suggest
+    const nextMonth=MONTHS.find(m=>!paidMonths.includes(m))||'';
+    return`<tr style="${alreadyPaid?'background:rgba(22,163,74,.04)':''}">
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(idx)}">${ini(s.name)}</div><div><div style="font-weight:600">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">${esc(s.batch||'')}${s.school?' · '+esc(s.school):''}</div></div></div></td>
       <td>${esc(s.cls)}</td>
       <td style="font-weight:700;color:#E8622A">${fmt(monthly)}<div style="font-size:10px;color:#78716C">Annual: ${fmt(effFee(s))}</div></td>
       <td>
-        <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;width:100px">
-          ${MONTHS.map(m=>{const paid=paidMonths.includes(m);return`<option value="${m}"${m===(selMonth||MONTHS[new Date().getMonth()])?' selected':''}${paid?' style="color:#16A34A"':''}>${m}${paid?' ✓':''}</option>`;}).join('')}
+        <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid ${alreadyPaid?'#16A34A':'#E7E2D9'};background:#F7F5F0;width:110px">
+          ${MONTHS.map(m=>{const paid=paidMonths.includes(m);return`<option value="${m}"${m===rowMonth?' selected':''}>${m}${paid?' ✅':''}</option>`;}).join('')}
         </select>
+        ${alreadyPaid&&nextMonth?`<div style="font-size:9px;color:#E8622A;margin-top:3px">Next: ${nextMonth}</div>`:''}
       </td>
-      <td><input type="number" id="pay-${s.id}" placeholder="${monthly}" style="width:80px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none"></td>
-      <td><div style="display:flex;flex-direction:column;gap:4px">
-        ${alreadyPaid?`<span style="font-size:11px;color:#16A34A;font-weight:600">✅ Paid</span>`:''}
-        <button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')" style="${alreadyPaid?'background:#78716C':''}">✓ ${alreadyPaid?'Pay Again':'Collect'}</button>
-        <span class="badge ${pen<=0?'badge-green':pen<effFee(s)/2?'badge-gold':'badge-red'}" style="font-size:10px">${fmt(pen)} due</span>
-      </div></td>
+      <td><input type="number" id="pay-${s.id}" placeholder="${monthly}" style="width:80px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none" ${alreadyPaid?'disabled':''}>
+      </td>
+      <td>
+        ${alreadyPaid
+          ?`<div style="text-align:center">
+              <div style="font-size:12px;font-weight:700;color:#16A34A">✅ Paid</div>
+              <div style="font-size:9px;color:#78716C">Select diff. month</div>
+            </div>`
+          :`<button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')">✓ Collect</button>`
+        }
+        <div style="font-size:10px;color:${pen<=0?'#16A34A':'#DC2626'};margin-top:3px;font-weight:600">${pen<=0?'Cleared':fmt(pen)+' due'}</div>
+      </td>
       <td>${(s.history||[]).length>0?`<button class="btn btn-ghost btn-xs" onclick="openHist('${s.id}')">📋 ${(s.history||[]).length}</button>`:`<span style="font-size:11px;color:#78716C">None</span>`}</td>
       <td>${pen>0?`<button class="btn btn-green btn-xs" onclick="sendWA('${s.id}')">💬</button>`:''}</td>
     </tr>`;}).join('');
@@ -1275,8 +1319,23 @@ function collectFee(sid){
   const selMonth=monthEl?.value||MONTHS[new Date().getMonth()];
   const stu0=students.find(s=>s.id===sid);
   if(!stu0){toast('Student not found','err');return;}
+
+  // ── BLOCK if this month already paid ──
+  const paidMonths=(stu0.history||[]).filter(h=>h.month).map(h=>h.month);
+  if(paidMonths.includes(selMonth)){
+    toast(`❌ ${selMonth} fee already collected! Select next month.`,'err');
+    // Auto-select next unpaid month
+    const nextUnpaid=MONTHS.find(m=>!paidMonths.includes(m));
+    if(nextUnpaid&&monthEl) monthEl.value=nextUnpaid;
+    return;
+  }
+
+  // ── Check employee permission ──
+  if(!isAdmin() && !hasPermission('collect_fees')){
+    toast('You do not have permission to collect fees','err');return;
+  }
+
   const monthly=stu0.monthlyFees||Math.round(effFee(stu0)/12)||0;
-  // Use entered amount or default to monthly fee
   const enteredAmt=parseFloat(inp?.value||0);
   const amt=enteredAmt>0?enteredAmt:monthly;
   if(!amt||amt<=0){toast('Enter amount or set monthly fee first','err');return;}
@@ -1291,7 +1350,7 @@ function collectFee(sid){
   persist();
   if(inp)inp.value='';
   const stu=students.find(s=>s.id===sid);
-  toast(`${selMonth} fee collected — ${fmt(amt)}`);
+  toast(`✅ ${selMonth} fee collected — ${fmt(amt)}`);
   showReceiptPrev(stu,amt,rcptNo,null,selMonth);
   renderFees();
 }
@@ -1304,7 +1363,7 @@ function sendWA(sid){
   window.open('https://wa.me/'+num+'?text='+encodeURIComponent(`Dear ${s.parent||s.name},\n\nThis is a reminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\n\nPending Fees: ₹${pen.toLocaleString('en-IN')}\n\nKindly arrange the payment at the earliest.\n\nThank you!`));
 }
 function deletePayment(sid, idx){
-  if(adminOnly('Only admin can delete payments'))return;
+  if(!canDo('delete_payments','You do not have permission to delete payments')) return;
   if(!confirm('Delete this payment record?'))return;
   students=students.map(s=>{
     if(s.id!==sid)return s;
@@ -1810,9 +1869,44 @@ function genPassword(){
   return Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
 }
 
+function permCheckboxes(perms){
+  const p = perms || DEFAULT_PERMS;
+  const items = [
+    ['add_students',    '➕ Add Students'],
+    ['edit_students',   '✏️ Edit Students'],
+    ['delete_students', '🗑️ Delete Students'],
+    ['collect_fees',    '💰 Collect Fees'],
+    ['delete_payments', '❌ Delete Payments'],
+    ['mark_attendance', '✅ Mark Attendance'],
+    ['view_fees',       '👁️ View Fees'],
+    ['manage_batches',  '🕐 Manage Batches'],
+    ['manage_courses',  '📚 Manage Courses'],
+  ];
+  return `<div style="background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:12px;padding:14px;margin-top:12px">
+    <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🔐 Permissions — What can this employee do?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${items.map(([key,label])=>`
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#fff;border:1.5px solid #E7E2D9;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:500;transition:.15s">
+          <input type="checkbox" id="perm-${key}" ${p[key]?' checked':''} style="width:15px;height:15px;accent-color:#E8622A;cursor:pointer">
+          ${label}
+        </label>`).join('')}
+    </div>
+  </div>`;
+}
+
+function getPermissionsFromForm(){
+  const keys=['add_students','edit_students','delete_students','collect_fees','delete_payments','mark_attendance','view_fees','manage_batches','manage_courses'];
+  const perms={};
+  keys.forEach(k=>{
+    const el=document.getElementById('perm-'+k);
+    perms[k]=el?el.checked:DEFAULT_PERMS[k];
+  });
+  return perms;
+}
+
 function openAddUser(){
   const empId=genEmpId();
-  const html=`<div style="max-width:480px;margin:20px auto">
+  const html=`<div style="max-width:520px;margin:20px auto">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
       <button class="btn btn-ghost btn-sm" onclick="renderSettings()">← Back</button>
       <h2 style="font-size:17px;font-weight:700">➕ Add Employee</h2>
@@ -1821,11 +1915,9 @@ function openAddUser(){
       <div class="form-grid">
         <div class="fg full"><label>Full Name ★</label><input id="nu-name" placeholder="e.g. Ravi Patel" oninput="autoFillEmpCreds(this.value)"></div>
         <div class="fg"><label>Mobile Number</label><input id="nu-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
-        <div class="fg"><label>Role ★</label><select id="nu-role">
-          ${EMP_ROLES.map(r=>`<option value="${r}">${r}</option>`).join('')}
-        </select></div>
+        <div class="fg"><label>Role ★</label><select id="nu-role">${EMP_ROLES.map(r=>`<option value="${r}">${r}</option>`).join('')}</select></div>
         <div class="fg full" style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 14px">
-          <div style="font-size:11px;font-weight:700;color:#16A34A;margin-bottom:8px">🪪 Auto-Generated Employee ID</div>
+          <div style="font-size:11px;font-weight:700;color:#16A34A;margin-bottom:4px">🪪 Auto-Generated Employee ID</div>
           <div style="font-size:16px;font-weight:800;color:#18181B;letter-spacing:1px">${empId}</div>
         </div>
         <div class="fg"><label>Username ★</label>
@@ -1835,49 +1927,40 @@ function openAddUser(){
         <div class="fg"><label>Password ★</label>
           <div style="display:flex;gap:6px">
             <input id="nu-pass" placeholder="Auto-generated" style="font-family:monospace;flex:1">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('nu-pass').value=genPassword()" title="Generate new password">🔄</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('nu-pass').value=genPassword()">🔄</button>
           </div>
-          <div class="hint">Auto-generated. You can change it.</div>
         </div>
       </div>
-      <div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin:12px 0">
-        ⚠️ Can do: Add students, Collect fees, Mark attendance<br>
-        🔒 Cannot: Delete records, Edit payments, Access Settings
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px">
+      ${permCheckboxes(DEFAULT_PERMS)}
+      <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn btn-ghost" onclick="renderSettings()">Cancel</button>
         <button class="btn btn-primary" onclick="saveNewUser('${empId}')">💾 Create Account</button>
       </div>
     </div>
   </div>`;
   document.getElementById('page-settings').innerHTML=html;
-  // Auto fill default credentials
   document.getElementById('nu-pass').value=genPassword();
 }
 
 function autoFillEmpCreds(name){
   const userEl=document.getElementById('nu-user');
-  if(userEl&&!userEl.dataset.manual){
-    userEl.value=genUsername(name);
-  }
+  if(userEl&&!userEl.dataset.manual) userEl.value=genUsername(name);
 }
 
 function openEditUser(username){
   const users=getUsers();
   const u=users.find(x=>x.username===username);
   if(!u)return;
-  const html=`<div style="max-width:480px;margin:20px auto">
+  const html=`<div style="max-width:520px;margin:20px auto">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
       <button class="btn btn-ghost btn-sm" onclick="renderSettings()">← Back</button>
-      <h2 style="font-size:17px;font-weight:700">✏️ Edit Employee</h2>
+      <h2 style="font-size:17px;font-weight:700">✏️ Edit Employee — ${esc(u.name||u.username)}</h2>
     </div>
     <div class="card">
       <div class="form-grid">
         <div class="fg full"><label>Full Name</label><input id="eu-name" value="${esc(u.name||'')}"></div>
         <div class="fg"><label>Mobile Number</label><input id="eu-mobile" value="${esc(u.mobile||'')}" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
-        <div class="fg"><label>Role</label><select id="eu-role">
-          ${EMP_ROLES.map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r}</option>`).join('')}
-        </select></div>
+        <div class="fg"><label>Role</label><select id="eu-role">${EMP_ROLES.map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r}</option>`).join('')}</select></div>
         <div class="fg full" style="background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:10px;padding:12px 14px">
           <div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px">🪪 Employee ID</div>
           <div style="font-size:15px;font-weight:800;color:#18181B">${esc(u.empId||'—')}</div>
@@ -1890,6 +1973,7 @@ function openEditUser(username){
           </div>
         </div>
       </div>
+      ${permCheckboxes(u.permissions)}
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn btn-ghost" onclick="renderSettings()">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditUser('${username}')">💾 Save Changes</button>
@@ -1916,6 +2000,7 @@ function saveEditUser(oldUsername){
     role,
     username:newUser||users[idx].username,
     password:newPass||users[idx].password,
+    permissions:getPermissionsFromForm(),
   };
   saveUsers(users);
   toast('Employee updated!');
@@ -1936,7 +2021,8 @@ function saveNewUser(empId){
   users.push({
     username:u, password:p, role, name,
     mobile:mobile||'', empId:empId||genEmpId(),
-    joinDate:todayStr()
+    joinDate:todayStr(),
+    permissions:getPermissionsFromForm()
   });
   saveUsers(users);
   toast(`✅ ${name} added! ID: ${empId} · Login: ${u} / ${p}`);
