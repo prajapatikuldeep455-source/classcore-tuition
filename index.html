@@ -34,7 +34,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 .page{display:none;}.page.active{display:block;}
 .sb-logo{padding:24px 18px 18px;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-logo h1{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.3px;}
-.sb-logo h1 span{color:#E8622A;}
+.sb-logo h1 span{color:var(--primary);}
 .sb-logo p{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px;}
 .sb-nav{padding:14px 10px;flex:1;}
 .sb-sec{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;padding:10px 10px 4px;margin-top:4px;}
@@ -331,6 +331,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
           <div style="font-size:10px;color:rgba(255,255,255,.4);cursor:pointer;margin-top:1px" onclick="doLogout()">Sign out</div>
         </div>
       </div>
+      <div id="sb-version" style="font-size:9px;color:rgba(255,255,255,.2);margin-top:10px;text-align:center;letter-spacing:.5px">ClassCore v—</div>
     </div>
   </div>
 
@@ -364,9 +365,18 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 <div id="modal-receipt" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-receipt')">
   <div class="modal-box" style="width:480px">
-    <div class="modal-hdr"><h3>🧾 Receipt Preview</h3><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="printCurrentReceipt()">🖨️ Print</button><button class="x-btn" onclick="closeModal('modal-receipt')">×</button></div></div>
+    <div class="modal-hdr"><h3>🧾 Receipt Preview</h3><div style="display:flex;align-items:center;gap:8px">
+      <select id="receipt-size" style="padding:5px 10px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;font-weight:600">
+        <option value="A4">A4 (Large)</option>
+        <option value="A5" selected>A5 (Standard)</option>
+        <option value="A6">A6 (Half)</option>
+        <option value="A7">A7 (Small)</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="printCurrentReceipt()">🖨️ Print</button>
+      <button class="x-btn" onclick="closeModal('modal-receipt')">×</button>
+    </div></div>
     <div class="modal-body" id="receipt-body"></div>
-    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-green" onclick="sendReceiptWA()">💬 WhatsApp</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
   </div>
 </div>
 <div id="modal-classfees" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-classfees')">
@@ -1454,41 +1464,173 @@ function showReceiptPrev(s,amount,rcptNo,payDate,month){
   openModal('modal-receipt');
 }
 
-function buildReceiptHTML(s,amount,rcptNo,payDate,month){
+function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const addr=localStorage.getItem('tuitionAddress')||'';
+  const logo=localStorage.getItem('tuitionLogo')||'';
   const dispDate=payDate||todayStr();
   const totalPaid=s.paid||0;const totalFee=effFee(s);const balance=Math.max(0,totalFee-totalPaid);const isPaid=balance<=0;
+
+  // Adjust font sizes and padding per paper size
+  const SZ = {
+    'A4': { pad:'32px', h1:'22px', amt:'36px', row:'13px', lbl:'11px', max:'540px' },
+    'A5': { pad:'24px', h1:'19px', amt:'32px', row:'12.5px', lbl:'10.5px', max:'440px' },
+    'A6': { pad:'16px', h1:'15px', amt:'26px', row:'11px', lbl:'9.5px', max:'320px' },
+    'A7': { pad:'12px', h1:'13px', amt:'22px', row:'10px', lbl:'9px', max:'250px' },
+  };
+  const f = SZ[size] || SZ['A5'];
+  const accentColor = '#1B3154';
+  const goldColor = '#C9A84C';
+
   return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt #${rcptNo}</title>
-  <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Segoe UI',sans-serif;padding:30px;max-width:440px;margin:auto;color:#18181B;}.hdr{background:linear-gradient(135deg,#E8622A,#CF5522);padding:22px 24px;border-radius:12px 12px 0 0;color:#fff;}.hdr h1{font-size:20px;font-weight:900;margin-bottom:2px;}.rcpt-num{display:flex;justify-content:space-between;margin-top:14px;}.lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;opacity:.65;}.val{font-size:18px;font-weight:800;}.amount-box{background:#FFF7F0;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px dashed #F0EAE0;}.amount{font-size:32px;font-weight:900;color:#E8622A;}.status{padding:8px 14px;border-radius:10px;font-size:11px;font-weight:800;}.paid{background:#DCFCE7;color:#16A34A;border:1.5px solid #86EFAC;}.partial{background:#FEF9C3;color:#A16207;border:1.5px solid #FDE047;}.student-box{display:flex;align-items:center;gap:12px;padding:14px 24px;background:#F7F5F0;margin:16px 24px;border-radius:10px;}.av{width:40px;height:40px;border-radius:50%;background:#E8622A;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;}.tbl-wrap{padding:0 24px 8px;}table{width:100%;border-collapse:collapse;}td{padding:8px 0;border-bottom:1px dashed #EDE8DF;font-size:12.5px;}td:first-child{color:#78716C;width:48%;}td:last-child{font-weight:600;}tr:last-child td{border:none;}.balance-row{margin:10px 24px;padding:12px 16px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}.paid-bg{background:#F0FDF4;border:1.5px solid #86EFAC;}.due-bg{background:#FEF2F2;border:1.5px solid #FECACA;}.footer{padding:16px 24px;text-align:center;color:#A8A099;font-size:11px;}.cut{margin:8px 24px;border-top:2px dashed #E0D9CE;text-align:center;}.cut span{background:#fff;padding:0 10px;font-size:14px;color:#C4BAB0;position:relative;top:-11px;}@media print{body{padding:10px;}}</style></head><body>
-  <div class="hdr"><h1>${esc(inst)}</h1>${addr?`<p style="font-size:11px;opacity:.75">${esc(addr)}</p>`:""}
-    <div class="rcpt-num"><div><div class="lbl">Fee Receipt</div><div class="val">#${rcptNo}</div></div><div style="text-align:right"><div class="lbl">Date</div><div style="font-size:13px;font-weight:700;margin-top:4px">${dispDate}</div></div></div></div>
-  <div class="amount-box"><div><div style="font-size:10px;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Amount Paid${month?' — '+month:''}</div><div class="amount">&#8377;${Number(amount).toLocaleString("en-IN")}</div></div><div class="status ${isPaid?"paid":"partial"}">${isPaid?"FULLY PAID":"PARTIAL"}</div></div>
-  <div class="student-box"><div class="av">${ini(s.name)}</div><div><div style="font-size:15px;font-weight:700">${esc(s.name)}</div><div style="font-size:12px;color:#78716C">Class ${esc(s.cls)}${s.medium?' · '+esc(s.medium)+' Medium':''}${s.batch?" · "+esc(s.batch):""}${s.school?" · "+esc(s.school):""}</div></div>${s.parent?`<div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:#78716C">Guardian</div><div style="font-size:12px;font-weight:600">${esc(s.parent)}</div></div>`:""}</div>
-  <div class="tbl-wrap"><table><tr><td>Total Fees</td><td>${fmt(totalFee)}</td></tr>${month?`<tr><td>Fee Month</td><td style="color:#E8622A;font-weight:700">${month}</td></tr>`:''}<tr><td>This Payment</td><td style="color:#E8622A">${fmt(amount)}</td></tr><tr><td>Total Paid</td><td style="color:#16A34A">${fmt(totalPaid)}</td></tr>${s.mobile?`<tr><td>Mobile</td><td>${esc(s.mobile)}</td></tr>`:""}</table></div>
-  <div class="balance-row ${isPaid?"paid-bg":"due-bg"}"><span style="font-weight:700;color:${isPaid?"#16A34A":"#DC2626"}">${isPaid?"Fully Paid":"Balance Due"}</span><span style="font-size:16px;font-weight:900;color:${isPaid?"#16A34A":"#DC2626"}">&#8377;${balance.toLocaleString("en-IN")}</span></div>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',Arial,sans-serif;padding:${f.pad};max-width:${f.max};margin:auto;color:#18181B;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .hdr{background:linear-gradient(135deg,${accentColor},#243d5c);padding:20px 24px;border-radius:12px 12px 0 0;color:#fff;}
+    .hdr h1{font-size:${f.h1};font-weight:900;margin-bottom:2px;}
+    .hdr .sub{font-size:10px;opacity:.7;margin-top:2px;}
+    .rcpt-row{display:flex;justify-content:space-between;margin-top:14px;align-items:flex-end;}
+    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;opacity:.6;}
+    .rcpt-num{font-size:${f.h1};font-weight:800;}
+    .gold{color:${goldColor};}
+    .amount-box{background:#FBF6E9;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px dashed #E0D5B5;}
+    .amount{font-size:${f.amt};font-weight:900;color:${accentColor};}
+    .status{padding:7px 12px;border-radius:10px;font-size:10px;font-weight:800;text-align:center;}
+    .paid-s{background:#DCFCE7;color:#16A34A;border:1.5px solid #86EFAC;}
+    .part-s{background:#FEF9C3;color:#A16207;border:1.5px solid #FDE047;}
+    .stu-box{display:flex;align-items:center;gap:10px;padding:12px 24px;background:#F5F4F0;margin:14px 24px;border-radius:10px;}
+    .av{width:38px;height:38px;border-radius:50%;background:${accentColor};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
+    .stu-name{font-size:${f.row};font-weight:700;}
+    .stu-sub{font-size:10px;color:#5A6A7E;margin-top:2px;}
+    .tbl{padding:0 24px 8px;}
+    table{width:100%;border-collapse:collapse;}
+    td{padding:7px 0;border-bottom:1px dashed #E5DFC8;font-size:${f.row};}
+    td:first-child{color:#5A6A7E;width:50%;}
+    td:last-child{font-weight:600;}
+    tr:last-child td{border:none;}
+    .bal-row{margin:10px 24px;padding:11px 16px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;}
+    .paid-bg{background:#F0FDF4;border:1.5px solid #86EFAC;}
+    .due-bg{background:#FEF2F2;border:1.5px solid #FECACA;}
+    .footer{padding:14px 24px;text-align:center;color:#9A9080;font-size:10px;border-top:1px solid #E5DFC8;margin-top:10px;}
+    .cut{margin:8px 24px;border-top:2px dashed #D5CCB8;text-align:center;}
+    .cut span{background:#fff;padding:0 10px;font-size:13px;color:#C4BAB0;position:relative;top:-10px;}
+    .logo-img{max-height:36px;border-radius:6px;margin-bottom:6px;background:#fff;padding:2px;}
+    @media print{body{padding:6px;}@page{size:${size||'A5'};margin:6mm;}}
+  </style></head><body>
+  <div class="hdr">
+    ${logo?`<img src="${logo}" class="logo-img">`:''}
+    <h1>${esc(inst)}</h1>
+    ${addr?`<div class="sub">${esc(addr)}</div>`:''}
+    <div class="rcpt-row">
+      <div><div class="lbl">Fee Receipt</div><div class="rcpt-num gold">#${rcptNo}</div></div>
+      <div style="text-align:right"><div class="lbl">Date</div><div style="font-size:${f.row};font-weight:700;margin-top:4px">${dispDate}</div></div>
+    </div>
+  </div>
+  <div class="amount-box">
+    <div>
+      <div style="font-size:9px;color:#5A6A7E;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Amount Paid${month?' — <b>'+month+'</b>':''}</div>
+      <div class="amount">&#8377;${Number(amount).toLocaleString('en-IN')}</div>
+    </div>
+    <div class="status ${isPaid?'paid-s':'part-s'}">${isPaid?'✅ FULLY PAID':'⏳ PARTIAL'}</div>
+  </div>
+  <div class="stu-box">
+    <div class="av">${ini(s.name)}</div>
+    <div style="flex:1">
+      <div class="stu-name">${esc(s.name)}</div>
+      <div class="stu-sub">Class ${esc(s.cls)}${s.medium?' · '+esc(s.medium):''} ${s.batch?'· '+esc(s.batch):''}${s.school?'· '+esc(s.school):''}</div>
+    </div>
+    ${s.parent?`<div style="text-align:right"><div style="font-size:9px;color:#5A6A7E">Guardian</div><div style="font-size:${f.lbl};font-weight:600">${esc(s.parent)}</div></div>`:''}
+  </div>
+  <div class="tbl"><table>
+    <tr><td>Total Annual Fees</td><td>${fmt(totalFee)}</td></tr>
+    ${month?`<tr><td>Fee Month</td><td style="color:${accentColor};font-weight:700">${month}</td></tr>`:''}
+    <tr><td>This Payment</td><td style="color:${accentColor}">${fmt(amount)}</td></tr>
+    <tr><td>Total Paid (cumulative)</td><td style="color:#16A34A">${fmt(totalPaid)}</td></tr>
+    ${s.mobile?`<tr><td>Mobile</td><td>${esc(s.mobile)}</td></tr>`:''}
+    ${s.roll?`<tr><td>Roll No.</td><td>${esc(s.roll)}</td></tr>`:''}
+  </table></div>
+  <div class="bal-row ${isPaid?'paid-bg':'due-bg'}">
+    <span style="font-weight:700;color:${isPaid?'#16A34A':'#DC2626'}">${isPaid?'✅ Fully Paid':'⚠️ Balance Due'}</span>
+    <span style="font-size:${f.h1};font-weight:900;color:${isPaid?'#16A34A':'#DC2626'}">&#8377;${balance.toLocaleString('en-IN')}</span>
+  </div>
   <div class="cut"><span>✂</span></div>
-  <div class="footer"><div style="margin-bottom:4px">Thank you for your payment!</div><div>${esc(inst)}${addr?" - "+esc(addr):""}</div><div style="margin-top:4px;font-size:10px">Generated by ClassCore - ${dispDate}</div></div>
+  <div class="footer">
+    <div style="margin-bottom:3px">Thank you for your payment! 🙏</div>
+    <div>${esc(inst)}${addr?' · '+esc(addr):''}</div>
+    <div style="margin-top:3px">Generated by ClassCore v${localStorage.getItem('cc_app_version')||'—'} · ${dispDate}</div>
+  </div>
   </body></html>`;
 }
+function getReceiptSize(){ return document.getElementById('receipt-size')?.value || 'A5'; }
+
 async function printCurrentReceipt(){
   if(!curReceipt)return;
   const{s,amount,rcptNo,payDate,month}=curReceipt;
-  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month);
-  if(IS_ELECTRON()){const r=await window.classcore.printContent(html);if(!r.ok)toast('Print failed','err');}
-  else{const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
+  const size = getReceiptSize();
+  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
+  if(IS_ELECTRON()){
+    const r=await window.classcore.printContent(html, size);
+    if(!r?.ok) toast('Print error — check printer connection','err');
+  } else {
+    const w=window.open('','_blank','width=800,height=700');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>{ w.focus(); w.print(); },600);
+  }
 }
+
 async function saveReceiptPDF(){
   if(!curReceipt)return;
   const{s,amount,rcptNo,payDate,month}=curReceipt;
-  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month);
+  const size = getReceiptSize();
+  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
   const name='Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
-  if(IS_ELECTRON()){const r=await window.classcore.savePDF(html,name);if(r.ok)toast('PDF saved!');else toast('PDF failed','err');}
-  else{const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
+  if(IS_ELECTRON()){
+    const r=await window.classcore.savePDF(html,name,size);
+    if(r?.ok) toast('✅ PDF saved!');
+    else toast('PDF save failed','err');
+  } else {
+    const w=window.open('','_blank','width=800,height=700');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(),600);
+  }
 }
-function buildStudentListHTML(){
+function sendReceiptWA(){
+  if(!curReceipt){toast('No receipt to share','err');return;}
+  const{s,amount,rcptNo,payDate,month}=curReceipt;
+  if(!s.mobile&&!s.parent){toast('No mobile number for this student','err');return;}
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
-  const list=students.filter(s=>!s.inactive);
+  const dispDate=payDate||todayStr();
+  const totalPaid=s.paid||0;
+  const totalFee=effFee(s);
+  const balance=Math.max(0,totalFee-totalPaid);
+  const mobile=(s.mobile||'').replace(/\D/g,'');
+  const num=mobile.length===10?'91'+mobile:mobile;
+  if(!num||num.length<10){toast('Invalid mobile number','err');return;}
+
+  const msg=
+`🧾 *Fee Receipt — ${esc(inst)}*
+
+📋 *Receipt #${rcptNo}*
+📅 Date: ${dispDate}${month?'\n📆 Month: *'+month+'*':''}
+
+👤 *Student Details*
+Name: ${s.name}
+Class: ${s.cls}${s.batch?' | Batch: '+s.batch:''}${s.medium?' | '+s.medium+' Medium':''}${s.roll?' | Roll: '+s.roll:''}
+
+💰 *Payment Details*
+Amount Paid: *₹${Number(amount).toLocaleString('en-IN')}*
+Total Paid: ₹${totalPaid.toLocaleString('en-IN')}
+Balance Due: ${balance<=0?'✅ *Fully Paid*':'⚠️ *₹'+balance.toLocaleString('en-IN')+'*'}
+
+🏫 ${inst}
+_Generated by ClassCore_`;
+
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+}
+
+function buildStudentListHTML(){
   return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Student List</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px;color:#18181B;}h2{margin-bottom:4px;}p{color:#666;font-size:12px;margin-bottom:16px;}table{width:100%;border-collapse:collapse;}th{background:#18181B;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}td{padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;}@media print{body{padding:10px;}}</style></head><body>
   <h2>${esc(inst)}</h2><p>Student List - ${todayStr()} - Total: ${list.length} active students</p>
   <table><thead><tr><th>#</th><th>Name</th><th>Class</th><th>School</th><th>Batch</th><th>Mobile</th><th>Guardian</th><th>Annual Fee</th><th>Paid</th><th>Pending</th></tr></thead>
@@ -2040,7 +2182,7 @@ function deleteUser(username){
 
 // ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────
 // Replace this URL with your Google Apps Script Web App URL after setup
-const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbxazHXsZ4B67DXx7GdSuqRDDwZ-6LRR0581MqVM5d6ZCUO-1Zj7Mu_jTdimyMC8Jh52/exec';
+const GSHEET_URL = 'AKfycbxazHXsZ4B67DXx7GdSuqRDDwZ-6LRR0581MqVM5d6ZCUO-1Zj7Mu_jTdimyMC8Jh52';
 
 // Generate device fingerprint to prevent trial abuse
 async function getDeviceId(){
@@ -2739,8 +2881,16 @@ function unenrollStudent(cid,sid){
 
 // ── THEME SYSTEM ──────────────────────────────────────────────────────────
 const THEMES = {
+  'navy-gold': {
+    name: '🏛️ Navy & Gold (ClassCore)',
+    primary: '#C9A84C', primaryDark: '#A8873A', primaryLight: '#FBF6E9',
+    sidebar: '#1B3154', sidebarActive: '#C9A84C',
+    bodyBg: '#F5F4F0', cardBg: '#fff', textMain: '#1B2E4B',
+    textMuted: '#5A6A7E', border: '#E0D9C8', inputBg: '#F5F4F0',
+    topbar: '#fff', scrollbar: '#C9A84C'
+  },
   'orange': {
-    name: '🔶 Orange (Default)',
+    name: '🔶 Orange',
     primary: '#E8622A', primaryDark: '#CF5522', primaryLight: '#FFF4EE',
     sidebar: '#18181B', sidebarActive: '#E8622A',
     bodyBg: '#F7F5F0', cardBg: '#fff', textMain: '#18181B',
@@ -2828,7 +2978,7 @@ function applyTheme(themeKey){
 }
 
 function loadSavedTheme(){
-  const saved = localStorage.getItem('cc_theme') || 'orange';
+  const saved = localStorage.getItem('cc_theme') || 'navy-gold';
   applyTheme(saved);
 }
 
@@ -2858,6 +3008,34 @@ function renderThemePicker(){
 function initApp(){
   loadSavedTheme();
   document.getElementById('today-chip').textContent=new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+  // Load and display version — listen for push from main process first
+  if(IS_ELECTRON()){
+    // Listen for push event (sent immediately on window ready)
+    window.classcore.onAppVersion(v => {
+      const ver = v || '—';
+      localStorage.setItem('cc_app_version', ver);
+      const el = document.getElementById('sb-version');
+      if(el) el.textContent = 'ClassCore v' + ver;
+    });
+    // Also invoke directly as fallback
+    window.classcore.getAppVersion().then(v => {
+      if(!v) return;
+      localStorage.setItem('cc_app_version', v);
+      const el = document.getElementById('sb-version');
+      if(el) el.textContent = 'ClassCore v' + v;
+    }).catch(() => {});
+  } else {
+    // Web fallback: read version.json
+    fetch('version.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(d => {
+        const ver = d.version || '—';
+        localStorage.setItem('cc_app_version', ver);
+        const el = document.getElementById('sb-version');
+        if(el) el.textContent = 'ClassCore v' + ver;
+      }).catch(() => {});
+  }
   // Check if we just updated — show success message with data confirmation
   if(IS_ELECTRON()){
     window.classcore.getUpdateMeta().then(meta=>{
