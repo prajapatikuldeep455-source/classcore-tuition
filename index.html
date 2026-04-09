@@ -367,10 +367,10 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   <div class="modal-box" style="width:480px">
     <div class="modal-hdr"><h3>🧾 Receipt Preview</h3><div style="display:flex;align-items:center;gap:8px">
       <select id="receipt-size" style="padding:5px 10px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;font-weight:600">
-        <option value="A4">A4 (Large)</option>
-        <option value="A5" selected>A5 (Standard)</option>
-        <option value="A6">A6 (Half)</option>
-        <option value="A7">A7 (Small)</option>
+        <option value="A4" selected>A4 (Standard)</option>
+        <option value="A5">A5 (Half)</option>
+        <option value="A6">A6 (Small)</option>
+        <option value="A7">A7 (Mini)</option>
       </select>
       <button class="btn btn-primary btn-sm" onclick="printCurrentReceipt()">🖨️ Print</button>
       <button class="x-btn" onclick="closeModal('modal-receipt')">×</button>
@@ -415,7 +415,25 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 const BUILTIN_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAE0UlEQVR4nO2dT4scRRyG60/39PzbRbIkYlajoK5GPIiwGFEUPXrIfgX16CleRMRD8IN49AvkkIPxoPHgsqIRI4uiYowaTXazWc06Mz3dVV7rbcGwLNq9vu9ze+mu7t8MzxRUVU+1MUIIIYQQQgghhGDBtl3Af80nm5uQT5082VIl3cC1XYBoFwlAjgQgRwKQIwHIkQDk/O+GgSuvvgHZDT3k3vIYjw9yzDZC9rGGvHHmrYOW2CnUA5AjAciRAORIAHIkADkSgBwJQM6hnwe49/RrkEfHFvpp9gP3eJr7xwZHsUE+SKPz7lqabQyf4x3tNE0bZ97cX8EdQz0AORKAHAlAjgQgRwKQIwHIydou4KBYa2HYN5tUr6S5P+o/nebJ9T+301w7B+vF4+VxmWZfuMfghiG81yhhsr+Ku4V6AHIkADkSgBwJQI4EIEcCkCMByDn08wB1WT+RZlvVK2kO8/r9NN/ty9/T/MjRYjHNlzM7gusb+2yancu+aJTw6f4q7hbqAciRAORIAHIkADkSgBwJQM6hHwaGKp5Ic6wjPLVb3pz+Cg2OhIfSuFj0YDl5JZudS/PXZnghzT1rfztAuZ1DPQA5EoAcCUCOBCBHApAjAciRAOQc+nmAGCI8ll1P5ih1kS1ArKvv0nx1p4R/SF8ZjpbTXBXxqTQHF883SvhyfxV3C/UA5EgAciQAORKAHAlAjgQgp/PDwJdffxvyvEZnP7h87VKa7ax8GK8QT6Xp2y37Q5p7VYTdoYul+QNpzsf2D7hcP8N8yFEPQI4EIEcCkCMByJEA5EgAciQAOa1vFr38AmzqZYLBlzyZxkucKozGDI5AHJXbD6a5tv4+OKHInkujH+XwHQyXRh+muTfwV+H+jx6H5eTejRtYrsWv1OImZCZMZpA/O/uOaRP1AORIAHIkADkSgBwJQI4EIKf15WDrcNxkQw3v+LHGLqV54HBz5ljuwDt+qmhvN673FZw/jd+nuX//4jDNxYnxcWgfa9g8utjavgeuZ0wwSPNHheO+zN00HUI9ADkSgBwJQI4EIEcCkCMByJEA5LQ+D+CsgxqCDU+m2UbzCxw35pk0xxibEuP6awwV5CrAuD1WVQ7Hrb2Ezc3zjeOwvBych/u5GPE7jfHnNI7y/N1GvbVpEfUA5EgAciQAORKAHAlAjgQgp/VhYKxKGKb1Mr+R5sLiZtDOVB+nuQz2rjTXVQ2bRTuLn9FbA88VZzu7cL7f68Ow0E5nW1Bwnu9A+9n0FpzvPbQPgz6cX+RFc/m4VdQDkCMByJEA5EgAciQAORKAHAlATvvzAAF36Xpx4cdv0rwbBvCuX+s8SDubTiGXZjZPs/N4vs8yWL4Nt67D/csLm/AYt/VZAe2dvZLmeR1wniHD5WF/e+8nOP/0S83/N7eKegByJAA5EoAcCUCOBCBHApDT+iZRTdbW1iA3N10K+FCvqWt8qHZ3dxdyluFItyhgVPe39mUJfwY2pjFoGy+MIe/t7UHOc3zIeDbD6128+JHpEuoByJEA5EgAciQAORKAHAlAjgQgp3PzAOvr65Cb43jvG5svN+YFmvMGd2I+n/9jbt7fOfzNRFzNvuPx1dXVfdX3b6MegBwJQI4EIEcCkCMByJEAQgghhBBCCCGEECT8BZt+FXBqUbAOAAAAAElFTkSuQmCC";
-const CLASSES=['Jr.KG','Sr.KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+const BASE_CLASSES=['Jr.KG','Sr.KG','1','2','3','4','5','6','7','8','9','10','11','12'];
+function getClasses(){
+  try{
+    const custom=JSON.parse(localStorage.getItem('cc_custom_classes')||'[]');
+    return [...BASE_CLASSES,...custom.filter(c=>!BASE_CLASSES.includes(c))];
+  }catch(e){return BASE_CLASSES;}
+}
+function addCustomClass(name){
+  if(!name)return;
+  try{
+    const custom=JSON.parse(localStorage.getItem('cc_custom_classes')||'[]');
+    if(!custom.includes(name)&&!BASE_CLASSES.includes(name)){
+      custom.push(name);
+      localStorage.setItem('cc_custom_classes',JSON.stringify(custom));
+    }
+  }catch(e){}
+}
+// Keep CLASSES as computed for compatibility
+let CLASSES=getClasses();
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const AVC=['avc0','avc1','avc2','avc3','avc4','avc5','avc6','avc7'];
 const BATCH_COLORS=['#E8622A','#2A9D8F','#18181B','#E9C46A','#264653','#E76F51','#457B9D','#6D6875'];
@@ -552,7 +570,36 @@ const fmt=n=>'₹'+Number(n||0).toLocaleString('en-IN');
 const ini=n=>(n||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
 const avcC=i=>AVC[i%AVC.length];
 const fmt12=t=>{if(!t)return'';const[h,m]=t.split(':').map(Number);return(h%12||12)+':'+(m+'').padStart(2,'0')+(h>=12?' PM':' AM');};
-const effFee=s=>{if(stuFeeOvr[s.id]!=null)return+stuFeeOvr[s.id];if(classFees[s.cls]!=null)return+classFees[s.cls];return+(s.finalFees||0);};
+// effFee = annual fee for student
+const effFee=s=>{
+  if(stuFeeOvr[s.id]!=null) return +stuFeeOvr[s.id];
+  // classFees stores MONTHLY rate; annual = × 12
+  if(classFees[s.cls]!=null) return (+classFees[s.cls])*12;
+  return +(s.finalFees||0);
+};
+// Get total monthly course fees for a student
+const courseFeeMonthly=s=>{
+  if(!s.courseIds||!s.courseIds.length)return 0;
+  return s.courseIds.reduce((total,cid)=>{
+    const course=courses.find(c=>c.id===cid);
+    return total+(course&&course.fee?+course.fee:0);
+  },0);
+};
+// Monthly fee for a student (base fee + course fees)
+const monthlyFee=s=>{
+  let base=0;
+  if(stuFeeOvr[s.id]!=null) base=Math.round(+stuFeeOvr[s.id]/12);
+  else if(classFees[s.cls]!=null) base=+classFees[s.cls];
+  else if(s.feeType==='annual'){
+    const ann=+(s.finalFees||s.annualFees||0);
+    base=ann>0?Math.round(ann/12):0;
+  } else {
+    base=+(s.monthlyFees||0);
+  }
+  return base+courseFeeMonthly(s);
+};
+// Annual fee
+const annualFee=s=>monthlyFee(s)*12;
 const bStu=b=>students.filter(s=>s.batch===b.name&&!s.inactive);
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
@@ -823,39 +870,54 @@ function gotoPage(pg){
 }
 function topBtnAction(){if(TOP_BTNS[curPage])TOP_BTNS[curPage].fn();}
 
-// DASHBOARD
 function renderDash(){
   const active=students.filter(s=>!s.inactive);
-  const exp=active.reduce((a,s)=>a+effFee(s),0);
-  const col=students.reduce((a,s)=>a+(s.paid||0),0);
-  const pen=Math.max(0,exp-col);
-  const penStu=active.filter(s=>(effFee(s)-(s.paid||0))>0).length;
-  const colPct=exp?Math.round(col/exp*100):0;
+  const curMonth=MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  // Monthly expected = sum of monthly fees
+  const expMonthly=active.reduce((a,s)=>a+monthlyFee(s),0);
+  // Collected this month
+  const colThisMonth=active.reduce((a,s)=>{
+    const h=(s.history||[]).filter(x=>x.month===curMonth&&(x.year||curYear)===curYear);
+    return a+h.reduce((b,x)=>b+(x.amount||0),0);
+  },0);
+  // Total collected all time
+  const colAll=students.reduce((a,s)=>a+(s.paid||0),0);
+  // Pending this month
+  const penMonth=Math.max(0,expMonthly-colThisMonth);
+  const penStu=active.filter(s=>{
+    const paidMonths=(s.history||[]).filter(h=>h.month===curMonth&&(h.year||curYear)===curYear);
+    return paidMonths.length===0 && monthlyFee(s)>0;
+  }).length;
+  const colPct=expMonthly?Math.round(colThisMonth/expMonthly*100):0;
   const byClass={};active.forEach(s=>{byClass[s.cls]=(byClass[s.cls]||0)+1;});
   document.getElementById('page-dashboard').innerHTML=`
   <div class="grid-4">
     <div class="stat-card"><div class="stat-stripe" style="background:#18181B"></div><div style="font-size:22px;margin-bottom:8px">🎓</div><div class="stat-val">${active.length}</div><div class="stat-lbl">Total Students</div><div class="stat-sub" style="color:#78716C">${students.filter(s=>s.inactive).length} inactive</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:#16A34A"></div><div style="font-size:22px;margin-bottom:8px">💚</div><div class="stat-val">${fmt(col)}</div><div class="stat-lbl">Fees Collected</div><div class="stat-sub" style="color:#16A34A">${colPct}% collected</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:#DC2626"></div><div style="font-size:22px;margin-bottom:8px">⚠️</div><div class="stat-val">${fmt(pen)}</div><div class="stat-lbl">Fees Pending</div><div class="stat-sub" style="color:#DC2626">${penStu} students</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:#E8622A"></div><div style="font-size:22px;margin-bottom:8px">💰</div><div class="stat-val">${fmt(exp)}</div><div class="stat-lbl">Total Expected</div><div class="stat-sub" style="color:#E8622A">This year</div></div>
+    <div class="stat-card"><div class="stat-stripe" style="background:#16A34A"></div><div style="font-size:22px;margin-bottom:8px">💚</div><div class="stat-val">${fmt(colThisMonth)}</div><div class="stat-lbl">${curMonth} Collected</div><div class="stat-sub" style="color:#16A34A">${colPct}% of ${curMonth}</div></div>
+    <div class="stat-card"><div class="stat-stripe" style="background:#DC2626"></div><div style="font-size:22px;margin-bottom:8px">⚠️</div><div class="stat-val">${fmt(penMonth)}</div><div class="stat-lbl">${curMonth} Pending</div><div class="stat-sub" style="color:#DC2626">${penStu} students</div></div>
+    <div class="stat-card"><div class="stat-stripe" style="background:var(--primary)"></div><div style="font-size:22px;margin-bottom:8px">💰</div><div class="stat-val">${fmt(expMonthly)}</div><div class="stat-lbl">Monthly Expected</div><div class="stat-sub" style="color:var(--primary)">Total: ${fmt(colAll)}</div></div>
   </div>
   <div class="grid-21">
-    <div class="card"><div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">Fee Collection</div>
-      <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Collected</span><span style="font-weight:700;color:#16A34A">${fmt(col)}</span></div><div class="prog"><div class="prog-fill" style="background:#16A34A;width:${colPct}%"></div></div></div>
-      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Pending</span><span style="font-weight:700;color:#DC2626">${fmt(pen)}</span></div><div class="prog"><div class="prog-fill" style="background:#DC2626;width:${exp?Math.round(pen/exp*100):0}%"></div></div></div>
+    <div class="card"><div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">${curMonth} Fee Collection</div>
+      <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Collected</span><span style="font-weight:700;color:#16A34A">${fmt(colThisMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#16A34A;width:${colPct}%"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Pending</span><span style="font-weight:700;color:#DC2626">${fmt(penMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#DC2626;width:${expMonthly?Math.round(penMonth/expMonthly*100):0}%"></div></div></div>
     </div>
     <div class="card"><div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Students by Class</div>
       ${Object.entries(byClass).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([c,n])=>`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:#78716C">Class ${esc(c)}</span><span style="font-weight:700">${n}</span></div>`).join('')||'<div style="color:#78716C;font-size:12px">No students yet</div>'}
     </div>
   </div>
   <div class="sec-hdr"><h3>Recent Students</h3><button class="btn btn-ghost btn-sm" onclick="gotoPage('students')">View All →</button></div>
-  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Batch</th><th>Fee</th><th>Paid</th><th>Pending</th><th>Status</th></tr></thead>
-  <tbody>${students.slice(-6).reverse().map((s,i)=>{const p=effFee(s)-(s.paid||0);return`<tr>
+  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Batch</th><th>Monthly Fee</th><th>${curMonth} Status</th><th>Total Paid</th><th>Status</th></tr></thead>
+  <tbody>${students.slice(-6).reverse().map((s,i)=>{
+    const mFee=monthlyFee(s);
+    const paidThisMonth=(s.history||[]).some(h=>h.month===curMonth&&(h.year||curYear)===curYear);
+    return`<tr>
     <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(i)}">${ini(s.name)}</div><div style="font-weight:600">${esc(s.name)}</div></div></td>
     <td>${esc(s.cls)}</td><td>${esc(s.batch||'—')}</td>
-    <td style="font-weight:700">${fmt(effFee(s))}</td>
-    <td style="color:#16A34A;font-weight:600">${fmt(s.paid)}</td>
-    <td style="color:${p>0?'#DC2626':'#16A34A'};font-weight:600">${fmt(p)}</td>
+    <td style="font-weight:700">${fmt(mFee)}/mo</td>
+    <td><span class="badge ${paidThisMonth?'badge-green':'badge-red'}">${paidThisMonth?'Paid':'Not paid'}</span></td>
+    <td style="color:#16A34A;font-weight:600">${fmt(s.paid||0)}</td>
     <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
   </tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;padding:40px;color:#78716C">No students yet. Click Students → Add Student.</td></tr>'}
   </tbody></table></div>`;
@@ -879,7 +941,7 @@ function renderStus(){
       <div class="search-box"><span>🔍</span><input value="${esc(sfSearch)}" placeholder="Search name, mobile…" oninput="sfSearch=this.value.toLowerCase();renderStus()"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="sfCls=this.value;renderStus()" style="padding:7px 11px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0">
-          <option value="">All Classes</option>${CLASSES.map(c=>`<option${sfCls===c?' selected':''}>${c}</option>`).join('')}
+          <option value="">All Classes</option>${getClasses().map(c=>`<option${sfCls===c?' selected':''}>${c}</option>`).join('')}
         </select>
         <select onchange="sfBat=this.value;renderStus()" style="padding:7px 11px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0">
           <option value="">All Batches</option>${batches.map(b=>`<option${sfBat===b.name?' selected':''}>${esc(b.name)}</option>`).join('')}
@@ -889,15 +951,20 @@ function renderStus(){
       </div>
     </div>
     ${!list.length?`<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">🎓</div><p>No students. <button onclick="openStuForm(null)" style="color:#E8622A;background:none;border:none;cursor:pointer;font-weight:700">Add one →</button></p></div>`:`
-    <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Medium</th><th>School</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Annual Fee</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${list.map((s,i)=>{const idx=students.indexOf(s);return`<tr>
+    <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Medium</th><th>School</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${list.map((s,i)=>{const idx=students.indexOf(s);
+    const mFee=monthlyFee(s);
+    const feeDisplay=s.feeType==='annual'
+      ? `<div style="font-weight:700">${fmt(s.annualFees||s.finalFees||0)}<span style="font-size:10px;color:#78716C;font-weight:400">/yr</span></div><div style="font-size:10px;color:#78716C">${fmt(mFee)}/mo</div>`
+      : `<div style="font-weight:700">${fmt(mFee)}<span style="font-size:10px;color:#78716C;font-weight:400">/mo</span></div>`;
+    return`<tr>
       <td style="color:#78716C;font-size:11px">${i+1}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(idx)}">${ini(s.name)}</div><div><div style="font-weight:600">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">${esc(s.subject||'')}</div></div></div></td>
       <td style="color:#78716C">${esc(s.roll||'—')}</td><td>${esc(s.cls)}</td>
       <td><span class="badge badge-gray">${esc(s.medium||'—')}</span></td>
       <td style="color:#78716C">${esc(s.school||'—')}</td><td>${esc(s.batch||'—')}</td>
       <td style="color:#78716C">${esc(s.mobile||'—')}</td><td>${esc(s.parent||'—')}</td>
-      <td style="font-weight:700">${fmt(effFee(s))}</td>
+      <td>${feeDisplay}</td>
       <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
       <td><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="openStuForm('${s.id}')">✏️ Edit</button><button class="btn btn-red btn-xs" onclick="delStu('${s.id}')">🗑️</button></div></td>
     </tr>`;}).join('')}</tbody></table>`}
@@ -919,9 +986,17 @@ function openStuForm(id){
     </div>
     <div class="card"><div class="form-grid">
       <div class="fg full"><label>Full Name ★</label><input id="sf-name" value="${esc(s?.name||'')}" placeholder="e.g. Aryan Patel"></div>
-      <div class="fg"><label>Class ★</label><select id="sf-cls" onchange="prefillClsFee()">
-        <option value="">— Select Class —</option>${CLASSES.map(c=>`<option${s?.cls===c?' selected':''}>${c}</option>`).join('')}
-      </select></div>
+      <div class="fg"><label>Class ★</label>
+        <div style="display:flex;gap:6px">
+          <select id="sf-cls" style="flex:1" onchange="onClsChange(this);prefillClsFee()">
+            <option value="">— Select Class —</option>
+            ${getClasses().map(c=>`<option${s?.cls===c?' selected':''}>${c}</option>`).join('')}
+            ${s?.cls&&!getClasses().includes(s.cls)?`<option selected>${esc(s.cls)}</option>`:''}
+            <option value="__other__">＋ Add Custom Class…</option>
+          </select>
+          <input id="sf-cls-custom" placeholder="e.g. B.Com, 11-Science" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid #E8622A;border-radius:8px;padding:9px 12px;font-size:13px;outline:none" onblur="applyCustomClass(this.value)">
+        </div>
+      </div>
       <div class="fg"><label>Roll Number</label><input id="sf-roll" value="${esc(s?.roll||'')}" placeholder="Leave blank for auto"></div>
       <div class="fg"><label>Batch / Time</label><select id="sf-batch">
         <option value="">— No Batch —</option>${batOpts}
@@ -930,20 +1005,42 @@ function openStuForm(id){
       <div class="fg"><label>Parent / Guardian</label><input id="sf-parent" value="${esc(s?.parent||'')}" placeholder="Father / Mother name"></div>
       <div class="fg"><label>Subject</label><input id="sf-subject" value="${esc(s?.subject||'')}" placeholder="e.g. Math, Science"></div>
       <div class="fg"><label>School Name</label><input id="sf-school" value="${esc(s?.school||'')}" placeholder="e.g. Delhi Public School"></div>
-      <div class="fg"><label>Medium</label><select id="sf-medium">
-        <option value="">— Select Medium —</option>
-        <option value="English"${s?.medium==='English'?' selected':''}>English</option>
-        <option value="Gujarati"${s?.medium==='Gujarati'?' selected':''}>Gujarati</option>
-        <option value="Hindi"${s?.medium==='Hindi'?' selected':''}>Hindi</option>
-        <option value="Semi-English"${s?.medium==='Semi-English'?' selected':''}>Semi-English</option>
-      </select></div>
-      <div class="fg"><label>Admission Date</label><input id="sf-admdate" type="date" value="${s?.admDate||''}"></div>
+      <div class="fg"><label>Medium</label>
+        <div style="display:flex;gap:6px">
+          <select id="sf-medium" style="flex:1" onchange="onMediumChange(this)">
+            <option value="">— Select Medium —</option>
+            <option value="English"${s?.medium==='English'?' selected':''}>English</option>
+            <option value="Gujarati"${s?.medium==='Gujarati'?' selected':''}>Gujarati</option>
+            <option value="Hindi"${s?.medium==='Hindi'?' selected':''}>Hindi</option>
+            <option value="Punjabi"${s?.medium==='Punjabi'?' selected':''}>Punjabi</option>
+            <option value="Marathi"${s?.medium==='Marathi'?' selected':''}>Marathi</option>
+            <option value="Urdu"${s?.medium==='Urdu'?' selected':''}>Urdu</option>
+            ${s?.medium&&!['English','Gujarati','Hindi','Punjabi','Marathi','Urdu'].includes(s.medium)?`<option value="${esc(s.medium)}" selected>${esc(s.medium)}</option>`:''}
+            <option value="__other__">＋ Add Custom…</option>
+          </select>
+          <input id="sf-medium-custom" placeholder="Type medium name" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid #E8622A;border-radius:8px;padding:9px 12px;font-size:13px;outline:none">
+        </div>
+      </div>
+      <div class="fg full"><label>Enrolled Courses</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;min-height:44px">
+          ${courses.length===0
+            ? `<span style="font-size:12px;color:#78716C;align-self:center">No courses yet — create courses first</span>`
+            : courses.map(c=>{
+                const enrolled=(s?.courseIds||[]).includes(c.id);
+                return`<label style="display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid ${enrolled?'#E8622A':'#E7E2D9'};border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${enrolled?'700':'400'};color:${enrolled?'#E8622A':'#18181B'}">
+                  <input type="checkbox" data-cid="${esc(c.id)}" ${enrolled?'checked':''} style="accent-color:#E8622A;cursor:pointer"> ${esc(c.name)}${c.fee?` (${fmt(c.fee)})`:''}
+                </label>`;
+              }).join('')
+          }
+        </div>
+        <div class="hint">Tick courses this student is enrolled in</div>
+      </div>
+      <div class="fg"><label>Admission Date</label><input id="sf-admdate" type="date" value="${s?.admDate||todayStr()}"></div>
       <div class="fg"><label>Fee Type</label><select id="sf-feetype" onchange="onFeeTypeChange()">
-        <option value="">— Select —</option>
-        <option value="monthly"${s?.feeType==='monthly'?' selected':''}>Monthly</option>
+        <option value="monthly"${(!s?.feeType||s?.feeType==='monthly')?' selected':''}>Monthly</option>
         <option value="annual"${s?.feeType==='annual'?' selected':''}>Annual</option>
       </select></div>
-      <div class="fg" id="sf-mwrap" style="${s?.feeType==='monthly'?'':'display:none'}">
+      <div class="fg" id="sf-mwrap" style="${s?.feeType==='annual'?'display:none':''}">
         <label>Monthly Fees (₹)</label>
         <input id="sf-monthly" type="number" value="${s?.monthlyFees||''}" placeholder="e.g. 1500" oninput="updateFeePreview()">
         <div class="hint" id="sf-clshint"></div>
@@ -970,15 +1067,81 @@ function openStuForm(id){
   gotoPage('students-form');
 }
 
+function onClsChange(sel){
+  const custom=document.getElementById('sf-cls-custom');
+  if(sel.value==='__other__'){
+    custom.style.display='block';
+    custom.focus();
+    sel.value='';
+  } else {
+    if(custom) custom.style.display='none';
+  }
+}
+
+function applyCustomClass(val){
+  val=(val||'').trim();
+  if(!val) return;
+  addCustomClass(val);
+  CLASSES=getClasses();
+  const sel=document.getElementById('sf-cls');
+  const custom=document.getElementById('sf-cls-custom');
+  if(!sel) return;
+  // Add to dropdown if not there
+  const exists=[...sel.options].some(o=>o.value===val);
+  if(!exists){
+    const opt=document.createElement('option');
+    opt.value=val; opt.text=val; opt.selected=true;
+    sel.insertBefore(opt, sel.options[sel.options.length-1]);
+  } else {
+    sel.value=val;
+  }
+  if(custom) custom.style.display='none';
+  prefillClsFee();
+}
+
+function getClsValue(){
+  const sel=document.getElementById('sf-cls');
+  const custom=document.getElementById('sf-cls-custom');
+  if(custom&&custom.style.display!=='none'&&custom.value.trim()){
+    return custom.value.trim();
+  }
+  return sel?.value||'';
+}
+
+function onMediumChange(sel){
+  const custom=document.getElementById('sf-medium-custom');
+  if(sel.value==='__other__'){
+    custom.style.display='block';
+    custom.focus();
+    sel.value='';
+  } else {
+    custom.style.display='none';
+  }
+}
+
+function getMediumValue(){
+  const sel=document.getElementById('sf-medium');
+  const custom=document.getElementById('sf-medium-custom');
+  if(custom&&custom.style.display!=='none'&&custom.value.trim()){
+    return custom.value.trim();
+  }
+  return sel?.value||'';
+}
+
+function getSelectedCourseIds(){
+  const checks=document.querySelectorAll('#page-students-form input[data-cid]:checked');
+  return [...checks].map(c=>c.getAttribute('data-cid'));
+}
+
 function onFeeTypeChange(){
-  const ft=document.getElementById('sf-feetype').value;
+  const ft=document.getElementById('sf-feetype')?.value||'';
   document.getElementById('sf-mwrap').style.display=ft==='monthly'?'flex':'none';
   document.getElementById('sf-awrap').style.display=ft==='annual'?'flex':'none';
   prefillClsFee();updateFeePreview();
 }
 
 function prefillClsFee(){
-  const cls=document.getElementById('sf-cls')?.value;
+  const cls=getClsValue();
   const cf=classFees[cls];
   const hint=document.getElementById('sf-clshint');
   if(!hint)return;
@@ -994,28 +1157,47 @@ function prefillClsFee(){
 }
 
 function updateFeePreview(){
-  const ft=document.getElementById('sf-feetype')?.value;
+  const ft=document.getElementById('sf-feetype')?.value||'monthly';
   const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
   const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
   const disc=parseFloat(document.getElementById('sf-discount')?.value||0);
-  const total=ft==='monthly'?monthly*12:ft==='annual'?annual:0;
-  const final=total-disc;
+  const total=ft==='monthly'?monthly*12:annual;
+  const final=Math.max(0,total-disc);
+  // Add enrolled course fees
+  const selectedCids=getSelectedCourseIds();
+  const courseFeeTotal=selectedCids.reduce((sum,cid)=>{
+    const c=courses.find(x=>x.id===cid);
+    return sum+(c&&c.fee?+c.fee:0);
+  },0);
   const el=document.getElementById('sf-feepreview');if(!el)return;
-  el.innerHTML=ft&&total>0?`<div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px;font-size:13px">💡 <b>Total:</b> ${fmt(total)} — <b>Discount:</b> ${fmt(disc)} → <b style="color:#16A34A">Final: ${fmt(final)}</b></div>`:'';
+  if(total>0||courseFeeTotal>0){
+    const baseMonthly=ft==='monthly'?monthly:Math.round(final/12);
+    const totalMonthly=baseMonthly+courseFeeTotal;
+    el.innerHTML=`<div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:12px 16px;font-size:13px">
+      💡 <b>Base Fee:</b> ${fmt(final)}${ft==='monthly'?` (${fmt(monthly)}/mo × 12)`:''}
+      ${disc>0?` — <b>Discount:</b> ${fmt(disc)}`:''}
+      ${courseFeeTotal>0?`<br>📚 <b>Course Fees:</b> ${fmt(courseFeeTotal)}/mo (${selectedCids.length} course${selectedCids.length>1?'s':''})`:''}
+      <br>💰 <b style="color:#16A34A">Total Monthly: ${fmt(totalMonthly)}/mo</b>
+    </div>`;
+  } else {
+    el.innerHTML='';
+  }
 }
 
 function saveStu(){
   const name=(document.getElementById('sf-name').value||'').trim();
   if(!name){toast('Student name is required','err');return;}
-  const cls=document.getElementById('sf-cls').value;
+  const cls=getClsValue();
   if(!cls){toast('Please select a class','err');return;}
   const mobile=(document.getElementById('sf-mobile').value||'').trim();
   if(mobile && (mobile.length!==10 || !/^\d{10}$/.test(mobile))){toast('Mobile must be exactly 10 digits','err');return;}
-  const ft=document.getElementById('sf-feetype').value;
+  const ft=document.getElementById('sf-feetype').value||'monthly';
   const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
   const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
   const disc=parseFloat(document.getElementById('sf-discount')?.value||0);
-  const total=ft==='monthly'?monthly*12:ft==='annual'?annual:0;
+  // totalFees = gross annual, finalFees = after discount
+  const totalFees=ft==='monthly'?monthly*12:annual;
+  const finalFees=Math.max(0,totalFees-disc);
   const ex=editStuId?students.find(x=>x.id===editStuId):null;
   const obj={
     id:ex?.id||uid(),name,cls,mobile,
@@ -1024,19 +1206,32 @@ function saveStu(){
     parent:document.getElementById('sf-parent').value||'',
     subject:document.getElementById('sf-subject').value||'',
     school:document.getElementById('sf-school').value||'',
-    medium:document.getElementById('sf-medium').value||'',
+    medium:getMediumValue(),
     admDate:document.getElementById('sf-admdate').value||'',
-    feeType:ft,monthlyFees:monthly,annualFees:annual,
-    totalFees:total,discount:disc,finalFees:total-disc,
+    feeType:ft,
+    monthlyFees:ft==='monthly'?monthly:Math.round(finalFees/12),
+    annualFees:ft==='annual'?annual:(monthly*12),
+    totalFees, discount:disc, finalFees,
     paid:ex?.paid||0,history:ex?.history||[],
     addr:document.getElementById('sf-addr').value||'',
     email:document.getElementById('sf-email').value||'',
     inactive:document.getElementById('sf-status').value==='inactive',
     notes:document.getElementById('sf-notes').value||'',
+    courseIds:getSelectedCourseIds(),
     joinDate:ex?.joinDate||todayStr(),
   };
   if(ex){students=students.map(x=>x.id===ex.id?obj:x);toast('Student updated!');}
   else{students.push(obj);toast('Student added: '+obj.name);}
+  // Sync course enrollment from courseIds
+  const sid=obj.id;
+  courses=courses.map(c=>{
+    const studs=[...(c.students||[])];
+    const inCourse=(obj.courseIds||[]).includes(c.id);
+    const idx=studs.indexOf(sid);
+    if(inCourse&&idx===-1) studs.push(sid);
+    if(!inCourse&&idx!==-1) studs.splice(idx,1);
+    return{...c,students:studs};
+  });
   persist();gotoPage('students');
 }
 
@@ -1111,11 +1306,19 @@ function openBatDetail(bid){
     </div>
     ${!list.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:32px;margin-bottom:8px">👥</div><p>No students in this batch yet.</p></div>`:`
     <table><thead><tr><th>#</th><th>Student</th><th>Class</th><th>Mobile</th><th>Fee Status</th><th>Remove</th></tr></thead>
-    <tbody>${list.map((s,i)=>{const pen=Math.max(0,effFee(s)-(s.paid||0));return`<tr>
+    <tbody>${list.map((s,i)=>{
+      const curM=MONTHS[new Date().getMonth()];
+      const curY=new Date().getFullYear();
+      const paidThisMonth=(s.history||[]).some(h=>h.month===curM&&(h.year||curY)===curY);
+      const mFee=monthlyFee(s);
+      return`<tr>
       <td style="font-size:11px;color:#78716C">${i+1}</td>
       <td><div style="display:flex;align-items:center;gap:7px"><div class="av ${avcC(i)}" style="width:26px;height:26px;font-size:10px">${ini(s.name)}</div><span style="font-weight:600;font-size:12.5px">${esc(s.name)}</span></div></td>
       <td>${esc(s.cls)}</td><td style="color:#78716C">${esc(s.mobile)}</td>
-      <td><span class="badge ${pen<=0?'badge-green':pen<effFee(s)/2?'badge-gold':'badge-red'}">${pen<=0?'Paid':'₹'+pen.toLocaleString('en-IN')+' due'}</span></td>
+      <td>
+        <span class="badge ${paidThisMonth?'badge-green':'badge-red'}">${paidThisMonth?curM+' Paid':curM+' Due'}</span>
+        <div style="font-size:10px;color:#78716C;margin-top:2px">${fmt(mFee)}/mo</div>
+      </td>
       <td><button class="btn btn-red btn-xs" onclick="removeStuBat('${esc(b.name)}','${s.id}')">Remove</button></td>
     </tr>`;}).join('')}</tbody></table>`}`;
   openModal('modal-batchdetail');
@@ -1254,79 +1457,178 @@ const MONTHS=['January','February','March','April','May','June','July','August',
 let curReceipt=null;
 
 function renderFees(){
-  const col=students.reduce((a,s)=>a+(s.paid||0),0);
-  const exp=students.reduce((a,s)=>a+effFee(s),0);
-  const pen=Math.max(0,exp-col);
   const list=students.filter(s=>!s.inactive);
-  const curMonth=MONTHS[new Date().getMonth()];
+  const curMonthIdx=new Date().getMonth();
+  const curMonth=MONTHS[curMonthIdx];
+  const curYear=new Date().getFullYear();
+
+  // Stats for selected month
+  const selM=document.getElementById('fee-month-filter')?.value||curMonth;
+  const colMonth=list.reduce((a,s)=>{
+    const h=(s.history||[]).filter(x=>x.month===selM&&(x.year||curYear)===curYear);
+    return a+h.reduce((b,x)=>b+(x.amount||0),0);
+  },0);
+  // Monthly expected = sum of each student's monthly fee
+  const expMonth=list.reduce((a,s)=>a+monthlyFee(s),0);
+  const penMonth=Math.max(0,expMonth-colMonth);
+  // Count students not paid this month
+  const notPaidCount=list.filter(s=>{
+    const paid=(s.history||[]).some(h=>h.month===selM&&(h.year||curYear)===curYear);
+    return !paid && monthlyFee(s)>0;
+  }).length;
+
   document.getElementById('page-fees').innerHTML=`
-  <div class="grid-3">
-    <div class="card" style="text-align:center"><div style="font-size:24px">💚</div><div style="font-size:26px;font-weight:800;color:#16A34A;margin:6px 0">${fmt(col)}</div><div style="font-size:12px;color:#78716C">Total Collected</div></div>
-    <div class="card" style="text-align:center"><div style="font-size:24px">🔴</div><div style="font-size:26px;font-weight:800;color:#DC2626;margin:6px 0">${fmt(pen)}</div><div style="font-size:12px;color:#78716C">Total Pending</div></div>
-    <div class="card" style="text-align:center"><div style="font-size:24px">💰</div><div style="font-size:26px;font-weight:800;margin:6px 0">${fmt(exp)}</div><div style="font-size:12px;color:#78716C">Total Expected</div></div>
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="card" style="text-align:center"><div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${notPaidCount} students)</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:20px">💰</div><div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(expMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Expected</div></div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
     <div class="search-box" style="flex:1"><span>🔍</span><input id="fee-srch" placeholder="Search student…" oninput="filterFees(this.value)"></div>
-    <select id="fee-month-filter" onchange="filterFees(document.getElementById('fee-srch').value)" style="padding:7px 11px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0">
-      <option value="">All Months</option>
+    <select id="fee-month-filter" onchange="renderFees()" style="padding:7px 14px;font-size:13px;font-weight:600;border-radius:8px;border:1.5px solid #E7E2D9;background:#fff;cursor:pointer">
       ${MONTHS.map(m=>`<option value="${m}"${m===curMonth?' selected':''}>${m}</option>`).join('')}
     </select>
     <button class="btn btn-ink btn-sm" onclick="openClassFeesMod()">⚙️ Set Class Fees</button>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Monthly Fee</th><th>Month</th><th>Custom Amt</th><th>Collect</th><th>History</th><th>WhatsApp</th></tr></thead>
-  <tbody id="fee-tbody">${makeFeeRows(list)}</tbody></table></div>`;
+  <div id="fee-pending-alert"></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Student</th><th>Class</th><th>Fee</th><th>This Month</th><th>Collect</th><th>History</th><th>💬</th></tr></thead>
+    <tbody id="fee-tbody">${makeFeeRows(list)}</tbody>
+  </table></div>`;
+  renderPendingAlert(list);
+}
+
+function renderPendingAlert(list){
+  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+  const curMonthIdx=MONTHS.indexOf(selMonth);
+  const curYear=new Date().getFullYear();
+  const overdue=[];
+  list.forEach(s=>{
+    if(!monthlyFee(s))return;
+    const paidMonths=(s.history||[]).filter(h=>h.month&&(h.year||curYear)===curYear).map(h=>h.month);
+    const admDate=s.admDate?new Date(s.admDate):null;
+    const admMonthIdx=admDate?admDate.getMonth():0;
+    const unpaid=[];
+    for(let i=admMonthIdx;i<curMonthIdx;i++){
+      if(!paidMonths.includes(MONTHS[i]))unpaid.push(MONTHS[i]);
+    }
+    if(unpaid.length>0)overdue.push({s,unpaid});
+  });
+  const el=document.getElementById('fee-pending-alert');
+  if(!el)return;
+  if(!overdue.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-size:13px;font-weight:700;color:#DC2626;margin-bottom:8px">
+      ⚠️ ${overdue.length} student${overdue.length>1?'s':''} with previous months pending:
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${overdue.map(({s,unpaid})=>`
+        <div style="background:#fff;border:1.5px solid #FECACA;border-radius:8px;padding:7px 12px;font-size:12px">
+          <b>${esc(s.name)}</b> <span style="color:#78716C">(${fmt(monthlyFee(s))}/mo)</span>
+          — <span style="color:#DC2626;font-weight:600">${unpaid.join(', ')}</span>
+          <button onclick="quickCollectPending('${s.id}','${unpaid[0]}')"
+            style="margin-left:8px;background:#DC2626;color:#fff;border:none;border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:inherit">
+            Collect ${unpaid[0]} (${fmt(monthlyFee(s))})
+          </button>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function quickCollectPending(sid,month){
+  const s=students.find(x=>x.id===sid);
+  if(!s)return;
+  const mFee=monthlyFee(s);
+  if(!mFee){toast('Set monthly fee for this student first','err');return;}
+  const alreadyPaid=(s.history||[]).some(h=>h.month===month&&(h.year||new Date().getFullYear())===new Date().getFullYear());
+  if(alreadyPaid){toast(month+' already collected','err');return;}
+  const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
+  localStorage.setItem('rcptNo',rcptNo);
+  students=students.map(x=>{
+    if(x.id!==sid)return x;
+    const history=[...(x.history||[]),{amount:mFee,date:todayStr(),receiptNo:rcptNo,month,year:new Date().getFullYear()}];
+    return{...x,paid:(x.paid||0)+mFee,history};
+  });
+  persist();
+  toast(`✅ ${month} fee collected — ${fmt(mFee)}`);
+  renderFees();
 }
 
 function makeFeeRows(list){
   if(!list.length)return`<tr><td colspan="8" style="text-align:center;padding:40px;color:#78716C">No students</td></tr>`;
-  const selMonth=document.getElementById('fee-month-filter')?.value||'';
+  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
   return list.map(s=>{
-    const pen=Math.max(0,effFee(s)-(s.paid||0));
     const idx=students.indexOf(s);
-    const monthly=s.monthlyFees||Math.round(effFee(s)/12)||0;
+    const mFee=monthlyFee(s);  // correct monthly fee
     const paidMonths=(s.history||[]).filter(h=>h.month).map(h=>h.month);
-    // Determine which month is selected in the row dropdown
-    const defaultMonth=selMonth||MONTHS[new Date().getMonth()];
-    const rowMonth=defaultMonth;
-    const alreadyPaid=paidMonths.includes(rowMonth);
-    // Find next unpaid month to suggest
-    const nextMonth=MONTHS.find(m=>!paidMonths.includes(m))||'';
-    return`<tr style="${alreadyPaid?'background:rgba(22,163,74,.04)':''}">
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(idx)}">${ini(s.name)}</div><div><div style="font-weight:600">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">${esc(s.batch||'')}${s.school?' · '+esc(s.school):''}</div></div></div></td>
-      <td>${esc(s.cls)}</td>
-      <td style="font-weight:700;color:#E8622A">${fmt(monthly)}<div style="font-size:10px;color:#78716C">Annual: ${fmt(effFee(s))}</div></td>
+    const alreadyPaid=(s.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
+    const nextUnpaid=MONTHS.find(m=>!paidMonths.includes(m))||'';
+    const totalPaidAll=s.paid||0;
+    // How many months paid total
+    const totalMonthsPaid=paidMonths.length;
+    return`<tr style="${alreadyPaid?'background:rgba(22,163,74,.05)':''}">
       <td>
-        <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid ${alreadyPaid?'#16A34A':'#E7E2D9'};background:#F7F5F0;width:110px">
-          ${MONTHS.map(m=>{const paid=paidMonths.includes(m);return`<option value="${m}"${m===rowMonth?' selected':''}>${m}${paid?' ✅':''}</option>`;}).join('')}
-        </select>
-        ${alreadyPaid&&nextMonth?`<div style="font-size:9px;color:#E8622A;margin-top:3px">Next: ${nextMonth}</div>`:''}
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="av ${avcC(idx)}">${ini(s.name)}</div>
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(s.name)}</div>
+            <div style="font-size:11px;color:#78716C">${esc(s.batch||'No Batch')}${s.subject?' · '+esc(s.subject):''}</div>
+          </div>
+        </div>
       </td>
-      <td><input type="number" id="pay-${s.id}" placeholder="${monthly}" style="width:80px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none" ${alreadyPaid?'disabled':''}>
+      <td>${esc(s.cls)}</td>
+      <td style="font-weight:700;color:var(--primary)">
+        ${s.feeType==='annual'
+          ? `${fmt(s.annualFees||s.finalFees||0)}<span style="font-size:10px;color:#78716C;font-weight:400">/yr</span><div style="font-size:10px;color:#78716C">${fmt(mFee)}/mo</div>`
+          : `${fmt(mFee)}<span style="font-size:10px;color:#78716C;font-weight:400">/mo</span>`
+        }
+        <div style="font-size:10px;color:#78716C">${totalMonthsPaid} month${totalMonthsPaid!==1?'s':''} paid</div>
       </td>
       <td>
         ${alreadyPaid
-          ?`<div style="text-align:center">
-              <div style="font-size:12px;font-weight:700;color:#16A34A">✅ Paid</div>
-              <div style="font-size:9px;color:#78716C">Select diff. month</div>
+          ?`<div style="font-size:12px;font-weight:700;color:#16A34A">✅ ${selMonth} Paid</div>
+             ${nextUnpaid?`<div style="font-size:10px;color:var(--primary);margin-top:2px">Next: <b>${nextUnpaid}</b></div>`:''}`
+          :`<div>
+              <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;width:110px">
+                ${MONTHS.map(m=>{const p=paidMonths.includes(m);return`<option value="${m}"${m===selMonth?' selected':''}>${m}${p?' ✅':''}</option>`;}).join('')}
+              </select>
+              <div style="font-size:10px;color:#DC2626;margin-top:2px;font-weight:600">Not paid</div>
             </div>`
-          :`<button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')">✓ Collect</button>`
         }
-        <div style="font-size:10px;color:${pen<=0?'#16A34A':'#DC2626'};margin-top:3px;font-weight:600">${pen<=0?'Cleared':fmt(pen)+' due'}</div>
       </td>
-      <td>${(s.history||[]).length>0?`<button class="btn btn-ghost btn-xs" onclick="openHist('${s.id}')">📋 ${(s.history||[]).length}</button>`:`<span style="font-size:11px;color:#78716C">None</span>`}</td>
-      <td>${pen>0?`<button class="btn btn-green btn-xs" onclick="sendWA('${s.id}')">💬</button>`:''}</td>
-    </tr>`;}).join('');
+      <td>
+        ${alreadyPaid
+          ?`<span style="font-size:11px;color:#16A34A">—</span>`
+          :`<div style="display:flex;gap:4px;align-items:center">
+              <input type="number" id="pay-${s.id}" placeholder="${mFee}" style="width:75px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none">
+              <button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')">✓ Collect</button>
+            </div>`
+        }
+        <div style="font-size:10px;color:#78716C;margin-top:3px">Total paid: <b style="color:#16A34A">${fmt(totalPaidAll)}</b></div>
+      </td>
+      <td>${(s.history||[]).length>0?`<button class="btn btn-ghost btn-xs" onclick="openHist('${s.id}')">📋 ${(s.history||[]).length}</button>`:`<span style="font-size:11px;color:#78716C">—</span>`}</td>
+      <td>
+        ${s.mobile
+          ?`<button class="btn btn-green btn-xs" onclick="sendWA('${s.id}')" title="Send WhatsApp reminder">💬</button>`
+          :`<span style="font-size:10px;color:#78716C">No mobile</span>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function filterFees(q){
+  CLASSES=getClasses();
   const list=students.filter(s=>!s.inactive&&(!q||(s.name||'').toLowerCase().includes(q.toLowerCase())));
   const tb=document.getElementById('fee-tbody');if(tb)tb.innerHTML=makeFeeRows(list);
+  renderPendingAlert(list);
 }
 
 function collectFee(sid){
   const inp=document.getElementById('pay-'+sid);
   const monthEl=document.getElementById('month-'+sid);
-  const selMonth=monthEl?.value||MONTHS[new Date().getMonth()];
+  const selMonth=monthEl?.value||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
   const stu0=students.find(s=>s.id===sid);
   if(!stu0){toast('Student not found','err');return;}
 
@@ -1345,10 +1647,10 @@ function collectFee(sid){
     toast('You do not have permission to collect fees','err');return;
   }
 
-  const monthly=stu0.monthlyFees||Math.round(effFee(stu0)/12)||0;
+  const mFee=monthlyFee(stu0);
   const enteredAmt=parseFloat(inp?.value||0);
-  const amt=enteredAmt>0?enteredAmt:monthly;
-  if(!amt||amt<=0){toast('Enter amount or set monthly fee first','err');return;}
+  const amt=enteredAmt>0?enteredAmt:mFee;
+  if(!amt||amt<=0){toast('Enter fee amount or set monthly fee for student first','err');return;}
   const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
   localStorage.setItem('rcptNo',rcptNo);
   students=students.map(s=>{
@@ -1366,11 +1668,20 @@ function collectFee(sid){
 }
 function sendWA(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
-  const pen=effFee(s)-(s.paid||0);
+  const mFee=monthlyFee(s);
+  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const mobile=(s.mobile||'').replace(/\D/g,'');
   const num=mobile.length===10?'91'+mobile:mobile;
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(`Dear ${s.parent||s.name},\n\nThis is a reminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\n\nPending Fees: ₹${pen.toLocaleString('en-IN')}\n\nKindly arrange the payment at the earliest.\n\nThank you!`));
+  const cFee=courseFeeMonthly(s);
+  const baseFee=mFee-cFee;
+  const enrolledCourses=(s.courseIds||[]).map(cid=>courses.find(c=>c.id===cid)).filter(Boolean);
+  const courseLines=enrolledCourses.length>0
+    ? '\n'+enrolledCourses.map(c=>`  📚 ${c.name}: ₹${(c.fee||0).toLocaleString('en-IN')}/mo`).join('\n')
+    : '';
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(
+    `Dear ${s.parent||s.name},\n\nReminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\nMonth Due: ${selMonth}\n\nFee Details:\n  Base Fee: ₹${baseFee.toLocaleString('en-IN')}/mo${courseLines}${cFee>0?'\n  ──────────\n  Total: ₹'+mFee.toLocaleString('en-IN')+'/mo':''}\n\nKindly pay the ${selMonth} fees at the earliest.\n\nThank you!`
+  ));
 }
 function deletePayment(sid, idx){
   if(!canDo('delete_payments','You do not have permission to delete payments')) return;
@@ -1386,21 +1697,26 @@ function deletePayment(sid, idx){
 }
 function openHist(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
-  const pen=Math.max(0,effFee(s)-(s.paid||0));
+  const mFee=monthlyFee(s);
+  const totalPaid=s.paid||0;
+  const totalMonthsPaid=(s.history||[]).filter(h=>h.month).length;
   document.getElementById('hist-title').textContent='Payment History — '+s.name;
   document.getElementById('hist-body').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-      <div style="background:#F7F5F0;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Total Fee</div><div style="font-size:16px;font-weight:800">${fmt(effFee(s))}</div></div>
-      <div style="background:#F0FDF4;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Paid</div><div style="font-size:16px;font-weight:800;color:#16A34A">${fmt(s.paid)}</div></div>
-      <div style="background:#FEF2F2;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Pending</div><div style="font-size:16px;font-weight:800;color:#DC2626">${fmt(pen)}</div></div>
+      <div style="background:#F7F5F0;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Monthly Fee</div><div style="font-size:16px;font-weight:800">${fmt(mFee)}/mo</div></div>
+      <div style="background:#F0FDF4;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Total Paid</div><div style="font-size:16px;font-weight:800;color:#16A34A">${fmt(totalPaid)}</div></div>
+      <div style="background:#EFF6FF;border-radius:10px;padding:12px;text-align:center"><div style="font-size:11px;color:#78716C">Months Paid</div><div style="font-size:16px;font-weight:800;color:#1D4ED8">${totalMonthsPaid}</div></div>
     </div>
     <table><thead><tr><th>Receipt #</th><th>Month</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
-    <tbody>${(s.history||[]).map((h,i)=>`<tr>
-      <td style="font-weight:700;color:#E8622A">#${h.receiptNo}</td>
-      <td><span class="badge badge-gray" style="font-size:10px">${h.month||'—'}</span></td>
+    <tbody>${(s.history||[]).slice().reverse().map((h,i)=>`<tr>
+      <td style="font-weight:700;color:var(--primary)">#${h.receiptNo||'—'}</td>
+      <td><span class="badge badge-gray" style="font-size:10px">${h.month||'—'} ${h.year||''}</span></td>
       <td style="font-weight:700;color:#16A34A">${fmt(h.amount)}</td>
       <td style="color:#78716C;font-size:12px">${h.date}</td>
-      <td style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="showReceiptPrev(students.find(x=>x.id==='${s.id}'),${h.amount},${h.receiptNo},'${h.date}','${h.month||''}')">🧾</button>${isAdmin()?`<button class="btn btn-red btn-xs" onclick="deletePayment('${s.id}',${i})">🗑️</button>`:''}</td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-ghost btn-xs" onclick="showReceiptPrev(students.find(x=>x.id==='${s.id}'),${h.amount},${h.receiptNo||0},'${h.date}','${h.month||''}')">🧾</button>
+        ${isAdmin()?`<button class="btn btn-red btn-xs" onclick="deletePayment('${s.id}',${(s.history||[]).length-1-i})">🗑️</button>`:''}
+      </td>
     </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#78716C;padding:20px">No payments yet</td></tr>'}
     </tbody></table>`;
   openModal('modal-history');
@@ -1414,7 +1730,10 @@ function showReceiptPrev(s,amount,rcptNo,payDate,month){
   const addr=localStorage.getItem('tuitionAddress')||'';
   const logo=localStorage.getItem('tuitionLogo')||BUILTIN_LOGO;
   const dispDate=payDate||todayStr();
-  const totalPaid=s.paid||0;const totalFee=effFee(s);const balance=Math.max(0,totalFee-totalPaid);const isPaid=balance<=0;
+  const totalPaid=s.paid||0;
+  const mFee=monthlyFee(s);
+  const paidCount=(s.history||[]).filter(h=>h.month).length;
+  const isPaid=true; // each collected month is paid
   document.getElementById('receipt-body').innerHTML=`
   <div style="background:#F4F2EE;border-radius:12px;padding:20px">
   <div class="receipt-paper">
@@ -1444,13 +1763,22 @@ function showReceiptPrev(s,amount,rcptNo,payDate,month){
       </div>
     </div>
     <div class="receipt-rows">
-      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Total ${s.feeType==='monthly'?'Annual':''} Fees</span><span style="font-size:13px;font-weight:600">${fmt(totalFee)}</span></div>
-      ${month?`<div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Fee Month</span><span style="font-size:13px;font-weight:700;color:#E8622A">${month}</span></div>`:''}
-      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">This Payment</span><span style="font-size:14px;font-weight:700;color:#E8622A">${fmt(amount)}</span></div>
-      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Total Paid (cumulative)</span><span style="font-size:13px;font-weight:600;color:#16A34A">${fmt(totalPaid)}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:11px 14px;margin:10px 0;background:${isPaid?'#F0FDF4':'#FEF2F2'};border-radius:10px;border:1.5px solid ${isPaid?'#86EFAC':'#FECACA'}">
-        <span style="font-size:13px;font-weight:700;color:${isPaid?'#16A34A':'#DC2626'}">${isPaid?'✅':'⚠️'} Balance Due</span>
-        <span style="font-size:16px;font-weight:900;color:${isPaid?'#16A34A':'#DC2626'}">₹${balance.toLocaleString('en-IN')}</span>
+      ${(()=>{
+        const baseFee=mFee-courseFeeMonthly(s);
+        const cFee=courseFeeMonthly(s);
+        const enrolledCourses=(s.courseIds||[]).map(cid=>courses.find(c=>c.id===cid)).filter(Boolean);
+        return `
+        <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Base Monthly Fee</span><span style="font-size:13px;font-weight:600">${fmt(baseFee)}/month</span></div>
+        ${enrolledCourses.map(c=>`<div class="receipt-row"><span style="font-size:12.5px;color:#78716C">📚 ${esc(c.name)}</span><span style="font-size:13px;font-weight:600;color:#1D4ED8">${fmt(c.fee||0)}/month</span></div>`).join('')}
+        ${cFee>0?`<div class="receipt-row" style="border-top:1px solid #E7E2D9;margin-top:4px;padding-top:8px"><span style="font-size:12.5px;font-weight:700">Total Monthly Fee</span><span style="font-size:14px;font-weight:800;color:var(--primary)">${fmt(mFee)}/month</span></div>`:''}
+        `;
+      })()}
+      ${month?`<div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Fee Month</span><span style="font-size:13px;font-weight:700;color:var(--primary)">${month}</span></div>`:''}
+      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">This Payment</span><span style="font-size:14px;font-weight:700;color:var(--primary)">${fmt(amount)}</span></div>
+      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Total Paid (all months)</span><span style="font-size:13px;font-weight:600;color:#16A34A">${fmt(totalPaid)}</span></div>
+      <div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Months Paid</span><span style="font-size:13px;font-weight:600">${paidCount} month${paidCount!==1?'s':''}</span></div>
+      <div style="background:#F0FDF4;border-radius:10px;padding:10px 14px;margin:10px 0;border:1.5px solid #86EFAC;text-align:center">
+        <span style="font-size:13px;font-weight:700;color:#16A34A">✅ Payment Recorded Successfully</span>
       </div>
       ${s.mobile?`<div class="receipt-row"><span style="font-size:12.5px;color:#78716C">Mobile</span><span style="font-size:13px;font-weight:600">${esc(s.mobile)}</span></div>`:''}
     </div>
@@ -1469,7 +1797,10 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
   const addr=localStorage.getItem('tuitionAddress')||'';
   const logo=localStorage.getItem('tuitionLogo')||'';
   const dispDate=payDate||todayStr();
-  const totalPaid=s.paid||0;const totalFee=effFee(s);const balance=Math.max(0,totalFee-totalPaid);const isPaid=balance<=0;
+  const totalPaid=s.paid||0;
+  const mFee=monthlyFee(s);
+  const paidCount=(s.history||[]).filter(h=>h.month).length;
+  const isPaid=true;
 
   // Adjust font sizes and padding per paper size
   const SZ = {
@@ -1478,7 +1809,7 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
     'A6': { pad:'16px', h1:'15px', amt:'26px', row:'11px', lbl:'9.5px', max:'320px' },
     'A7': { pad:'12px', h1:'13px', amt:'22px', row:'10px', lbl:'9px', max:'250px' },
   };
-  const f = SZ[size] || SZ['A5'];
+  const f = SZ[size] || SZ['A4'];
   const accentColor = '#1B3154';
   const goldColor = '#C9A84C';
 
@@ -1515,7 +1846,7 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
     .cut{margin:8px 24px;border-top:2px dashed #D5CCB8;text-align:center;}
     .cut span{background:#fff;padding:0 10px;font-size:13px;color:#C4BAB0;position:relative;top:-10px;}
     .logo-img{max-height:36px;border-radius:6px;margin-bottom:6px;background:#fff;padding:2px;}
-    @media print{body{padding:6px;}@page{size:${size||'A5'};margin:6mm;}}
+    @media print{body{padding:6px;}@page{size:${size||'A4'};margin:6mm;}}
   </style></head><body>
   <div class="hdr">
     ${logo?`<img src="${logo}" class="logo-img">`:''}
@@ -1542,16 +1873,25 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
     ${s.parent?`<div style="text-align:right"><div style="font-size:9px;color:#5A6A7E">Guardian</div><div style="font-size:${f.lbl};font-weight:600">${esc(s.parent)}</div></div>`:''}
   </div>
   <div class="tbl"><table>
-    <tr><td>Total Annual Fees</td><td>${fmt(totalFee)}</td></tr>
+    ${(()=>{
+      const baseFee=mFee-courseFeeMonthly(s);
+      const cFee=courseFeeMonthly(s);
+      const enrolledCourses=(s.courseIds||[]).map(cid=>courses.find(c=>c.id===cid)).filter(Boolean);
+      let rows=`<tr><td>Base Monthly Fee</td><td>${fmt(baseFee)}/month</td></tr>`;
+      enrolledCourses.forEach(c=>{rows+=`<tr><td>📚 ${esc(c.name)}</td><td style="color:#1D4ED8">${fmt(c.fee||0)}/month</td></tr>`;});
+      if(cFee>0) rows+=`<tr style="border-top:2px solid #E0D9C8"><td style="font-weight:700">Total Monthly Fee</td><td style="font-weight:800;color:${accentColor}">${fmt(mFee)}/month</td></tr>`;
+      return rows;
+    })()}
     ${month?`<tr><td>Fee Month</td><td style="color:${accentColor};font-weight:700">${month}</td></tr>`:''}
-    <tr><td>This Payment</td><td style="color:${accentColor}">${fmt(amount)}</td></tr>
-    <tr><td>Total Paid (cumulative)</td><td style="color:#16A34A">${fmt(totalPaid)}</td></tr>
+    <tr><td>This Payment</td><td style="color:${accentColor};font-weight:700">${fmt(amount)}</td></tr>
+    <tr><td>Total Paid (all months)</td><td style="color:#16A34A">${fmt(totalPaid)}</td></tr>
+    <tr><td>Months Paid</td><td>${paidCount} month${paidCount!==1?'s':''}</td></tr>
     ${s.mobile?`<tr><td>Mobile</td><td>${esc(s.mobile)}</td></tr>`:''}
     ${s.roll?`<tr><td>Roll No.</td><td>${esc(s.roll)}</td></tr>`:''}
   </table></div>
-  <div class="bal-row ${isPaid?'paid-bg':'due-bg'}">
-    <span style="font-weight:700;color:${isPaid?'#16A34A':'#DC2626'}">${isPaid?'✅ Fully Paid':'⚠️ Balance Due'}</span>
-    <span style="font-size:${f.h1};font-weight:900;color:${isPaid?'#16A34A':'#DC2626'}">&#8377;${balance.toLocaleString('en-IN')}</span>
+  <div class="bal-row paid-bg">
+    <span style="font-weight:700;color:#16A34A">✅ Payment Recorded</span>
+    <span style="font-size:${f.h1};font-weight:900;color:#16A34A">&#8377;${Number(amount).toLocaleString('en-IN')}</span>
   </div>
   <div class="cut"><span>✂</span></div>
   <div class="footer">
@@ -1561,7 +1901,7 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
   </div>
   </body></html>`;
 }
-function getReceiptSize(){ return document.getElementById('receipt-size')?.value || 'A5'; }
+function getReceiptSize(){ return document.getElementById('receipt-size')?.value || 'A4'; }
 
 async function printCurrentReceipt(){
   if(!curReceipt)return;
@@ -1599,18 +1939,17 @@ async function saveReceiptPDF(){
 function sendReceiptWA(){
   if(!curReceipt){toast('No receipt to share','err');return;}
   const{s,amount,rcptNo,payDate,month}=curReceipt;
-  if(!s.mobile&&!s.parent){toast('No mobile number for this student','err');return;}
+  if(!s.mobile){toast('No mobile number for this student','err');return;}
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const dispDate=payDate||todayStr();
   const totalPaid=s.paid||0;
-  const totalFee=effFee(s);
-  const balance=Math.max(0,totalFee-totalPaid);
+  const mFee=monthlyFee(s);
+  const paidCount=(s.history||[]).filter(h=>h.month).length;
   const mobile=(s.mobile||'').replace(/\D/g,'');
   const num=mobile.length===10?'91'+mobile:mobile;
   if(!num||num.length<10){toast('Invalid mobile number','err');return;}
-
   const msg=
-`🧾 *Fee Receipt — ${esc(inst)}*
+`🧾 *Fee Receipt — ${inst}*
 
 📋 *Receipt #${rcptNo}*
 📅 Date: ${dispDate}${month?'\n📆 Month: *'+month+'*':''}
@@ -1620,22 +1959,26 @@ Name: ${s.name}
 Class: ${s.cls}${s.batch?' | Batch: '+s.batch:''}${s.medium?' | '+s.medium+' Medium':''}${s.roll?' | Roll: '+s.roll:''}
 
 💰 *Payment Details*
+Monthly Fee: ₹${mFee.toLocaleString('en-IN')}/month
 Amount Paid: *₹${Number(amount).toLocaleString('en-IN')}*
-Total Paid: ₹${totalPaid.toLocaleString('en-IN')}
-Balance Due: ${balance<=0?'✅ *Fully Paid*':'⚠️ *₹'+balance.toLocaleString('en-IN')+'*'}
+Total Paid (all months): ₹${totalPaid.toLocaleString('en-IN')}
+Months Paid: ${paidCount}
+
+✅ Payment recorded successfully!
 
 🏫 ${inst}
 _Generated by ClassCore_`;
-
   window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
 }
 
 function buildStudentListHTML(){
+  const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
+  const list=students.filter(s=>!s.inactive);
   return`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Student List</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px;color:#18181B;}h2{margin-bottom:4px;}p{color:#666;font-size:12px;margin-bottom:16px;}table{width:100%;border-collapse:collapse;}th{background:#18181B;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}td{padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;}@media print{body{padding:10px;}}</style></head><body>
-  <h2>${esc(inst)}</h2><p>Student List - ${todayStr()} - Total: ${list.length} active students</p>
-  <table><thead><tr><th>#</th><th>Name</th><th>Class</th><th>School</th><th>Batch</th><th>Mobile</th><th>Guardian</th><th>Annual Fee</th><th>Paid</th><th>Pending</th></tr></thead>
-  <tbody>${list.map((s,i)=>{const pen=Math.max(0,effFee(s)-(s.paid||0));return`<tr><td>${i+1}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.cls)}</td><td>${esc(s.school||'-')}</td><td>${esc(s.batch||'-')}</td><td>${esc(s.mobile||'-')}</td><td>${esc(s.parent||'-')}</td><td>${fmt(effFee(s))}</td><td style="color:#16A34A">${fmt(s.paid)}</td><td style="color:${pen>0?'#DC2626':'#16A34A'}">${fmt(pen)}</td></tr>`;}).join('')}</tbody></table>
-  <p style="margin-top:16px;text-align:right">Generated by ClassCore - ${todayStr()}</p></body></html>`;
+  <h2>${esc(inst)}</h2><p>Student List — ${todayStr()} — Total: ${list.length} active students</p>
+  <table><thead><tr><th>#</th><th>Name</th><th>Class</th><th>School</th><th>Batch</th><th>Mobile</th><th>Guardian</th><th>Monthly Fee</th><th>Total Paid</th><th>Months Paid</th></tr></thead>
+  <tbody>${list.map((s,i)=>{const mFee=monthlyFee(s);const mPaid=(s.history||[]).filter(h=>h.month).length;return`<tr><td>${i+1}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.cls)}</td><td>${esc(s.school||'-')}</td><td>${esc(s.batch||'-')}</td><td>${esc(s.mobile||'-')}</td><td>${esc(s.parent||'-')}</td><td style="font-weight:700">${fmt(mFee)}/mo</td><td style="color:#16A34A">${fmt(s.paid||0)}</td><td style="color:#1D4ED8">${mPaid} mo</td></tr>`;}).join('')}</tbody></table>
+  <p style="margin-top:16px;text-align:right">Generated by ClassCore — ${todayStr()}</p></body></html>`;
 }
 async function printStudentList(){
   const html=buildStudentListHTML();
