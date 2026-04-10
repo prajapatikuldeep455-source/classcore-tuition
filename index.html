@@ -2796,15 +2796,25 @@ function checkAndShowLicense(){
     return;
   }
   if(licStatus.status === 'trial'){
-    if(licStatus.daysLeft <= 7){
-      showLicenseScreen();
+    // Always allow access during trial — just show warning if ≤7 days left
+    if(localStorage.getItem('ops_logged')){
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      initApp();
+      if(licStatus.daysLeft <= 7){
+        setTimeout(()=>toast(`⚠️ Trial expires in ${licStatus.daysLeft} day${licStatus.daysLeft===1?'':'s'}! Please purchase a license.`,'warn'),1500);
+      }
     } else {
-      if(localStorage.getItem('ops_logged')){
-        document.getElementById('login-screen').style.display='none';
-        document.getElementById('app').style.display='flex';
-        initApp();
-      } else {
-        document.getElementById('login-screen').style.display='flex';
+      document.getElementById('login-screen').style.display='flex';
+      // Inject trial days banner into login screen
+      const trialBanner=document.getElementById('login-trial-banner');
+      if(!trialBanner){
+        const banner=document.createElement('div');
+        banner.id='login-trial-banner';
+        banner.style.cssText='background:'+(licStatus.daysLeft<=7?'#FEE2E2;border:1.5px solid #FECACA':'#F0FDF4;border:1.5px solid #BBF7D0')+';border-radius:10px;padding:10px 14px;margin-bottom:16px;text-align:center;font-size:12px;font-weight:600;color:'+(licStatus.daysLeft<=7?'#DC2626':'#16A34A');
+        banner.textContent=(licStatus.daysLeft<=7?'⚠️':'✅')+' Free Trial: '+licStatus.daysLeft+' day'+(licStatus.daysLeft===1?'':'s')+' remaining';
+        const loginBox=document.querySelector('#login-screen .fg');
+        if(loginBox&&loginBox.parentNode) loginBox.parentNode.insertBefore(banner,loginBox);
       }
     }
     return;
