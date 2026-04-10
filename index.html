@@ -64,7 +64,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 .fg input,.fg select,.fg textarea{background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text-main);font-size:13.5px;padding:9px 12px;outline:none;transition:.15s;width:100%;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#E8622A;background:#fff;}
 .fg .hint{font-size:11px;color:#2A9D8F;margin-top:2px;}
-.table-wrap{background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px;}
+.table-wrap{background:var(--card-bg);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px;contain:content;}
 .table-bar{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E7E2D9;flex-wrap:wrap;gap:8px;}
 table{width:100%;border-collapse:collapse;}
 thead tr{background:#F7F5F0;}
@@ -78,7 +78,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 .badge-gold{background:#FEF9C3;color:#92400E;}.badge-gray{background:#F4F4F5;color:#78716C;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(24,24,27,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
 .modal-overlay.open{display:flex;}
-.modal-box{background:#fff;border:1.5px solid #E7E2D9;border-radius:18px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.18);}
+.modal-box{background:#fff;border:1.5px solid #E7E2D9;border-radius:18px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.18);will-change:transform;transform:translateZ(0);}
 .modal-hdr{padding:18px 24px;border-bottom:1px solid #E7E2D9;display:flex;align-items:center;justify-content:space-between;background:#fff;flex-shrink:0;}
 .modal-hdr h3{font-size:17px;font-weight:700;}.modal-body{padding:24px;overflow-y:auto;flex:1;}
 .modal-foot{padding:14px 24px;border-top:1px solid #E7E2D9;display:flex;justify-content:flex-end;gap:9px;background:#FAF8F5;flex-shrink:0;}
@@ -478,6 +478,12 @@ function buildPayload(){
 }
 
 // Save everything to SSD file
+// ── PERFORMANCE: debounce helper ──────────────────────────────────────────
+function debounce(fn, ms){
+  let t;
+  return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+}
+
 async function persist(){
   showSaveChip('saving');
   if(IS_ELECTRON()){
@@ -496,6 +502,8 @@ async function persist(){
     return {ok:true};
   }
 }
+// Debounced version for rapid changes (search, input)
+const persistDebounced=debounce(persist, 600);
 
 let saveChipTimer;
 function showSaveChip(state){
@@ -938,7 +946,7 @@ function renderStus(){
   <div class="flt">${[['all','All'],['active','Active'],['inactive','Inactive']].map(([f,l])=>`<button class="f-pill${sfFilter===f?' on':''}" onclick="sfFilter='${f}';renderStus()">${l}</button>`).join('')}</div>
   <div class="table-wrap">
     <div class="table-bar">
-      <div class="search-box"><span>🔍</span><input value="${esc(sfSearch)}" placeholder="Search name, mobile…" oninput="sfSearch=this.value.toLowerCase();renderStus()"></div>
+      <div class="search-box"><span>🔍</span><input value="${esc(sfSearch)}" placeholder="Search name, mobile…" oninput="sfSearch=this.value.toLowerCase();filterStus()"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="sfCls=this.value;renderStus()" style="padding:7px 11px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0">
           <option value="">All Classes</option>${getClasses().map(c=>`<option${sfCls===c?' selected':''}>${c}</option>`).join('')}
@@ -946,17 +954,22 @@ function renderStus(){
         <select onchange="sfBat=this.value;renderStus()" style="padding:7px 11px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0">
           <option value="">All Batches</option>${batches.map(b=>`<option${sfBat===b.name?' selected':''}>${esc(b.name)}</option>`).join('')}
         </select>
-        <span style="font-size:12px;color:#78716C;align-self:center">${list.length} students</span><button class="btn btn-ghost btn-sm" onclick="printStudentList()">🖨️ Print</button><button class="btn btn-teal btn-sm" onclick="saveStudentListPDF()">📄 PDF</button>
+        <span id="stu-count" style="font-size:12px;color:#78716C;align-self:center">${list.length} students</span><button class="btn btn-ghost btn-sm" onclick="printStudentList()">🖨️ Print</button><button class="btn btn-teal btn-sm" onclick="saveStudentListPDF()">📄 PDF</button>
         <button class="btn btn-ghost btn-sm" onclick="printStudents()">🖨️ Print / PDF</button>
       </div>
     </div>
     ${!list.length?`<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">🎓</div><p>No students. <button onclick="openStuForm(null)" style="color:#E8622A;background:none;border:none;cursor:pointer;font-weight:700">Add one →</button></p></div>`:`
     <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Medium</th><th>School</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${list.map((s,i)=>{const idx=students.indexOf(s);
+    <tbody id="stu-tbody">${buildStuRows(list)}</tbody></table>`}
+  </div>`;}
+
+function buildStuRows(list){
+  return list.map((s,i)=>{
+    const idx=students.indexOf(s);
     const mFee=monthlyFee(s);
     const feeDisplay=s.feeType==='annual'
-      ? `<div style="font-weight:700">${fmt(s.annualFees||s.finalFees||0)}<span style="font-size:10px;color:#78716C;font-weight:400">/yr</span></div><div style="font-size:10px;color:#78716C">${fmt(mFee)}/mo</div>`
-      : `<div style="font-weight:700">${fmt(mFee)}<span style="font-size:10px;color:#78716C;font-weight:400">/mo</span></div>`;
+      ?`<div style="font-weight:700">${fmt(s.annualFees||s.finalFees||0)}<span style="font-size:10px;color:#78716C;font-weight:400">/yr</span></div><div style="font-size:10px;color:#78716C">${fmt(mFee)}/mo</div>`
+      :`<div style="font-weight:700">${fmt(mFee)}<span style="font-size:10px;color:#78716C;font-weight:400">/mo</span></div>`;
     return`<tr>
       <td style="color:#78716C;font-size:11px">${i+1}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(idx)}">${ini(s.name)}</div><div><div style="font-weight:600">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">${esc(s.subject||'')}</div></div></div></td>
@@ -967,11 +980,28 @@ function renderStus(){
       <td>${feeDisplay}</td>
       <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
       <td><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="openStuForm('${s.id}')">✏️ Edit</button><button class="btn btn-red btn-xs" onclick="delStu('${s.id}')">🗑️</button></div></td>
-    </tr>`;}).join('')}</tbody></table>`}
-  </div>`;
+    </tr>`;
+  }).join('')||`<tr><td colspan="12" style="text-align:center;padding:30px;color:#78716C">No students found</td></tr>`;
 }
 
 // STUDENT FORM
+// Fast filter - only rebuilds tbody, not the whole page
+const filterStus=debounce(()=>{
+  const tbody=document.getElementById('stu-tbody');
+  if(!tbody){renderStus();return;}
+  const list=students.filter(s=>{
+    if(sfFilter==='active'&&s.inactive)return false;
+    if(sfFilter==='inactive'&&!s.inactive)return false;
+    if(sfCls&&s.cls!==sfCls)return false;
+    if(sfBat&&s.batch!==sfBat)return false;
+    if(sfSearch&&!(s.name||'').toLowerCase().includes(sfSearch)&&!(s.mobile||'').includes(sfSearch))return false;
+    return true;
+  });
+  tbody.innerHTML=buildStuRows(list);
+  const cnt=document.getElementById('stu-count');
+  if(cnt)cnt.textContent=list.length+' students';
+},150);
+
 function openStuForm(id){
   if(id && !canDo('edit_students','You cannot edit students')) return;
   if(!id && !canDo('add_students','You cannot add students')) return;
@@ -1621,8 +1651,11 @@ function makeFeeRows(list){
 function filterFees(q){
   CLASSES=getClasses();
   const list=students.filter(s=>!s.inactive&&(!q||(s.name||'').toLowerCase().includes(q.toLowerCase())));
-  const tb=document.getElementById('fee-tbody');if(tb)tb.innerHTML=makeFeeRows(list);
-  renderPendingAlert(list);
+  const tb=document.getElementById('fee-tbody');
+  if(tb) requestAnimationFrame(()=>{
+    tb.innerHTML=makeFeeRows(list);
+    renderPendingAlert(list);
+  });
 }
 
 function collectFee(sid){
@@ -1936,39 +1969,62 @@ async function saveReceiptPDF(){
     setTimeout(()=>w.print(),600);
   }
 }
-function sendReceiptWA(){
+async function sendReceiptWA(){
   if(!curReceipt){toast('No receipt to share','err');return;}
   const{s,amount,rcptNo,payDate,month}=curReceipt;
   if(!s.mobile){toast('No mobile number for this student','err');return;}
+  const mobile=(s.mobile||'').replace(/\D/g,'');
+  const num=mobile.length===10?'91'+mobile:mobile;
+  if(!num||num.length<10){toast('Invalid mobile number','err');return;}
+
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const dispDate=payDate||todayStr();
   const totalPaid=s.paid||0;
   const mFee=monthlyFee(s);
   const paidCount=(s.history||[]).filter(h=>h.month).length;
-  const mobile=(s.mobile||'').replace(/\D/g,'');
-  const num=mobile.length===10?'91'+mobile:mobile;
-  if(!num||num.length<10){toast('Invalid mobile number','err');return;}
+  const cFee=courseFeeMonthly(s);
+  const baseFee=mFee-cFee;
+  const enrolledCourses=(s.courseIds||[]).map(cid=>courses.find(c=>c.id===cid)).filter(Boolean);
+  const courseLines=enrolledCourses.length>0
+    ?'\n'+enrolledCourses.map(c=>`  📚 ${c.name}: ₹${(c.fee||0).toLocaleString('en-IN')}/mo`).join('\n'):'';
+
   const msg=
 `🧾 *Fee Receipt — ${inst}*
 
 📋 *Receipt #${rcptNo}*
 📅 Date: ${dispDate}${month?'\n📆 Month: *'+month+'*':''}
 
-👤 *Student Details*
-Name: ${s.name}
-Class: ${s.cls}${s.batch?' | Batch: '+s.batch:''}${s.medium?' | '+s.medium+' Medium':''}${s.roll?' | Roll: '+s.roll:''}
+👤 *Student: ${s.name}*
+Class: ${s.cls}${s.batch?' | Batch: '+s.batch:''}${s.roll?' | Roll: '+s.roll:''}
 
 💰 *Payment Details*
-Monthly Fee: ₹${mFee.toLocaleString('en-IN')}/month
+  Base Fee: ₹${baseFee.toLocaleString('en-IN')}/mo${courseLines}${cFee>0?'\n  Total Fee: ₹'+mFee.toLocaleString('en-IN')+'/mo':''}
 Amount Paid: *₹${Number(amount).toLocaleString('en-IN')}*
-Total Paid (all months): ₹${totalPaid.toLocaleString('en-IN')}
-Months Paid: ${paidCount}
+Total Paid: ₹${totalPaid.toLocaleString('en-IN')} (${paidCount} months)
 
 ✅ Payment recorded successfully!
+🏫 ${inst}`;
 
-🏫 ${inst}
-_Generated by ClassCore_`;
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+  // In Electron: save PDF silently → open folder → open WhatsApp
+  if(IS_ELECTRON()){
+    toast('Saving PDF receipt…');
+    const size=getReceiptSize();
+    const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
+    const fname='Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
+    const r=await window.classcore.savePDFSilent(html,fname,size);
+    if(r?.ok){
+      toast('📁 PDF saved! Attach it on WhatsApp.');
+      // Open WhatsApp after short delay
+      setTimeout(()=>{
+        window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+      },800);
+    } else {
+      toast('PDF save failed — sending text only','warn');
+      window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+    }
+  } else {
+    window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+  }
 }
 
 function buildStudentListHTML(){

@@ -1,4 +1,4 @@
 {
-  "version": "1.2.5",
-  "notes": "WhatsApp button fixed, A4 default receipt, course fees shown in receipt and WhatsApp"
+  "version": "1.2.6",
+  "notes": "WhatsApp PDF receipt, performance improvements, smoother UI"
 }
