@@ -25,6 +25,11 @@
 html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--body-bg);color:var(--text-main);-webkit-font-smoothing:antialiased;}
 ::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:var(--body-bg);}::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:3px;}
 input,select,textarea,button{font-family:inherit;}
+input:not([type=file]):not([type=color]):not([type=checkbox]):not([type=radio]),select,textarea{
+  background:var(--input-bg);color:var(--text-main);border-color:var(--border);
+}
+.topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
+table thead th{background:var(--sidebar-bg);}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 #app{display:flex;height:100vh;overflow:hidden;}
 .sidebar{width:225px;background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
@@ -319,7 +324,9 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div class="nav-item" data-page="batches" onclick="gotoPage('batches')">🕐 Batches</div>
       <div class="nav-item" data-page="courses" onclick="gotoPage('courses')">📚 Courses</div>
       <div class="nav-item" data-page="fees" onclick="gotoPage('fees')">💰 Fees</div>
+      <div class="nav-item" data-page="expenses" onclick="gotoPage('expenses')">📋 Expenses</div>
       <div class="nav-item" data-page="attendance" onclick="gotoPage('attendance')">✅ Attendance</div>
+      <div class="nav-item" data-page="broadcast" onclick="gotoPage('broadcast')">📣 Broadcast</div>
       <div class="nav-item" data-page="settings" onclick="gotoPage('settings')">⚙️ Settings</div>
     </div>
     <div class="sb-foot">
@@ -353,7 +360,9 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div id="page-courses" class="page"></div>
       <div id="page-courses-form" class="page"></div>
       <div id="page-fees" class="page"></div>
+      <div id="page-expenses" class="page"></div>
       <div id="page-attendance" class="page"></div>
+      <div id="page-broadcast" class="page"></div>
       <div id="page-settings" class="page"></div>
     </div>
   </div>
@@ -389,7 +398,12 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   <div class="modal-box" style="width:580px"><div class="modal-hdr"><h3 id="batchdetail-title">Batch Students</h3><button class="x-btn" onclick="closeModal('modal-batchdetail')">×</button></div><div class="modal-body" id="batchdetail-body"></div></div>
 </div>
 
-<div id="toast"></div>
+<div id="modal-idcard" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-idcard')">
+  <div class="modal-box" style="width:420px"><div class="modal-hdr"><h3>🪪 Student ID Card</h3><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="printIDCard()">🖨️ Print</button><button class="x-btn" onclick="closeModal('modal-idcard')">×</button></div></div><div class="modal-body" id="idcard-body"></div></div>
+</div>
+<div id="modal-bulk-fee" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-bulk-fee')">
+  <div class="modal-box" style="width:560px"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
+</div>
 
 <!-- Auto Update Banner -->
 <div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:12px 24px;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
@@ -461,11 +475,15 @@ let batches=[];
 let classFees={};
 let stuFeeOvr={};
 let attData={};
-let monthFees={}; // month-wise fee tracking: {studentId: {2025-01: {amount, paid, date}}}
+let monthFees={};
+let expenses=[];     // {id, date, category, desc, amount, paidTo}
+let salaries=[];     // {id, userId, month, year, amount, paid, paidDate}
+let announcements=[]; // {id, date, text, sentWA}
 
 function buildPayload(){
   return {
     students,batches,courses,classFees,stuFeeOvr,attData,monthFees,
+    expenses,salaries,announcements,
     cc_users:localStorage.getItem('cc_users')||'',
     username:localStorage.getItem('username')||'admin',
     password:localStorage.getItem('password')||'1234',
@@ -549,6 +567,9 @@ async function loadAllData(){
       stuFeeOvr=d.stuFeeOvr||{};
       attData=d.attData||{};
       monthFees=d.monthFees||{};
+      expenses=d.expenses||[];
+      salaries=d.salaries||[];
+      announcements=d.announcements||[];
       if(d.cc_users) localStorage.setItem('cc_users',d.cc_users);
       if(d.username) localStorage.setItem('username',d.username);
       if(d.password) localStorage.setItem('password',d.password);
@@ -568,6 +589,9 @@ async function loadAllData(){
     stuFeeOvr=ld('ops_sfo',{});
     attData=ld('ops_att',{});
     monthFees=ld('ops_mf',{});
+    expenses=ld('ops_exp',[]);
+    salaries=ld('ops_sal',[]);
+    announcements=ld('ops_ann',[]);
   }
 }
 
@@ -859,8 +883,8 @@ function verifyForgotOTP(){
 // NAV
 let curPage='dashboard';
 let editStuId=null,editBatId=null;
-const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',courses:'Courses','courses-form':'Course Form',fees:'Fees',attendance:'Attendance',settings:'Settings'};
-const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)}};
+const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',courses:'Courses','courses-form':'Course Form',fees:'Fees',expenses:'Expenses',attendance:'Attendance',broadcast:'Broadcast',settings:'Settings'};
+const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)},expenses:{lbl:'＋ Add Expense',fn:()=>openExpenseForm()},broadcast:{lbl:'📣 New Announcement',fn:()=>openBroadcastForm()}};
 
 function gotoPage(pg){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -873,7 +897,7 @@ function gotoPage(pg){
   const tb=document.getElementById('top-btn');
   if(TOP_BTNS[pg]){tb.textContent=TOP_BTNS[pg].lbl;tb.style.display='flex';}
   else tb.style.display='none';
-  const renders={dashboard:renderDash,students:renderStus,batches:renderBats,courses:renderCourses,fees:renderFees,attendance:renderAtt,settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}};
+  const renders={dashboard:renderDash,students:renderStus,batches:renderBats,courses:renderCourses,fees:renderFees,expenses:renderExpenses,attendance:renderAtt,broadcast:renderBroadcast,settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}};
   if(renders[pg])renders[pg]();
 }
 function topBtnAction(){if(TOP_BTNS[curPage])TOP_BTNS[curPage].fn();}
@@ -882,52 +906,64 @@ function renderDash(){
   const active=students.filter(s=>!s.inactive);
   const curMonth=MONTHS[new Date().getMonth()];
   const curYear=new Date().getFullYear();
-  // Monthly expected = sum of monthly fees
+  // Monthly expected
   const expMonthly=active.reduce((a,s)=>a+monthlyFee(s),0);
   // Collected this month
   const colThisMonth=active.reduce((a,s)=>{
     const h=(s.history||[]).filter(x=>x.month===curMonth&&(x.year||curYear)===curYear);
     return a+h.reduce((b,x)=>b+(x.amount||0),0);
   },0);
-  // Total collected all time
   const colAll=students.reduce((a,s)=>a+(s.paid||0),0);
-  // Pending this month
   const penMonth=Math.max(0,expMonthly-colThisMonth);
-  const penStu=active.filter(s=>{
-    const paidMonths=(s.history||[]).filter(h=>h.month===curMonth&&(h.year||curYear)===curYear);
-    return paidMonths.length===0 && monthlyFee(s)>0;
-  }).length;
+  // This month expenses
+  const expThisMonth=expenses.filter(e=>{
+    const d=new Date(e.date);
+    return MONTHS[d.getMonth()]===curMonth&&d.getFullYear()===curYear;
+  }).reduce((a,e)=>a+(e.amount||0),0);
+  const profit=colThisMonth-expThisMonth;
+  // Students paid/not this month
+  const paidStu=active.filter(s=>(s.history||[]).some(h=>h.month===curMonth&&(h.year||curYear)===curYear));
+  const notPaidStu=active.filter(s=>monthlyFee(s)>0&&!(s.history||[]).some(h=>h.month===curMonth&&(h.year||curYear)===curYear));
   const colPct=expMonthly?Math.round(colThisMonth/expMonthly*100):0;
   const byClass={};active.forEach(s=>{byClass[s.cls]=(byClass[s.cls]||0)+1;});
   document.getElementById('page-dashboard').innerHTML=`
   <div class="grid-4">
     <div class="stat-card"><div class="stat-stripe" style="background:#18181B"></div><div style="font-size:22px;margin-bottom:8px">🎓</div><div class="stat-val">${active.length}</div><div class="stat-lbl">Total Students</div><div class="stat-sub" style="color:#78716C">${students.filter(s=>s.inactive).length} inactive</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:#16A34A"></div><div style="font-size:22px;margin-bottom:8px">💚</div><div class="stat-val">${fmt(colThisMonth)}</div><div class="stat-lbl">${curMonth} Collected</div><div class="stat-sub" style="color:#16A34A">${colPct}% of ${curMonth}</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:#DC2626"></div><div style="font-size:22px;margin-bottom:8px">⚠️</div><div class="stat-val">${fmt(penMonth)}</div><div class="stat-lbl">${curMonth} Pending</div><div class="stat-sub" style="color:#DC2626">${penStu} students</div></div>
-    <div class="stat-card"><div class="stat-stripe" style="background:var(--primary)"></div><div style="font-size:22px;margin-bottom:8px">💰</div><div class="stat-val">${fmt(expMonthly)}</div><div class="stat-lbl">Monthly Expected</div><div class="stat-sub" style="color:var(--primary)">Total: ${fmt(colAll)}</div></div>
+    <div class="stat-card"><div class="stat-stripe" style="background:#16A34A"></div><div style="font-size:22px;margin-bottom:8px">💚</div><div class="stat-val">${fmt(colThisMonth)}</div><div class="stat-lbl">${curMonth} Collected</div><div class="stat-sub" style="color:#16A34A">${paidStu.length}/${active.length} paid</div></div>
+    <div class="stat-card"><div class="stat-stripe" style="background:#DC2626"></div><div style="font-size:22px;margin-bottom:8px">⚠️</div><div class="stat-val">${fmt(penMonth)}</div><div class="stat-lbl">${curMonth} Pending</div><div class="stat-sub" style="color:#DC2626">${notPaidStu.length} students</div></div>
+    <div class="stat-card" style="cursor:pointer" onclick="gotoPage('expenses')"><div class="stat-stripe" style="background:${profit>=0?'#16A34A':'#DC2626'}"></div><div style="font-size:22px;margin-bottom:8px">${profit>=0?'📈':'📉'}</div><div class="stat-val" style="color:${profit>=0?'#16A34A':'#DC2626'}">${fmt(Math.abs(profit))}</div><div class="stat-lbl">${curMonth} ${profit>=0?'Profit':'Loss'}</div><div class="stat-sub" style="color:#78716C">Exp: ${fmt(expThisMonth)}</div></div>
   </div>
   <div class="grid-21">
     <div class="card"><div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">${curMonth} Fee Collection</div>
-      <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Collected</span><span style="font-weight:700;color:#16A34A">${fmt(colThisMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#16A34A;width:${colPct}%"></div></div></div>
-      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Pending</span><span style="font-weight:700;color:#DC2626">${fmt(penMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#DC2626;width:${expMonthly?Math.round(penMonth/expMonthly*100):0}%"></div></div></div>
+      <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Collected (${paidStu.length} students)</span><span style="font-weight:700;color:#16A34A">${fmt(colThisMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#16A34A;width:${colPct}%"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Pending (${notPaidStu.length} students)</span><span style="font-weight:700;color:#DC2626">${fmt(penMonth)}</span></div><div class="prog"><div class="prog-fill" style="background:#DC2626;width:${expMonthly?Math.round(penMonth/expMonthly*100):0}%"></div></div></div>
+      ${notPaidStu.length>0?`<button class="btn btn-primary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="gotoPage('fees');setTimeout(openBulkFee,300)">⚡ Collect ${curMonth} Fees — ${notPaidStu.length} pending</button>`:'<div style="margin-top:12px;text-align:center;font-size:12px;color:#16A34A;font-weight:700">✅ All students paid for '+curMonth+'!</div>'}
     </div>
     <div class="card"><div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Students by Class</div>
       ${Object.entries(byClass).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([c,n])=>`<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:#78716C">Class ${esc(c)}</span><span style="font-weight:700">${n}</span></div>`).join('')||'<div style="color:#78716C;font-size:12px">No students yet</div>'}
     </div>
   </div>
+  ${notPaidStu.length>0?`<div class="sec-hdr"><h3>⚠️ Not Paid — ${curMonth}</h3><button class="btn btn-ghost btn-sm" onclick="gotoPage('fees')">View All →</button></div>
+  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Batch</th><th>Monthly Fee</th><th>Quick Collect</th></tr></thead>
+  <tbody>${notPaidStu.slice(0,8).map((s,i)=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(i)}">${ini(s.name)}</div><div style="font-weight:600">${esc(s.name)}</div></div></td>
+    <td>${esc(s.cls)}</td><td>${esc(s.batch||'—')}</td>
+    <td style="font-weight:700;color:var(--primary)">${fmt(monthlyFee(s))}/mo</td>
+    <td><button class="btn btn-teal btn-xs" onclick="quickCollectPending('${s.id}','${curMonth}')">✓ Collect ${curMonth}</button></td>
+  </tr>`).join('')}
+  </tbody></table></div>`:''}
   <div class="sec-hdr"><h3>Recent Students</h3><button class="btn btn-ghost btn-sm" onclick="gotoPage('students')">View All →</button></div>
-  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Batch</th><th>Monthly Fee</th><th>${curMonth} Status</th><th>Total Paid</th><th>Status</th></tr></thead>
-  <tbody>${students.slice(-6).reverse().map((s,i)=>{
+  <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Batch</th><th>Monthly Fee</th><th>${curMonth} Status</th><th>Total Paid</th></tr></thead>
+  <tbody>${students.slice(-5).reverse().map((s,i)=>{
     const mFee=monthlyFee(s);
     const paidThisMonth=(s.history||[]).some(h=>h.month===curMonth&&(h.year||curYear)===curYear);
     return`<tr>
     <td><div style="display:flex;align-items:center;gap:8px"><div class="av ${avcC(i)}">${ini(s.name)}</div><div style="font-weight:600">${esc(s.name)}</div></div></td>
     <td>${esc(s.cls)}</td><td>${esc(s.batch||'—')}</td>
     <td style="font-weight:700">${fmt(mFee)}/mo</td>
-    <td><span class="badge ${paidThisMonth?'badge-green':'badge-red'}">${paidThisMonth?'Paid':'Not paid'}</span></td>
+    <td><span class="badge ${paidThisMonth?'badge-green':'badge-red'}">${paidThisMonth?'✅ Paid':'❌ Pending'}</span></td>
     <td style="color:#16A34A;font-weight:600">${fmt(s.paid||0)}</td>
-    <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
-  </tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;padding:40px;color:#78716C">No students yet. Click Students → Add Student.</td></tr>'}
+  </tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;padding:40px;color:#78716C">No students yet.</td></tr>'}
   </tbody></table></div>`;
 }
 
@@ -979,7 +1015,7 @@ function buildStuRows(list){
       <td style="color:#78716C">${esc(s.mobile||'—')}</td><td>${esc(s.parent||'—')}</td>
       <td>${feeDisplay}</td>
       <td><span class="badge ${s.inactive?'badge-red':'badge-green'}">${s.inactive?'Inactive':'Active'}</span></td>
-      <td><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="openStuForm('${s.id}')">✏️ Edit</button><button class="btn btn-red btn-xs" onclick="delStu('${s.id}')">🗑️</button></div></td>
+      <td><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="openStuForm('${s.id}')">✏️ Edit</button><button class="btn btn-ink btn-xs" onclick="showIDCard('${s.id}')">🪪</button><button class="btn btn-red btn-xs" onclick="delStu('${s.id}')">🗑️</button></div></td>
     </tr>`;
   }).join('')||`<tr><td colspan="12" style="text-align:center;padding:30px;color:#78716C">No students found</td></tr>`;
 }
@@ -1519,6 +1555,7 @@ function renderFees(){
       ${MONTHS.map(m=>`<option value="${m}"${m===curMonth?' selected':''}>${m}</option>`).join('')}
     </select>
     <button class="btn btn-ink btn-sm" onclick="openClassFeesMod()">⚙️ Set Class Fees</button>
+    <button class="btn btn-primary btn-sm" onclick="openBulkFee()">⚡ Bulk Collect</button>
   </div>
   <div id="fee-pending-alert"></div>
   <div class="table-wrap"><table>
@@ -2170,6 +2207,486 @@ function saveAtt(){
   attData[key]={...attState};persist();toast('Attendance saved!');
 }
 
+
+// ═══════════════════════════════════════════════════════
+// FEATURE: STUDENT ID CARD
+// ═══════════════════════════════════════════════════════
+function showIDCard(sid){
+  const s=students.find(x=>x.id===sid);if(!s)return;
+  const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
+  const addr=localStorage.getItem('tuitionAddress')||'';
+  const logo=localStorage.getItem('tuitionLogo')||BUILTIN_LOGO;
+  document.getElementById('idcard-body').innerHTML=`
+  <div id="id-card-print" style="width:340px;margin:16px auto;border-radius:16px;overflow:hidden;border:2px solid var(--primary);font-family:'Segoe UI',sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.12)">
+    <div style="background:linear-gradient(135deg,var(--sidebar-bg,#1B3154),#243d5c);padding:16px 20px;display:flex;align-items:center;gap:12px">
+      ${logo?`<img src="${logo}" style="height:40px;border-radius:8px;background:#fff;padding:2px">`:''}
+      <div>
+        <div style="font-size:14px;font-weight:900;color:#fff">${esc(inst)}</div>
+        ${addr?`<div style="font-size:10px;color:rgba(255,255,255,.65)">${esc(addr)}</div>`:''}
+      </div>
+    </div>
+    <div style="background:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--primary,#E8622A);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;flex-shrink:0">${ini(s.name)}</div>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#18181B">${esc(s.name)}</div>
+        <div style="font-size:12px;color:#5A6A7E;margin-top:2px">${esc(s.subject||s.batch||'Student')}</div>
+      </div>
+    </div>
+    <div style="background:#F7F5F0;padding:12px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+      ${[['Class',s.cls],['Roll No.',s.roll||'—'],['Batch',s.batch||'—'],['Medium',s.medium||'—'],['School',s.school||'—'],['Mobile',s.mobile||'—'],['Guardian',s.parent||'—'],['Adm. Date',s.admDate||'—']].map(([l,v])=>`<div><span style="color:#78716C;font-size:10px;text-transform:uppercase;letter-spacing:.5px">${l}</span><div style="font-weight:700;color:#18181B;margin-top:1px">${esc(v)}</div></div>`).join('')}
+    </div>
+    <div style="background:var(--primary,#E8622A);padding:8px 20px;text-align:center;font-size:10px;color:#fff;font-weight:600;letter-spacing:1px">STUDENT IDENTITY CARD · ${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
+  </div>`;
+  openModal('modal-idcard');
+}
+function printIDCard(){
+  const card=document.getElementById('id-card-print');
+  if(!card)return;
+  const inst=localStorage.getItem('tuitionName')||'ClassCore';
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ID Card</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;}@media print{body{padding:0;}}</style></head><body>${card.outerHTML}</body></html>`;
+  if(IS_ELECTRON()){window.classcore.printContent(html,'A6');}
+  else{const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),400);}
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURE: BULK FEE COLLECTION
+// ═══════════════════════════════════════════════════════
+function openBulkFee(){
+  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  const unpaid=students.filter(s=>!s.inactive&&monthlyFee(s)>0&&!(s.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear));
+  document.getElementById('bulk-fee-body').innerHTML=`
+  <div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;font-weight:600;color:#92400E">
+    📅 Month: <b>${selMonth}</b> — ${unpaid.length} students not yet paid
+  </div>
+  <div style="margin-bottom:10px;display:flex;gap:8px">
+    <button class="btn btn-ghost btn-sm" onclick="bulkSelectAll(true)">☑ Select All</button>
+    <button class="btn btn-ghost btn-sm" onclick="bulkSelectAll(false)">☐ Deselect All</button>
+  </div>
+  <div style="max-height:360px;overflow-y:auto">
+    ${unpaid.length===0?'<div style="text-align:center;padding:30px;color:#16A34A;font-weight:700">✅ All students paid for '+selMonth+'!</div>':
+    unpaid.map(s=>`<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #E7E2D9;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff">
+      <input type="checkbox" class="bulk-chk" data-sid="${s.id}" data-fee="${monthlyFee(s)}" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+      <div style="flex:1">
+        <div style="font-weight:700">${esc(s.name)}</div>
+        <div style="font-size:11px;color:#78716C">${esc(s.cls)} · ${esc(s.batch||'No batch')}</div>
+      </div>
+      <div style="font-weight:700;color:var(--primary)">${fmt(monthlyFee(s))}</div>
+    </label>`).join('')}
+  </div>`;
+  openModal('modal-bulk-fee');
+}
+function bulkSelectAll(val){
+  document.querySelectorAll('.bulk-chk').forEach(c=>c.checked=val);
+}
+function collectBulkFees(){
+  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  const checked=[...document.querySelectorAll('.bulk-chk:checked')];
+  if(!checked.length){toast('No students selected','err');return;}
+  let collected=0,totalAmt=0;
+  checked.forEach(chk=>{
+    const sid=chk.getAttribute('data-sid');
+    const fee=parseFloat(chk.getAttribute('data-fee')||0);
+    if(!fee)return;
+    const paidAlready=(students.find(s=>s.id===sid)?.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
+    if(paidAlready)return;
+    const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
+    localStorage.setItem('rcptNo',rcptNo);
+    students=students.map(s=>{
+      if(s.id!==sid)return s;
+      const history=[...(s.history||[]),{amount:fee,date:todayStr(),receiptNo:rcptNo,month:selMonth,year:curYear}];
+      return{...s,paid:(s.paid||0)+fee,history};
+    });
+    collected++;totalAmt+=fee;
+  });
+  persist();
+  closeModal('modal-bulk-fee');
+  renderFees();
+  toast(`✅ Collected ${selMonth} fees from ${collected} students — ${fmt(totalAmt)}`);
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURE: EXPENSE TRACKING
+// ═══════════════════════════════════════════════════════
+const EXP_CATS=['Rent','Salary','Electricity','Water','Internet','Stationery','Furniture','Maintenance','Advertising','Other'];
+let editExpId=null;
+function renderExpenses(){
+  const curMonth=MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  // FIX: was d.getMonth()===curYear (wrong) — should compare month name
+  const thisMonthExp=expenses.filter(e=>{
+    const d=new Date(e.date);
+    return MONTHS[d.getMonth()]===curMonth&&d.getFullYear()===curYear;
+  }).reduce((a,e)=>a+(e.amount||0),0);
+  const feesCol=students.reduce((a,s)=>a+(s.paid||0),0);
+  const profit=feesCol-thisMonthExp;
+
+  // Only rebuild if page not yet rendered (avoid full re-render)
+  const page=document.getElementById('page-expenses');
+  const alreadyBuilt=page.querySelector('#exp-table-body');
+
+  if(!alreadyBuilt){
+    page.innerHTML=`
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="card" style="text-align:center"><div style="font-size:20px">💸</div><div id="exp-stat-month" style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(thisMonthExp)}</div><div style="font-size:11px;color:#78716C">${curMonth} Expenses</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(feesCol)}</div><div style="font-size:11px;color:#78716C">Total Fees Collected</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:20px">${profit>=0?'📈':'📉'}</div><div id="exp-stat-profit" style="font-size:22px;font-weight:800;color:${profit>=0?'#16A34A':'#DC2626'};margin:4px 0">${fmt(Math.abs(profit))}</div><div style="font-size:11px;color:#78716C">${profit>=0?'Net Profit':'Net Loss'}</div></div>
+    </div>
+    <div id="exp-form-wrap"></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Paid To</th><th>Amount</th><th>Actions</th></tr></thead>
+      <tbody id="exp-table-body"></tbody>
+    </table></div>`;
+  } else {
+    // Just update stats
+    const sm=document.getElementById('exp-stat-month');
+    const sp=document.getElementById('exp-stat-profit');
+    if(sm) sm.textContent=fmt(thisMonthExp);
+    if(sp){ sp.textContent=fmt(Math.abs(profit)); sp.style.color=profit>=0?'#16A34A':'#DC2626'; }
+  }
+
+  // Always refresh table body
+  const tbody=document.getElementById('exp-table-body');
+  if(tbody){
+    tbody.innerHTML=expenses.length===0
+      ?'<tr><td colspan="6" style="text-align:center;padding:30px;color:#78716C">No expenses yet. Add one!</td></tr>'
+      :[...expenses].reverse().map(e=>`<tr>
+        <td style="color:#78716C;font-size:12px">${e.date}</td>
+        <td><span class="badge badge-gray">${esc(e.category)}</span></td>
+        <td style="font-weight:600">${esc(e.desc)}</td>
+        <td style="color:#78716C">${esc(e.paidTo||'—')}</td>
+        <td style="font-weight:700;color:#DC2626">${fmt(e.amount)}</td>
+        <td><div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-xs" onclick="editExpense('${e.id}')">✏️</button>
+          <button class="btn btn-red btn-xs" onclick="delExpense('${e.id}')">🗑️</button>
+        </div></td>
+      </tr>`).join('');
+  }
+}
+
+function openExpenseForm(id){
+  const e=id?expenses.find(x=>x.id===id):null;
+  editExpId=id||null;
+  // Make sure page is rendered first
+  if(!document.getElementById('exp-form-wrap')) renderExpenses();
+  const wrap=document.getElementById('exp-form-wrap');
+  if(!wrap)return;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:16px;border:2px solid var(--primary)">
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:14px">${e?'✏️ Edit':'➕ Add'} Expense</h3>
+    <div class="form-grid">
+      <div class="fg"><label>Date ★</label><input type="date" id="ef-date" value="${e?.date||todayISO()}"></div>
+      <div class="fg"><label>Category ★</label><select id="ef-cat">${EXP_CATS.map(c=>`<option${e?.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="fg"><label>Description ★</label><input id="ef-desc" placeholder="e.g. Monthly rent" value="${esc(e?.desc||'')}"></div>
+      <div class="fg"><label>Paid To</label><input id="ef-to" placeholder="Person/company name" value="${esc(e?.paidTo||'')}"></div>
+      <div class="fg"><label>Amount (₹) ★</label><input type="number" id="ef-amt" placeholder="0" value="${e?.amount||''}" autofocus></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="closeExpenseForm()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveExpense()">💾 Save</button>
+    </div>
+  </div>`;
+  // Scroll to form
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function closeExpenseForm(){
+  const wrap=document.getElementById('exp-form-wrap');
+  if(wrap) wrap.innerHTML='';
+  editExpId=null;
+}
+
+function saveExpense(){
+  const date=document.getElementById('ef-date')?.value||todayISO();
+  const category=document.getElementById('ef-cat')?.value||'Other';
+  const desc=(document.getElementById('ef-desc')?.value||'').trim();
+  const paidTo=(document.getElementById('ef-to')?.value||'').trim();
+  const amount=parseFloat(document.getElementById('ef-amt')?.value||0);
+  if(!desc){toast('Enter description','err');return;}
+  if(!amount||amount<=0){toast('Enter a valid amount','err');return;}
+  if(editExpId){
+    expenses=expenses.map(e=>e.id===editExpId?{...e,date,category,desc,paidTo,amount}:e);
+    toast('Expense updated!');
+  } else {
+    expenses.push({id:uid(),date,category,desc,paidTo,amount});
+    toast('Expense added!');
+  }
+  closeExpenseForm();
+  persist();
+  renderExpenses();
+}
+
+function editExpense(id){
+  openExpenseForm(id); // No full re-render needed
+}
+
+function delExpense(id){
+  if(!confirm('Delete this expense?'))return;
+  expenses=expenses.filter(e=>e.id!==id);
+  persist();
+  renderExpenses();
+  toast('Deleted','err');
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURE: BROADCAST / ANNOUNCEMENTS
+// ═══════════════════════════════════════════════════════
+function renderBroadcast(){
+  const page=document.getElementById('page-broadcast');
+  const alreadyBuilt=page.querySelector('#bc-list-body');
+
+  if(!alreadyBuilt){
+    const active=students.filter(s=>!s.inactive&&s.mobile);
+    page.innerHTML=`
+    <div class="card" style="margin-bottom:18px">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">📣 Send Announcement to Parents</h3>
+      <div class="form-grid">
+        <div class="fg full"><label>Message ★</label>
+          <textarea id="bc-msg" rows="4" placeholder="Type your announcement here…&#10;e.g. Dear Parents, school will be closed on 15th April due to holiday." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;font-family:inherit;background:var(--input-bg);color:var(--text-main)"></textarea>
+        </div>
+        <div class="fg"><label>Send To</label>
+          <select id="bc-target" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--input-bg);color:var(--text-main);outline:none;width:100%">
+            <option value="all">All Students (${active.length} parents)</option>
+            ${batches.map(b=>`<option value="bat_${b.id}">Batch: ${esc(b.name)}</option>`).join('')}
+            ${getClasses().map(c=>`<option value="cls_${c}">Class: ${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label>Sending</label>
+          <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:8px;padding:10px 12px;font-size:12px;color:#16A34A;font-weight:600">${active.length} parents have mobile numbers</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+        <button class="btn btn-green" onclick="sendBroadcast()">💬 Send via WhatsApp</button>
+        <span style="font-size:11px;color:#78716C">WhatsApp opens for each parent. Press send for each one.</span>
+      </div>
+    </div>
+    <div class="sec-hdr"><h3>📜 Previous Announcements</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Message</th><th>Sent To</th><th>Actions</th></tr></thead>
+      <tbody id="bc-list-body"></tbody>
+    </table></div>`;
+  }
+
+  // Always refresh just the list
+  refreshBroadcastList();
+}
+
+function refreshBroadcastList(){
+  const tbody=document.getElementById('bc-list-body');
+  if(!tbody)return;
+  tbody.innerHTML=announcements.length===0
+    ?'<tr><td colspan="4" style="text-align:center;padding:30px;color:#78716C">No announcements yet.</td></tr>'
+    :[...announcements].reverse().map(a=>`<tr>
+      <td style="color:#78716C;font-size:12px">${a.date}</td>
+      <td style="font-size:12px;max-width:300px">${esc(a.text).substring(0,80)}${a.text.length>80?'…':''}</td>
+      <td><span class="badge badge-gray">${a.sentTo||'All'} (${a.recipients||0})</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-green btn-xs" onclick="reSendBroadcast('${a.id}')">💬 Resend</button>
+        <button class="btn btn-red btn-xs" onclick="delAnnouncement('${a.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+let _bcQueue=[];
+let _bcIdx=0;
+let _bcMsg='';
+let _bcInst='';
+
+function sendBroadcast(){
+  const msg=(document.getElementById('bc-msg')?.value||'').trim();
+  if(!msg){toast('Type a message first','err');return;}
+  const target=document.getElementById('bc-target')?.value||'all';
+  const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
+  let targets=students.filter(s=>!s.inactive&&s.mobile);
+  if(target.startsWith('bat_')){const bid=target.slice(4);const b=batches.find(x=>x.id===bid);if(b)targets=targets.filter(s=>s.batch===b.name);}
+  if(target.startsWith('cls_')){const cls=target.slice(4);targets=targets.filter(s=>s.cls===cls);}
+  if(!targets.length){toast('No students with mobile numbers in this group','err');return;}
+
+  // Save to history
+  announcements.unshift({id:uid(),date:todayStr(),text:msg,sentTo:target==='all'?'All':'Group',recipients:targets.length});
+  persist();
+  refreshBroadcastList();
+
+  // Start queue
+  _bcQueue=[...targets];
+  _bcIdx=0;
+  _bcMsg=msg;
+  _bcInst=inst;
+  showSendQueue();
+}
+
+function showSendQueue(){
+  if(_bcIdx>=_bcQueue.length){
+    // Done
+    const qEl=document.getElementById('bc-queue-wrap');
+    if(qEl) qEl.innerHTML=`
+      <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:20px;text-align:center">
+        <div style="font-size:36px;margin-bottom:8px">✅</div>
+        <div style="font-size:16px;font-weight:800;color:#16A34A">All ${_bcQueue.length} messages sent!</div>
+        <div style="font-size:12px;color:#78716C;margin-top:6px">All parents have been messaged.</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="closeSendQueue()">Close</button>
+      </div>`;
+    toast(`✅ All ${_bcQueue.length} messages sent!`);
+    return;
+  }
+
+  const s=_bcQueue[_bcIdx];
+  const total=_bcQueue.length;
+  const done=_bcIdx;
+  const pct=Math.round((done/total)*100);
+  const mobile=(s.mobile||'').replace(/\D/g,'');
+  const num=mobile.length===10?'91'+mobile:mobile;
+  const fullMsg=`Dear ${s.parent||s.name},\n\n📢 *${_bcInst}*\n\n${_bcMsg}\n\n_Sent via ClassCore_`;
+  const waUrl='https://wa.me/'+num+'?text='+encodeURIComponent(fullMsg);
+
+  // Render queue UI
+  let qEl=document.getElementById('bc-queue-wrap');
+  if(!qEl){
+    const card=document.createElement('div');
+    card.id='bc-queue-wrap';
+    card.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+    document.body.appendChild(card);
+    qEl=card;
+  }
+
+  qEl.innerHTML=`
+  <div style="background:#fff;border-radius:20px;padding:28px 32px;width:420px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:800">💬 Sending Messages</div>
+      <button onclick="closeSendQueue()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#78716C;line-height:1">×</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="background:#E7E2D9;border-radius:10px;height:8px;margin-bottom:6px;overflow:hidden">
+      <div style="background:var(--primary);height:100%;width:${pct}%;border-radius:10px;transition:width .4s"></div>
+    </div>
+    <div style="font-size:11px;color:#78716C;margin-bottom:20px">${done} of ${total} sent</div>
+
+    <!-- Current student -->
+    <div style="background:#F7F5F0;border-radius:12px;padding:14px 16px;margin-bottom:20px">
+      <div style="font-size:11px;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Sending to:</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="av avc${_bcIdx%6}" style="width:40px;height:40px;font-size:14px">${ini(s.name)}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px">${esc(s.name)}</div>
+          <div style="font-size:12px;color:#78716C">${s.parent?'Guardian: '+esc(s.parent)+' · ':''} 📱 ${esc(s.mobile)}</div>
+          <div style="font-size:11px;color:#78716C">Class ${esc(s.cls)}${s.batch?' · '+esc(s.batch):''}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message preview -->
+    <div style="background:#DCF8C6;border-radius:10px;padding:10px 14px;font-size:12px;color:#18181B;margin-bottom:20px;white-space:pre-wrap;max-height:100px;overflow-y:auto;line-height:1.5">Dear ${esc(s.parent||s.name)},
+
+📢 *${esc(_bcInst)}*
+
+${esc(_bcMsg)}</div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:10px">
+      <button onclick="sendQueueCurrent('${waUrl.replace(/'/g,"\\'")}')" 
+        style="flex:1;background:#25D366;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        💬 Open WhatsApp
+      </button>
+      <button onclick="nextInQueue()" 
+        style="background:#F7F5F0;color:#18181B;border:1.5px solid #E7E2D9;border-radius:10px;padding:13px 18px;font-size:13px;font-weight:600;cursor:pointer">
+        Skip →
+      </button>
+    </div>
+    <div style="font-size:10px;color:#78716C;margin-top:10px;text-align:center">
+      After pressing Send in WhatsApp, click "Next →" or come back here
+    </div>
+    <button onclick="nextInQueue()" 
+      style="width:100%;margin-top:10px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">
+      ✅ Sent! Next → (${_bcIdx+1}/${total})
+    </button>
+  </div>`;
+
+  // Auto-open WhatsApp for this person
+  window.open(waUrl);
+}
+
+function sendQueueCurrent(url){
+  window.open(url);
+}
+
+function nextInQueue(){
+  _bcIdx++;
+  showSendQueue();
+}
+
+function closeSendQueue(){
+  const el=document.getElementById('bc-queue-wrap');
+  if(el) el.remove();
+  _bcQueue=[];_bcIdx=0;
+}
+
+function reSendBroadcast(id){
+  const a=announcements.find(x=>x.id===id);if(!a)return;
+  const textarea=document.getElementById('bc-msg');
+  if(textarea){
+    textarea.value=a.text;
+    textarea.focus();
+    textarea.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+
+function delAnnouncement(id){
+  if(!confirm('Delete this announcement?'))return;
+  announcements=announcements.filter(a=>a.id!==id);
+  persist();
+  refreshBroadcastList();
+  toast('Deleted','err');
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURE: TEACHER SALARY (in Settings)
+// ═══════════════════════════════════════════════════════
+function renderSalaries(){
+  const users=getUsers().filter(u=>u.role!=='admin');
+  const curMonth=MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  const el=document.getElementById('salary-section');
+  if(!el)return;
+  el.innerHTML=`
+  <div class="sec-hdr"><h3>💵 Teacher Salaries — ${curMonth} ${curYear}</h3></div>
+  ${users.length===0?'<div style="color:#78716C;font-size:13px">No employees added yet.</div>':
+  users.map(u=>{
+    const paid=salaries.some(s=>s.userId===u.username&&s.month===curMonth&&s.year===curYear);
+    const salRec=salaries.find(s=>s.userId===u.username&&s.month===curMonth&&s.year===curYear);
+    return`<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F7F5F0;border-radius:10px;margin-bottom:10px;border:1.5px solid ${paid?'#BBF7D0':'#E7E2D9'}">
+      <div class="av avc1" style="width:36px;height:36px;font-size:13px">${ini(u.name||u.username)}</div>
+      <div style="flex:1">
+        <div style="font-weight:700">${esc(u.name||u.username)}</div>
+        <div style="font-size:11px;color:#78716C">${esc(u.role||'Employee')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="sal-${u.username}" placeholder="Salary ₹" value="${salRec?.amount||''}" style="width:100px;padding:6px 10px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;outline:none">
+        ${paid
+          ?`<span style="background:#DCFCE7;color:#16A34A;border:1.5px solid #86EFAC;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700">✅ Paid ${fmt(salRec?.amount||0)}</span>
+             <button class="btn btn-ghost btn-xs" onclick="undoSalary('${u.username}')">Undo</button>`
+          :`<button class="btn btn-teal btn-sm" onclick="markSalaryPaid('${u.username}')">✓ Mark Paid</button>`
+        }
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+function markSalaryPaid(username){
+  const curMonth=MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  const amt=parseFloat(document.getElementById('sal-'+username)?.value||0);
+  if(!amt){toast('Enter salary amount first','err');return;}
+  salaries=salaries.filter(s=>!(s.userId===username&&s.month===curMonth&&s.year===curYear));
+  salaries.push({id:uid(),userId:username,month:curMonth,year:curYear,amount:amt,paidDate:todayStr()});
+  persist();toast('Salary marked as paid!');renderSalaries();
+}
+function undoSalary(username){
+  const curMonth=MONTHS[new Date().getMonth()];
+  const curYear=new Date().getFullYear();
+  salaries=salaries.filter(s=>!(s.userId===username&&s.month===curMonth&&s.year===curYear));
+  persist();renderSalaries();
+}
+
 // SETTINGS
 function renderSettings(){
   const tName = localStorage.getItem('tuitionName')||'ClassCore Tuition';
@@ -2209,9 +2726,6 @@ function renderSettings(){
       '</div>' +
       '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveInstitute()">💾 Save Institute Details</button>' +
     '</div>' +
-
-    '<div class="card" style="margin-bottom:18px">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">🗄️ Data Management</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         '<button class="btn btn-ghost" onclick="exportData()">📥 Export Backup</button>' +
         (IS_ELECTRON()
@@ -2228,7 +2742,10 @@ function renderSettings(){
       '<div id="user-list-wrap">' + renderUserList() + '</div>' +
     '</div>' : '') +
 
+    (isAdmin() ? '<div class="card" style="margin-bottom:18px"><div id="salary-section"></div></div>' : '') +
+
     '</div>';
+  if(isAdmin()) setTimeout(()=>renderSalaries(),50);
 }
 function prevLogo(inp){
   const f=inp.files[0];if(!f)return;
@@ -2324,7 +2841,20 @@ function updSbInst(){
   document.getElementById('sb-inst-name').textContent=localStorage.getItem('tuitionName')||'Tuition Management';
 }
 async function exportData(){
-  const data={students,batches,courses,classFees,stuFeeOvr,attData,exported:new Date().toISOString()};
+  const data=buildPayload();
+  data.exported=new Date().toISOString();
+  if(IS_ELECTRON()){
+    const r=await window.classcore.exportBackup(data);
+    if(r.ok) toast('Backup exported!');
+    else if(r.error) toast('Export failed: '+r.error,'err');
+  } else {
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    a.download='ClassCore_Backup_'+todayISO()+'.json';a.click();toast('Backup exported!');
+  }
+}
+async function exportData(){
+  const data=buildPayload();
+  data.exported=new Date().toISOString();
   if(IS_ELECTRON()){
     const r=await window.classcore.exportBackup(data);
     if(r.ok) toast('Backup exported!');
@@ -3361,6 +3891,14 @@ const THEMES = {
     bodyBg: '#FFF1F2', cardBg: '#fff', textMain: '#1F0A0F',
     textMuted: '#6B7280', border: '#FECDD3', inputBg: '#FFF1F2',
     topbar: '#fff', scrollbar: '#FDA4AF'
+  },
+  'dark': {
+    name: '🌙 Dark Mode',
+    primary: '#C9A84C', primaryDark: '#A8873A', primaryLight: '#2A2416',
+    sidebar: '#111827', sidebarActive: '#C9A84C',
+    bodyBg: '#1F2937', cardBg: '#111827', textMain: '#F9FAFB',
+    textMuted: '#9CA3AF', border: '#374151', inputBg: '#1F2937',
+    topbar: '#111827', scrollbar: '#4B5563'
   }
 };
 

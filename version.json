@@ -1,4 +1,4 @@
 {
-  "version": "1.2.7",
-  "notes": "Trial system fixed - 30 days access, warning banner on login, expired screen after 30 days"
+  "version": "1.3.3",
+  "notes": "Broadcast Send Queue - one parent at a time with progress tracker"
 }
