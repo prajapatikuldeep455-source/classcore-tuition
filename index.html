@@ -83,7 +83,8 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 .badge-gold{background:#FEF9C3;color:#92400E;}.badge-gray{background:#F4F4F5;color:#78716C;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(24,24,27,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
 .modal-overlay.open{display:flex;}
-.modal-box{background:#fff;border:1.5px solid #E7E2D9;border-radius:18px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.18);will-change:transform;transform:translateZ(0);}
+.modal-box{background:#fff;border:1.5px solid #E7E2D9;border-radius:18px;max-width:96vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.18);will-change:transform;transform:translateZ(0);animation:modalIn .22s cubic-bezier(.34,1.56,.64,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.92) translateY(16px);}to{opacity:1;transform:scale(1) translateY(0);}}
 .modal-hdr{padding:18px 24px;border-bottom:1px solid #E7E2D9;display:flex;align-items:center;justify-content:space-between;background:#fff;flex-shrink:0;}
 .modal-hdr h3{font-size:17px;font-weight:700;}.modal-body{padding:24px;overflow-y:auto;flex:1;}
 .modal-foot{padding:14px 24px;border-top:1px solid #E7E2D9;display:flex;justify-content:flex-end;gap:9px;background:#FAF8F5;flex-shrink:0;}
@@ -155,6 +156,15 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRegWithKey()">🔑 Activate Key</button>
     </div>
     <div id="reg-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
+    <!-- Credentials box shown after registration -->
+    <div id="reg-creds-box" style="display:none;margin-top:14px;background:#F0FDF4;border:2px solid #16A34A;border-radius:12px;padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:#16A34A;margin-bottom:8px">✅ Your Login Details — Save These!</div>
+      <div style="background:#fff;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:13px">
+        <div>👤 Username: <b id="reg-creds-user" style="color:#1B3154"></b></div>
+        <div style="margin-top:4px">🔒 Password: <b id="reg-creds-pass" style="color:#1B3154"></b></div>
+      </div>
+      <div style="font-size:11px;color:#78716C;margin-top:8px">⚠️ Screenshot this! Also sent to your email.<br>You must change this password on first login.</div>
+    </div>
   </div>
 </div>
 
@@ -368,7 +378,51 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   </div>
 </div>
 
-<!-- MODALS -->
+<!-- STUDENT FORM MODAL -->
+<div id="modal-student-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('student')">
+  <div class="modal-box" style="width:720px">
+    <div class="modal-hdr">
+      <h3 id="modal-stu-title">Add New Student</h3>
+      <button class="x-btn" onclick="closeFormModal('student')">×</button>
+    </div>
+    <div class="modal-body" id="modal-stu-body"></div>
+  </div>
+</div>
+
+<!-- BATCH FORM MODAL -->
+<div id="modal-batch-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('batch')">
+  <div class="modal-box" style="width:640px">
+    <div class="modal-hdr">
+      <h3 id="modal-bat-title">Create New Batch</h3>
+      <button class="x-btn" onclick="closeFormModal('batch')">×</button>
+    </div>
+    <div class="modal-body" id="modal-bat-body"></div>
+  </div>
+</div>
+
+<!-- COURSE FORM MODAL -->
+<div id="modal-course-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('course')">
+  <div class="modal-box" style="width:600px">
+    <div class="modal-hdr">
+      <h3 id="modal-crs-title">Add New Course</h3>
+      <button class="x-btn" onclick="closeFormModal('course')">×</button>
+    </div>
+    <div class="modal-body" id="modal-crs-body"></div>
+  </div>
+</div>
+
+<!-- EXPENSE FORM MODAL -->
+<div id="modal-expense-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('expense')">
+  <div class="modal-box" style="width:560px">
+    <div class="modal-hdr">
+      <h3 id="modal-exp-title">Add Expense</h3>
+      <button class="x-btn" onclick="closeFormModal('expense')">×</button>
+    </div>
+    <div class="modal-body" id="modal-exp-body"></div>
+  </div>
+</div>
+
+<!-- EXISTING MODALS -->
 <div id="modal-history" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-history')">
   <div class="modal-box" style="width:520px"><div class="modal-hdr"><h3 id="hist-title">Payment History</h3><button class="x-btn" onclick="closeModal('modal-history')">×</button></div><div class="modal-body" id="hist-body"></div></div>
 </div>
@@ -504,20 +558,32 @@ function debounce(fn, ms){
 
 async function persist(){
   showSaveChip('saving');
-  if(IS_ELECTRON()){
-    const result = await window.classcore.saveData(buildPayload());
-    if(!result||!result.ok){
-      showSaveChip('error');
-      console.error('Save failed!', result?.error);
+  try {
+    if(IS_ELECTRON()){
+      // Build payload safely
+      let payload;
+      try { payload = buildPayload(); }
+      catch(e){ console.error('buildPayload error:', e); showSaveChip('error'); return {ok:false}; }
+      const result = await window.classcore.saveData(payload);
+      if(!result||!result.ok){
+        showSaveChip('error');
+        console.error('Save failed!', result?.error);
+      } else {
+        showSaveChip('saved');
+      }
+      return result||{ok:false};
     } else {
+      try {
+        sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+        sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
+      } catch(e){ console.error('LocalStorage save error:', e); }
       showSaveChip('saved');
+      return {ok:true};
     }
-    return result;
-  } else {
-    sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
-    sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
-    showSaveChip('saved');
-    return {ok:true};
+  } catch(e) {
+    console.error('persist error:', e);
+    showSaveChip('error');
+    return {ok:false};
   }
 }
 // Debounced version for rapid changes (search, input)
@@ -644,8 +710,20 @@ function toast(msg,type='ok'){
   el.classList.add('show');clearTimeout(toastT);
   toastT=setTimeout(()=>el.classList.remove('show'),2800);
 }
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  // Re-trigger animation on re-open
+  const box=el.querySelector('.modal-box');
+  if(box){box.style.animation='none';requestAnimationFrame(()=>{box.style.animation='';});}
+  el.classList.add('open');
+}
+function closeModal(id){document.getElementById(id)?.classList.remove('open');}
+
+function closeFormModal(type){
+  const map={student:'modal-student-form',batch:'modal-batch-form',course:'modal-course-form',expense:'modal-expense-form'};
+  closeModal(map[type]||('modal-'+type+'-form'));
+}
 
 // ── AUTH & ROLES ─────────────────────────────────────────────────────────
 let currentUser=null;
@@ -699,28 +777,31 @@ function canDo(perm, msg){
 function doLogin(){
   const u=(document.getElementById('l-user').value||'').trim();
   const p=document.getElementById('l-pass').value||'';
-  // Check for force-change password flag
+  if(!u){toast('Enter username','err');return;}
+  if(!p){toast('Enter password','err');return;}
   const users=getUsers();
+  // Check username exists first
+  const byUser=users.find(x=>x.username===u);
+  if(!byUser){toast('Username not found','err');return;}
+  // Then check password
   const found=users.find(x=>x.username===u&&x.password===p);
-  if(found){
-    // Check if first-time login (must change password)
-    if(found.mustChange){
-      showForceChangePassword(found);
-      return;
-    }
-    currentUser={username:found.username,role:found.role,name:found.name||found.username};
-    localStorage.setItem('ops_logged','1');
-    localStorage.setItem('ops_cur_user',JSON.stringify(currentUser));
-    // Sync legacy localStorage
-    if(found.role==='admin'){
-      localStorage.setItem('username',found.username);
-      localStorage.setItem('password',found.password);
-    }
-    persist();
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    initApp();
-  }else toast('Wrong username or password','err');
+  if(!found){toast('Wrong password','err');return;}
+  // Correct credentials
+  if(found.mustChange){
+    showForceChangePassword(found);
+    return;
+  }
+  currentUser={username:found.username,role:found.role,name:found.name||found.username};
+  localStorage.setItem('ops_logged','1');
+  localStorage.setItem('ops_cur_user',JSON.stringify(currentUser));
+  if(found.role==='admin'){
+    localStorage.setItem('username',found.username);
+    localStorage.setItem('password',found.password);
+  }
+  persist();
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  initApp();
 }
 function doLogout(){localStorage.removeItem('ops_logged');localStorage.removeItem('ops_cur_user');currentUser=null;location.reload();}
 
@@ -887,18 +968,41 @@ const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'St
 const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)},expenses:{lbl:'＋ Add Expense',fn:()=>openExpenseForm()},broadcast:{lbl:'📣 New Announcement',fn:()=>openBroadcastForm()}};
 
 function gotoPage(pg){
+  // Hide all pages
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+pg).classList.add('active');
+  const pageEl=document.getElementById('page-'+pg);
+  if(!pageEl){console.warn('Page not found:',pg);return;}
+  pageEl.classList.add('active');
+  // Update nav highlight — use base page name
+  const base=pg.split('-')[0];
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const ni=document.querySelector('.nav-item[data-page="'+pg.split('-')[0]+'"]');
+  const ni=document.querySelector('.nav-item[data-page="'+base+'"]');
   if(ni)ni.classList.add('active');
   curPage=pg;
   document.getElementById('page-title').textContent=PAGE_TITLES[pg]||pg;
   const tb=document.getElementById('top-btn');
   if(TOP_BTNS[pg]){tb.textContent=TOP_BTNS[pg].lbl;tb.style.display='flex';}
   else tb.style.display='none';
-  const renders={dashboard:renderDash,students:renderStus,batches:renderBats,courses:renderCourses,fees:renderFees,expenses:renderExpenses,attendance:renderAtt,broadcast:renderBroadcast,settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}};
-  if(renders[pg])renders[pg]();
+  // Only render main pages (not sub-form pages — they render themselves)
+  const renders={
+    dashboard:renderDash,
+    students:renderStus,
+    batches:renderBats,
+    courses:renderCourses,
+    fees:renderFees,
+    expenses:renderExpenses,
+    attendance:renderAtt,
+    broadcast:renderBroadcast,
+    settings:()=>{if(adminOnly('Only admin can access settings'))return gotoPage('dashboard');renderSettings();}
+  };
+  if(renders[pg]){
+    try{ renders[pg](); }
+    catch(err){
+      console.error('Page render error ['+pg+']:', err);
+      const el=document.getElementById('page-'+pg);
+      if(el&&!el.innerHTML.trim()) el.innerHTML=`<div style="padding:40px;text-align:center;color:#DC2626">⚠️ Page error. Please go back and try again.<br><small style="color:#78716C">${err.message}</small></div>`;
+    }
+  }
 }
 function topBtnAction(){if(TOP_BTNS[curPage])TOP_BTNS[curPage].fn();}
 
@@ -970,6 +1074,7 @@ function renderDash(){
 // STUDENTS LIST
 let sfFilter='all',sfSearch='',sfCls='',sfBat='';
 function renderStus(){
+  try {
   const list=students.filter(s=>{
     if(sfFilter==='active'&&s.inactive)return false;
     if(sfFilter==='inactive'&&!s.inactive)return false;
@@ -997,7 +1102,12 @@ function renderStus(){
     ${!list.length?`<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">🎓</div><p>No students. <button onclick="openStuForm(null)" style="color:#E8622A;background:none;border:none;cursor:pointer;font-weight:700">Add one →</button></p></div>`:`
     <table><thead><tr><th>#</th><th>Student</th><th>Roll</th><th>Class</th><th>Medium</th><th>School</th><th>Batch</th><th>Phone</th><th>Guardian</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="stu-tbody">${buildStuRows(list)}</tbody></table>`}
-  </div>`;}
+  </div>`;
+  } catch(err) {
+    console.error('renderStus error:', err);
+    document.getElementById('page-students').innerHTML=`<div style="text-align:center;padding:40px;color:#DC2626">Error loading students. Please restart the app.<br><small>${err.message}</small></div>`;
+  }
+}
 
 function buildStuRows(list){
   return list.map((s,i)=>{
@@ -1044,93 +1154,96 @@ function openStuForm(id){
   editStuId=id;
   const s=id?students.find(x=>x.id===id):null;
   const batOpts=batches.map(b=>`<option value="${esc(b.name)}"${s?.batch===b.name?' selected':''}>${esc(b.name)} (${fmt12(b.startTime)}–${fmt12(b.endTime)})</option>`).join('');
-  document.getElementById('page-students-form').innerHTML=`
-  <div style="max-width:680px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
-      <button class="btn btn-ghost btn-sm" onclick="gotoPage('students')">← Back</button>
-      <h2 style="font-size:18px;font-weight:700">${id?'Edit Student':'Add New Student'}</h2>
+  document.getElementById('modal-stu-title').textContent=id?'Edit Student':'Add New Student';
+  document.getElementById('modal-stu-body').innerHTML=`
+  <div class="form-grid">
+    <div class="fg full"><label>Full Name ★</label><input id="sf-name" value="${esc(s?.name||'')}" placeholder="e.g. Aryan Patel"></div>
+    <div class="fg"><label>Class ★</label>
+      <div style="display:flex;gap:6px">
+        <select id="sf-cls" style="flex:1" onchange="onClsChange(this);prefillClsFee()">
+          <option value="">— Select Class —</option>
+          ${getClasses().map(c=>`<option${s?.cls===c?' selected':''}>${c}</option>`).join('')}
+          ${s?.cls&&!getClasses().includes(s.cls)?`<option selected>${esc(s.cls)}</option>`:''}
+          <option value="__other__">＋ Add Custom Class…</option>
+        </select>
+        <input id="sf-cls-custom" placeholder="e.g. B.Com" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid var(--primary);border-radius:8px;padding:9px 12px;font-size:13px;outline:none" onblur="applyCustomClass(this.value)">
+      </div>
     </div>
-    <div class="card"><div class="form-grid">
-      <div class="fg full"><label>Full Name ★</label><input id="sf-name" value="${esc(s?.name||'')}" placeholder="e.g. Aryan Patel"></div>
-      <div class="fg"><label>Class ★</label>
-        <div style="display:flex;gap:6px">
-          <select id="sf-cls" style="flex:1" onchange="onClsChange(this);prefillClsFee()">
-            <option value="">— Select Class —</option>
-            ${getClasses().map(c=>`<option${s?.cls===c?' selected':''}>${c}</option>`).join('')}
-            ${s?.cls&&!getClasses().includes(s.cls)?`<option selected>${esc(s.cls)}</option>`:''}
-            <option value="__other__">＋ Add Custom Class…</option>
-          </select>
-          <input id="sf-cls-custom" placeholder="e.g. B.Com, 11-Science" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid #E8622A;border-radius:8px;padding:9px 12px;font-size:13px;outline:none" onblur="applyCustomClass(this.value)">
-        </div>
+    <div class="fg"><label>Roll Number</label><input id="sf-roll" value="${esc(s?.roll||'')}" placeholder="Leave blank for auto"></div>
+    <div class="fg"><label>Batch / Time</label><select id="sf-batch"><option value="">— No Batch —</option>${batOpts}</select></div>
+    <div class="fg"><label>Mobile (10 digits)</label><input id="sf-mobile" value="${esc(s?.mobile||'')}" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
+    <div class="fg"><label>Parent / Guardian</label><input id="sf-parent" value="${esc(s?.parent||'')}" placeholder="Father / Mother name"></div>
+    <div class="fg"><label>Subject</label><input id="sf-subject" value="${esc(s?.subject||'')}" placeholder="e.g. Math, Science"></div>
+    <div class="fg"><label>School Name</label><input id="sf-school" value="${esc(s?.school||'')}" placeholder="e.g. Delhi Public School"></div>
+    <div class="fg"><label>Medium</label>
+      <div style="display:flex;gap:6px">
+        <select id="sf-medium" style="flex:1" onchange="onMediumChange(this)">
+          <option value="">— Select —</option>
+          <option value="English"${s?.medium==='English'?' selected':''}>English</option>
+          <option value="Gujarati"${s?.medium==='Gujarati'?' selected':''}>Gujarati</option>
+          <option value="Hindi"${s?.medium==='Hindi'?' selected':''}>Hindi</option>
+          <option value="Punjabi"${s?.medium==='Punjabi'?' selected':''}>Punjabi</option>
+          <option value="Marathi"${s?.medium==='Marathi'?' selected':''}>Marathi</option>
+          <option value="Urdu"${s?.medium==='Urdu'?' selected':''}>Urdu</option>
+          ${s?.medium&&!['English','Gujarati','Hindi','Punjabi','Marathi','Urdu'].includes(s.medium)?`<option value="${esc(s.medium)}" selected>${esc(s.medium)}</option>`:''}
+          <option value="__other__">＋ Add Custom…</option>
+        </select>
+        <input id="sf-medium-custom" placeholder="Type medium" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid var(--primary);border-radius:8px;padding:9px 12px;font-size:13px;outline:none">
       </div>
-      <div class="fg"><label>Roll Number</label><input id="sf-roll" value="${esc(s?.roll||'')}" placeholder="Leave blank for auto"></div>
-      <div class="fg"><label>Batch / Time</label><select id="sf-batch">
-        <option value="">— No Batch —</option>${batOpts}
-      </select></div>
-      <div class="fg"><label>Mobile ★ (10 digits)</label><input id="sf-mobile" value="${esc(s?.mobile||'')}" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,10)"></div>
-      <div class="fg"><label>Parent / Guardian</label><input id="sf-parent" value="${esc(s?.parent||'')}" placeholder="Father / Mother name"></div>
-      <div class="fg"><label>Subject</label><input id="sf-subject" value="${esc(s?.subject||'')}" placeholder="e.g. Math, Science"></div>
-      <div class="fg"><label>School Name</label><input id="sf-school" value="${esc(s?.school||'')}" placeholder="e.g. Delhi Public School"></div>
-      <div class="fg"><label>Medium</label>
-        <div style="display:flex;gap:6px">
-          <select id="sf-medium" style="flex:1" onchange="onMediumChange(this)">
-            <option value="">— Select Medium —</option>
-            <option value="English"${s?.medium==='English'?' selected':''}>English</option>
-            <option value="Gujarati"${s?.medium==='Gujarati'?' selected':''}>Gujarati</option>
-            <option value="Hindi"${s?.medium==='Hindi'?' selected':''}>Hindi</option>
-            <option value="Punjabi"${s?.medium==='Punjabi'?' selected':''}>Punjabi</option>
-            <option value="Marathi"${s?.medium==='Marathi'?' selected':''}>Marathi</option>
-            <option value="Urdu"${s?.medium==='Urdu'?' selected':''}>Urdu</option>
-            ${s?.medium&&!['English','Gujarati','Hindi','Punjabi','Marathi','Urdu'].includes(s.medium)?`<option value="${esc(s.medium)}" selected>${esc(s.medium)}</option>`:''}
-            <option value="__other__">＋ Add Custom…</option>
-          </select>
-          <input id="sf-medium-custom" placeholder="Type medium name" style="display:none;flex:1;background:#F7F5F0;border:1.5px solid #E8622A;border-radius:8px;padding:9px 12px;font-size:13px;outline:none">
-        </div>
-      </div>
-      <div class="fg full"><label>Enrolled Courses</label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;min-height:44px">
-          ${courses.length===0
-            ? `<span style="font-size:12px;color:#78716C;align-self:center">No courses yet — create courses first</span>`
-            : courses.map(c=>{
-                const enrolled=(s?.courseIds||[]).includes(c.id);
-                return`<label style="display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid ${enrolled?'#E8622A':'#E7E2D9'};border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${enrolled?'700':'400'};color:${enrolled?'#E8622A':'#18181B'}">
-                  <input type="checkbox" data-cid="${esc(c.id)}" ${enrolled?'checked':''} style="accent-color:#E8622A;cursor:pointer"> ${esc(c.name)}${c.fee?` (${fmt(c.fee)})`:''}
-                </label>`;
-              }).join('')
-          }
-        </div>
-        <div class="hint">Tick courses this student is enrolled in</div>
-      </div>
-      <div class="fg"><label>Admission Date</label><input id="sf-admdate" type="date" value="${s?.admDate||todayStr()}"></div>
-      <div class="fg"><label>Fee Type</label><select id="sf-feetype" onchange="onFeeTypeChange()">
-        <option value="monthly"${(!s?.feeType||s?.feeType==='monthly')?' selected':''}>Monthly</option>
-        <option value="annual"${s?.feeType==='annual'?' selected':''}>Annual</option>
-      </select></div>
-      <div class="fg" id="sf-mwrap" style="${s?.feeType==='annual'?'display:none':''}">
-        <label>Monthly Fees (₹)</label>
-        <input id="sf-monthly" type="number" value="${s?.monthlyFees||''}" placeholder="e.g. 1500" oninput="updateFeePreview()">
-        <div class="hint" id="sf-clshint"></div>
-      </div>
-      <div class="fg" id="sf-awrap" style="${s?.feeType==='annual'?'':'display:none'}">
-        <label>Annual Fees (₹)</label><input id="sf-annual" type="number" value="${s?.annualFees||''}" placeholder="e.g. 15000" oninput="updateFeePreview()">
-      </div>
-      <div class="fg"><label>Discount (₹)</label><input id="sf-discount" type="number" value="${s?.discount||0}" placeholder="0" oninput="updateFeePreview()"></div>
-      <div class="full" id="sf-feepreview"></div>
-      <div class="fg"><label>Address</label><input id="sf-addr" value="${esc(s?.addr||'')}" placeholder="Home address"></div>
-      <div class="fg"><label>Email</label><input id="sf-email" type="email" value="${esc(s?.email||'')}" placeholder="Optional"></div>
-      <div class="fg"><label>Status</label><select id="sf-status">
-        <option value="active"${!s?.inactive?' selected':''}>Active</option>
-        <option value="inactive"${s?.inactive?' selected':''}>Inactive</option>
-      </select></div>
-      <div class="fg"><label>Notes</label><input id="sf-notes" value="${esc(s?.notes||'')}" placeholder="Optional remarks"></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button class="btn btn-ghost" onclick="gotoPage('students')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveStu()">💾 Save Student</button>
-    </div></div>
+    <div class="fg"><label>Admission Date</label><input id="sf-admdate" type="date" value="${s?.admDate||todayStr()}"></div>
+    <div class="fg"><label>Fee Type</label><select id="sf-feetype" onchange="onFeeTypeChange()">
+      <option value="monthly"${(!s?.feeType||s?.feeType==='monthly')?' selected':''}>Monthly</option>
+      <option value="annual"${s?.feeType==='annual'?' selected':''}>Annual</option>
+    </select></div>
+    <div class="fg" id="sf-mwrap" style="${s?.feeType==='annual'?'display:none':''}">
+      <label>Monthly Fees (₹)</label>
+      <input id="sf-monthly" type="number" value="${s?.monthlyFees||''}" placeholder="e.g. 1500" oninput="updateFeePreview()">
+      <div class="hint" id="sf-clshint"></div>
+    </div>
+    <div class="fg" id="sf-awrap" style="${s?.feeType==='annual'?'':'display:none'}">
+      <label>Annual Fees (₹)</label><input id="sf-annual" type="number" value="${s?.annualFees||''}" placeholder="e.g. 15000" oninput="updateFeePreview()">
+    </div>
+    <div class="fg"><label>Discount (₹)</label><input id="sf-discount" type="number" value="${s?.discount||0}" placeholder="0" oninput="updateFeePreview()"></div>
+    <div class="full" id="sf-feepreview"></div>
+    <div class="fg full"><label>Student Photo</label>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="sf-photo-preview" style="width:72px;height:82px;border-radius:10px;border:2px solid var(--border);overflow:hidden;background:#F7F5F0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${s?.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="font-size:26px;font-weight:800;color:#78716C">${s?ini(s.name):'📷'}</div>`}
+        </div>
+        <div>
+          <input type="file" id="sf-photo-input" accept="image/*" style="display:none" onchange="previewStuPhoto(this)">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-photo-input').click()">📷 Upload Photo</button>
+          ${s?.photo?`<button type="button" class="btn btn-ghost btn-sm" style="margin-left:6px;color:#DC2626" onclick="clearStuPhoto()">✕ Remove</button>`:''}
+          <div class="hint" style="margin-top:5px">Shown on ID Card. Auto-compressed.</div>
+        </div>
+      </div>
+      <input type="hidden" id="sf-photo-data" value="${s?.photo||''}">
+    </div>
+    <div class="fg full"><label>Enrolled Courses</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:#F7F5F0;border:1.5px solid var(--border);border-radius:8px;min-height:44px">
+        ${courses.length===0
+          ?`<span style="font-size:12px;color:#78716C;align-self:center">No courses yet</span>`
+          :courses.map(c=>{const enrolled=(s?.courseIds||[]).includes(c.id);return`<label style="display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid ${enrolled?'var(--primary)':'var(--border)'};border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:${enrolled?'700':'400'}">
+            <input type="checkbox" data-cid="${esc(c.id)}" ${enrolled?'checked':''} style="accent-color:var(--primary);cursor:pointer"> ${esc(c.name)}${c.fee?` (${fmt(c.fee)})`:''}
+          </label>`;}).join('')}
+      </div>
+      <div class="hint">Tick courses this student is enrolled in</div>
+    </div>
+    <div class="fg"><label>Address</label><input id="sf-addr" value="${esc(s?.addr||'')}" placeholder="Home address"></div>
+    <div class="fg"><label>Email</label><input id="sf-email" type="email" value="${esc(s?.email||'')}" placeholder="Optional"></div>
+    <div class="fg"><label>Status</label><select id="sf-status">
+      <option value="active"${!s?.inactive?' selected':''}>Active</option>
+      <option value="inactive"${s?.inactive?' selected':''}>Inactive</option>
+    </select></div>
+    <div class="fg"><label>Notes</label><input id="sf-notes" value="${esc(s?.notes||'')}" placeholder="Optional remarks"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeFormModal('student')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveStu()">💾 ${id?'Update Student':'Save Student'}</button>
   </div>`;
+  openModal('modal-student-form');
   prefillClsFee();updateFeePreview();
-  gotoPage('students-form');
 }
 
 function onClsChange(sel){
@@ -1172,6 +1285,37 @@ function getClsValue(){
     return custom.value.trim();
   }
   return sel?.value||'';
+}
+
+function previewStuPhoto(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){toast('Photo too large. Max 5MB.','err');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    // Compress image before storing — max 300x340px, 75% quality
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=300;
+      let w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>340){w=Math.round(w*340/h);h=340;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const data=canvas.toDataURL('image/jpeg',0.75);
+      document.getElementById('sf-photo-data').value=data;
+      const prev=document.getElementById('sf-photo-preview');
+      if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearStuPhoto(){
+  document.getElementById('sf-photo-data').value='';
+  const prev=document.getElementById('sf-photo-preview');
+  if(prev) prev.innerHTML=`<div style="font-size:28px;font-weight:800;color:#78716C">📷</div>`;
 }
 
 function onMediumChange(sel){
@@ -1284,11 +1428,12 @@ function saveStu(){
     inactive:document.getElementById('sf-status').value==='inactive',
     notes:document.getElementById('sf-notes').value||'',
     courseIds:getSelectedCourseIds(),
+    photo:document.getElementById('sf-photo-data')?.value||ex?.photo||'',
     joinDate:ex?.joinDate||todayStr(),
   };
-  if(ex){students=students.map(x=>x.id===ex.id?obj:x);toast('Student updated!');}
-  else{students.push(obj);toast('Student added: '+obj.name);}
-  // Sync course enrollment from courseIds
+  if(ex){students=students.map(x=>x.id===ex.id?obj:x);toast('✅ Student updated!');}
+  else{students.push(obj);toast('✅ Student added: '+obj.name);}
+  // Sync course enrollment
   const sid=obj.id;
   courses=courses.map(c=>{
     const studs=[...(c.students||[])];
@@ -1298,7 +1443,10 @@ function saveStu(){
     if(!inCourse&&idx!==-1) studs.splice(idx,1);
     return{...c,students:studs};
   });
-  persist();gotoPage('students');
+  // Navigate — close modal, refresh student list
+  closeFormModal('student');
+  renderStus();
+  persist();
 }
 
 function delStu(id){
@@ -1430,43 +1578,38 @@ function openBatForm(id){
   const b=id?batches.find(x=>x.id===id):null;
   const selColor=b?.color||BATCH_COLORS[batches.length%BATCH_COLORS.length];
   window._bc=selColor;
-  // Get teachers for dropdown
   const teachers=getUsers().filter(u=>u.role!=='admin');
   const teacherOpts=`<option value="">— No Teacher Assigned —</option>`+teachers.map(t=>`<option value="${esc(t.username)}"${b?.teacher===t.username?' selected':''}>${esc(t.name||t.username)} (${esc(t.role||'Employee')})</option>`).join('');
-  document.getElementById('page-batches-form').innerHTML=`
-  <div style="max-width:600px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
-      <button class="btn btn-ghost btn-sm" onclick="gotoPage('batches')">← Back</button>
-      <h2 style="font-size:18px;font-weight:700">${id?'Edit Batch':'Create New Batch'}</h2>
-    </div>
-    <div class="card"><div class="form-grid">
-      <div class="fg full"><label>Batch Name ★</label><input id="bf-name" value="${esc(b?.name||'')}" placeholder="e.g. Morning Batch A" oninput="updBatPrev()"></div>
-      <div class="fg"><label>Start Time ★</label><input id="bf-st" type="time" value="${b?.startTime||''}" oninput="updBatPrev()"></div>
-      <div class="fg"><label>End Time ★</label><input id="bf-en" type="time" value="${b?.endTime||''}" oninput="updBatPrev()"></div>
-      <div class="fg full"><label>Days of Week ★</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="bf-days">
-          ${DAYS.map(d=>{const on=(b?.days||[]).includes(d);return`<div class="day-btn${on?' on':''}" style="${on?'background:'+selColor+';color:#fff;border-color:'+selColor:''}" onclick="togDay(this,'${d}')">${d}</div>`;}).join('')}
-        </div>
+  document.getElementById('modal-bat-title').textContent=id?'Edit Batch':'Create New Batch';
+  document.getElementById('modal-bat-body').innerHTML=`
+  <div class="form-grid">
+    <div class="fg full"><label>Batch Name ★</label><input id="bf-name" value="${esc(b?.name||'')}" placeholder="e.g. Morning Batch A" oninput="updBatPrev()"></div>
+    <div class="fg"><label>Start Time ★</label><input id="bf-st" type="time" value="${b?.startTime||''}" oninput="updBatPrev()"></div>
+    <div class="fg"><label>End Time ★</label><input id="bf-en" type="time" value="${b?.endTime||''}" oninput="updBatPrev()"></div>
+    <div class="fg full"><label>Days of Week ★</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="bf-days">
+        ${DAYS.map(d=>{const on=(b?.days||[]).includes(d);return`<div class="day-btn${on?' on':''}" style="${on?'background:'+selColor+';color:#fff;border-color:'+selColor:''}" onclick="togDay(this,'${d}')">${d}</div>`;}).join('')}
       </div>
-      <div class="fg"><label>Subject</label><input id="bf-sub" value="${esc(b?.subject||'')}" placeholder="e.g. Mathematics" oninput="updBatPrev()"></div>
-      <div class="fg"><label>Max Students</label><input id="bf-max" type="number" value="${b?.maxStudents||20}"></div>
-      <div class="fg"><label>Assign Teacher</label><select id="bf-teacher">${teacherOpts}</select></div>
-      <div class="fg"><label>Subject Fee (₹/month)</label><input id="bf-fee" type="number" value="${b?.subjectFee||''}" placeholder="e.g. 1500"></div>
-      <div class="fg full"><label>Batch Notes</label><input id="bf-notes" value="${esc(b?.notes||'')}" placeholder="e.g. Focus on board exam preparation"></div>
-      <div class="fg full"><label>Batch Color</label>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center">
-          ${BATCH_COLORS.map(c=>`<div onclick="setBatColor('${c}')" id="bfc${c.slice(1)}" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:${selColor===c?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
-          <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:#78716C">Custom:</span><input type="color" id="bf-cc" value="${selColor}" oninput="setBatColor(this.value)" style="width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;padding:0"></div>
-        </div>
-      </div>
-      <div class="full" id="bf-prev"></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button class="btn btn-ghost" onclick="gotoPage('batches')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveBat()">💾 ${id?'Update Batch':'Create Batch'}</button>
-    </div></div>
+    <div class="fg"><label>Subject</label><input id="bf-sub" value="${esc(b?.subject||'')}" placeholder="e.g. Mathematics" oninput="updBatPrev()"></div>
+    <div class="fg"><label>Max Students</label><input id="bf-max" type="number" value="${b?.maxStudents||20}"></div>
+    <div class="fg"><label>Assign Teacher</label><select id="bf-teacher">${teacherOpts}</select></div>
+    <div class="fg"><label>Subject Fee (₹/month)</label><input id="bf-fee" type="number" value="${b?.subjectFee||''}" placeholder="e.g. 1500"></div>
+    <div class="fg full"><label>Batch Notes</label><input id="bf-notes" value="${esc(b?.notes||'')}" placeholder="e.g. Focus on board exam preparation"></div>
+    <div class="fg full"><label>Batch Color</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center">
+        ${BATCH_COLORS.map(c=>`<div onclick="setBatColor('${c}')" id="bfc${c.slice(1)}" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:${selColor===c?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:#78716C">Custom:</span><input type="color" id="bf-cc" value="${selColor}" oninput="setBatColor(this.value)" style="width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;padding:0"></div>
+      </div>
+    </div>
+    <div class="full" id="bf-prev"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeFormModal('batch')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveBat()">💾 ${id?'Update Batch':'Create Batch'}</button>
   </div>`;
-  updBatPrev();gotoPage('batches-form');
+  openModal('modal-batch-form');
+  updBatPrev();
 }
 
 function togDay(el,d){
@@ -1476,7 +1619,7 @@ function togDay(el,d){
 }
 function setBatColor(c){
   window._bc=c;
-  document.querySelectorAll('#page-batches-form [id^="bfc"]').forEach(el=>{el.style.border='3px solid '+(('#'+el.id.slice(3))===c?'#18181B':'transparent');});
+  document.querySelectorAll('[id^="bfc"]').forEach(el=>{el.style.border='3px solid '+(('#'+el.id.slice(3))===c?'#18181B':'transparent');});
   document.querySelectorAll('#bf-days .day-btn.on').forEach(el=>{el.style.background=c;el.style.borderColor=c;});
   const cc=document.getElementById('bf-cc');if(cc)cc.value=c;
   updBatPrev();
@@ -1506,9 +1649,11 @@ function saveBat(){
     color:window._bc||'#E8622A',
     teacher, subjectFee, notes
   };
-  if(editBatId){batches=batches.map(x=>x.id===editBatId?obj:x);toast('Batch updated!');}
-  else{batches.push(obj);toast('Batch created: '+obj.name);}
-  persist();gotoPage('batches');
+  if(editBatId){batches=batches.map(x=>x.id===editBatId?obj:x);toast('✅ Batch updated!');}
+  else{batches.push(obj);toast('✅ Batch created: '+obj.name);}
+  closeFormModal('batch');
+  renderBats();
+  persist();
 }
 function delBat(id){
   if(!confirm('Delete this batch?'))return;
@@ -2136,20 +2281,28 @@ function applyClsFee(cls){
 
 // ATTENDANCE
 let attState={};
+let attSearch='';
 function renderAtt(){
   document.getElementById('page-attendance').innerHTML=`
   <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end">
     <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Date</div>
-      <input type="date" id="att-date" value="${todayISO()}" onchange="loadAtt()" style="padding:9px 12px;background:#fff;border:1.5px solid #E7E2D9;border-radius:8px;font-size:13px;outline:none;width:160px"></div>
+      <input type="date" id="att-date" value="${todayISO()}" onchange="loadAtt()" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:160px"></div>
     <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Batch</div>
-      <select id="att-bat" onchange="loadAtt()" style="padding:9px 12px;background:#fff;border:1.5px solid #E7E2D9;border-radius:8px;font-size:13px;outline:none;width:190px">
+      <select id="att-bat" onchange="loadAtt()" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:190px;color:var(--text-main)">
         <option value="">All Active Students</option>${batches.map(b=>`<option value="${esc(b.name)}">${esc(b.name)}</option>`).join('')}
       </select></div>
+    <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Search</div>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:0 10px;width:190px">
+        <span style="color:#78716C">🔍</span>
+        <input id="att-search" placeholder="Search student…" oninput="attSearch=this.value.toLowerCase();filterAttGrid()" style="border:none;background:transparent;outline:none;font-size:13px;padding:9px 0;width:100%;color:var(--text-main)">
+      </div>
+    </div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-green btn-sm" onclick="markAll(true)">✓ All Present</button>
       <button class="btn btn-red btn-sm" onclick="markAll(false)">✗ All Absent</button>
-      <button class="btn btn-primary" onclick="saveAtt()">💾 Save</button><button class="btn btn-ghost btn-sm" onclick="printAttReport()">🖨️ Print</button><button class="btn btn-teal btn-sm" onclick="saveAttPDF()">📄 PDF</button>
-      <button class="btn btn-ghost btn-sm" onclick="printAttendance()">🖨️ Print / PDF</button>
+      <button class="btn btn-primary" onclick="saveAtt()">💾 Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="printAttReport()">🖨️ Print</button>
+      <button class="btn btn-teal btn-sm" onclick="saveAttPDF()">📄 PDF</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px">
@@ -2159,24 +2312,45 @@ function renderAtt(){
     <div class="card" style="padding:13px 15px"><div style="font-size:10px;font-weight:700;color:#78716C">RATE</div><div id="att-r" style="font-size:24px;font-weight:800;color:#E8622A">—</div></div>
   </div>
   <div class="att-grid" id="att-grid"></div>`;
+  attSearch='';
   loadAtt();
 }
 function loadAtt(){
   const date=document.getElementById('att-date')?.value||todayISO();
   const batch=document.getElementById('att-bat')?.value||'';
   let list=students.filter(s=>!s.inactive);
-  if(batch)list=list.filter(s=>s.batch===batch);
+  if(batch) list=list.filter(s=>s.batch===batch);
   const key=date+'__'+(batch||'ALL');
-  const saved=attData[key]||{};
-  attState={};list.forEach(s=>{attState[s.id]=s.id in saved?saved[s.id]:false;});
-  renderAttGrid(list);
+  const saved=attData[key];
+
+  attState={};
+  list.forEach(s=>{
+    if(saved && s.id in saved){
+      // Use saved value
+      attState[s.id]=saved[s.id];
+    } else if(!batch){
+      // "All Active Students" view — check if student has saved data in their batch key
+      const batchKey=date+'__'+(s.batch||'');
+      const batchSaved=attData[batchKey];
+      if(batchSaved && s.id in batchSaved){
+        attState[s.id]=batchSaved[s.id];
+      } else {
+        // No saved data at all — default to PRESENT
+        attState[s.id]=true;
+      }
+    } else {
+      // Batch view, no saved data — default to PRESENT
+      attState[s.id]=true;
+    }
+  });
+  filterAttGrid();
 }
 function renderAttGrid(list){
   const grid=document.getElementById('att-grid');if(!grid)return;
-  if(!list||!list.length){grid.innerHTML='<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">👥</div><p>No active students</p></div>';updAttStats();return;}
+  if(!list||!list.length){grid.innerHTML='<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">👥</div><p>No students found</p></div>';updAttStats();return;}
   grid.innerHTML=list.map((s,i)=>{const isP=attState[s.id]!==false;return`
     <div class="att-card ${isP?'present':'absent'}" id="atc-${s.id}" onclick="togAtt('${s.id}')">
-      <div class="av ${avcC(i)}">${ini(s.name)}</div>
+      <div class="av ${avcC(students.indexOf(s))}">${ini(s.name)}</div>
       <div class="att-info"><h4>${esc(s.name)}</h4><p>${esc(s.cls)} · ${esc(s.batch||'No batch')}</p></div>
       <div class="toggle${isP?' on':''}" id="tog-${s.id}"></div>
     </div>`;}).join('');
@@ -2194,17 +2368,43 @@ function updAttStats(){
   const s=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
   s('att-p',p);s('att-a',t-p);s('att-t',t);s('att-r',t?Math.round(p/t*100)+'%':'—');
 }
+function filterAttGrid(){
+  const batch=document.getElementById('att-bat')?.value||'';
+  let list=students.filter(s=>!s.inactive);
+  if(batch) list=list.filter(s=>s.batch===batch);
+  if(attSearch) list=list.filter(s=>(s.name||'').toLowerCase().includes(attSearch)||(s.cls||'').toLowerCase().includes(attSearch));
+  renderAttGrid(list);
+}
 function markAll(v){
   Object.keys(attState).forEach(k=>attState[k]=v);
-  const batch=document.getElementById('att-bat')?.value||'';
-  let list=students.filter(s=>!s.inactive);if(batch)list=list.filter(s=>s.batch===batch);
-  renderAttGrid(list);
+  filterAttGrid();
 }
 function saveAtt(){
   const date=document.getElementById('att-date')?.value||todayISO();
   const batch=document.getElementById('att-bat')?.value||'';
   const key=date+'__'+(batch||'ALL');
-  attData[key]={...attState};persist();toast('Attendance saved!');
+  attData[key]={...attState};
+
+  // If saving "All Active Students" view, also sync each student's batch key
+  if(!batch){
+    // Group students by batch and save to each batch key
+    const byBatch={};
+    Object.keys(attState).forEach(sid=>{
+      const s=students.find(x=>x.id===sid);
+      if(!s)return;
+      const bk=s.batch||'';
+      if(!byBatch[bk])byBatch[bk]={};
+      byBatch[bk][sid]=attState[sid];
+    });
+    Object.entries(byBatch).forEach(([bk,data])=>{
+      const bKey=date+'__'+bk;
+      attData[bKey]={...(attData[bKey]||{}),...data};
+    });
+  }
+
+  persist();
+  toast('✅ Attendance saved!');
+  updAttStats();
 }
 
 
@@ -2215,28 +2415,33 @@ function showIDCard(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
   const inst=localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const addr=localStorage.getItem('tuitionAddress')||'';
-  const logo=localStorage.getItem('tuitionLogo')||BUILTIN_LOGO;
+  const mobile=localStorage.getItem('tuitionMobile')||'';
+  const logo=localStorage.getItem('tuitionLogo')||'';
+  const primary='#1B3154';const gold='#C9A84C';
   document.getElementById('idcard-body').innerHTML=`
-  <div id="id-card-print" style="width:340px;margin:16px auto;border-radius:16px;overflow:hidden;border:2px solid var(--primary);font-family:'Segoe UI',sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.12)">
-    <div style="background:linear-gradient(135deg,var(--sidebar-bg,#1B3154),#243d5c);padding:16px 20px;display:flex;align-items:center;gap:12px">
-      ${logo?`<img src="${logo}" style="height:40px;border-radius:8px;background:#fff;padding:2px">`:''}
-      <div>
-        <div style="font-size:14px;font-weight:900;color:#fff">${esc(inst)}</div>
-        ${addr?`<div style="font-size:10px;color:rgba(255,255,255,.65)">${esc(addr)}</div>`:''}
+  <div id="id-card-print" style="width:300px;margin:12px auto;border-radius:14px;overflow:hidden;border:2px solid ${primary};font-family:'Segoe UI',Arial,sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="background:${primary};padding:14px 16px;text-align:center;position:relative">
+      ${logo?`<img src="${logo}" style="height:34px;border-radius:6px;background:#fff;padding:2px;margin-bottom:6px;display:block;margin-inline:auto">`:''}
+      <div style="font-size:15px;font-weight:900;color:#fff">${esc(inst)}</div>
+      ${addr?`<div style="font-size:9px;color:rgba(255,255,255,.7);margin-top:2px">${esc(addr)}</div>`:''}
+      ${mobile?`<div style="font-size:10px;font-weight:700;color:${gold};margin-top:4px">📞 ${esc(mobile)}</div>`:''}
+      <div style="position:absolute;bottom:-1px;left:0;right:0;height:14px;background:#fff;border-radius:50% 50% 0 0 / 100% 100% 0 0"></div>
+    </div>
+    <div style="background:#fff;padding:14px 16px 6px;text-align:center">
+      <div style="width:88px;height:100px;border-radius:8px;border:3px solid ${primary};overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:#F7F5F0">
+        ${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:`<div style="font-size:30px;font-weight:800;color:${primary}">${ini(s.name)}</div>`}
       </div>
+      <div style="font-size:16px;font-weight:800;color:#18181B;margin-top:8px">${esc(s.name)}</div>
     </div>
-    <div style="background:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px">
-      <div style="width:64px;height:64px;border-radius:50%;background:var(--primary,#E8622A);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;flex-shrink:0">${ini(s.name)}</div>
-      <div>
-        <div style="font-size:16px;font-weight:800;color:#18181B">${esc(s.name)}</div>
-        <div style="font-size:12px;color:#5A6A7E;margin-top:2px">${esc(s.subject||s.batch||'Student')}</div>
-      </div>
+    <div style="background:#fff;padding:0 16px 10px">
+      ${[[s.parent?'Father/Guardian':null,s.parent],[s.mobile?'Contact No.':null,s.mobile],['Class',s.cls+(s.medium?' ('+s.medium+')':'')],[s.batch?'Batch':null,s.batch],[s.roll?'Roll No.':null,s.roll],[s.admDate?'Adm. Date':null,s.admDate],[s.addr?'Address':null,s.addr]].filter(([l])=>l).map(([l,v])=>`<div style="display:flex;border-bottom:1px solid #F0EAE0;padding:4px 0;font-size:10.5px"><span style="color:#5A6A7E;width:88px;flex-shrink:0">${l}</span><span style="font-weight:600;color:#18181B;flex:1">${esc(v)}</span></div>`).join('')}
     </div>
-    <div style="background:#F7F5F0;padding:12px 20px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
-      ${[['Class',s.cls],['Roll No.',s.roll||'—'],['Batch',s.batch||'—'],['Medium',s.medium||'—'],['School',s.school||'—'],['Mobile',s.mobile||'—'],['Guardian',s.parent||'—'],['Adm. Date',s.admDate||'—']].map(([l,v])=>`<div><span style="color:#78716C;font-size:10px;text-transform:uppercase;letter-spacing:.5px">${l}</span><div style="font-weight:700;color:#18181B;margin-top:1px">${esc(v)}</div></div>`).join('')}
+    <div style="background:${primary};padding:8px 16px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:9px;color:rgba(255,255,255,.7)">STUDENT ID · ${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.7)">Principal Sign. ________</div>
     </div>
-    <div style="background:var(--primary,#E8622A);padding:8px 20px;text-align:center;font-size:10px;color:#fff;font-weight:600;letter-spacing:1px">STUDENT IDENTITY CARD · ${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
-  </div>`;
+  </div>
+  ${!s.photo?'<div style=\'text-align:center;margin-top:6px;font-size:11px;color:#78716C\'>💡 Edit student → upload photo for better ID card</div>':''}`;
   openModal('modal-idcard');
 }
 function printIDCard(){
@@ -2368,26 +2573,20 @@ function renderExpenses(){
 function openExpenseForm(id){
   const e=id?expenses.find(x=>x.id===id):null;
   editExpId=id||null;
-  // Make sure page is rendered first
-  if(!document.getElementById('exp-form-wrap')) renderExpenses();
-  const wrap=document.getElementById('exp-form-wrap');
-  if(!wrap)return;
-  wrap.innerHTML=`<div class="card" style="margin-bottom:16px;border:2px solid var(--primary)">
-    <h3 style="font-size:14px;font-weight:700;margin-bottom:14px">${e?'✏️ Edit':'➕ Add'} Expense</h3>
-    <div class="form-grid">
-      <div class="fg"><label>Date ★</label><input type="date" id="ef-date" value="${e?.date||todayISO()}"></div>
-      <div class="fg"><label>Category ★</label><select id="ef-cat">${EXP_CATS.map(c=>`<option${e?.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>Description ★</label><input id="ef-desc" placeholder="e.g. Monthly rent" value="${esc(e?.desc||'')}"></div>
-      <div class="fg"><label>Paid To</label><input id="ef-to" placeholder="Person/company name" value="${esc(e?.paidTo||'')}"></div>
-      <div class="fg"><label>Amount (₹) ★</label><input type="number" id="ef-amt" placeholder="0" value="${e?.amount||''}" autofocus></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-ghost btn-sm" onclick="closeExpenseForm()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="saveExpense()">💾 Save</button>
-    </div>
+  document.getElementById('modal-exp-title').textContent=e?'Edit Expense':'Add Expense';
+  document.getElementById('modal-exp-body').innerHTML=`
+  <div class="form-grid">
+    <div class="fg"><label>Date ★</label><input type="date" id="ef-date" value="${e?.date||todayISO()}"></div>
+    <div class="fg"><label>Category ★</label><select id="ef-cat">${EXP_CATS.map(c=>`<option${e?.category===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="fg"><label>Description ★</label><input id="ef-desc" placeholder="e.g. Monthly rent" value="${esc(e?.desc||'')}"></div>
+    <div class="fg"><label>Paid To</label><input id="ef-to" placeholder="Person/company name" value="${esc(e?.paidTo||'')}"></div>
+    <div class="fg full"><label>Amount (₹) ★</label><input type="number" id="ef-amt" placeholder="0" value="${e?.amount||''}"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeFormModal('expense')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveExpense()">💾 ${e?'Update':'Save'} Expense</button>
   </div>`;
-  // Scroll to form
-  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+  openModal('modal-expense-form');
 }
 
 function closeExpenseForm(){
@@ -2411,14 +2610,12 @@ function saveExpense(){
     expenses.push({id:uid(),date,category,desc,paidTo,amount});
     toast('Expense added!');
   }
-  closeExpenseForm();
+  closeFormModal('expense');
   persist();
   renderExpenses();
 }
 
-function editExpense(id){
-  openExpenseForm(id); // No full re-render needed
-}
+function editExpense(id){ openExpenseForm(id); }
 
 function delExpense(id){
   if(!confirm('Delete this expense?'))return;
@@ -2744,9 +2941,44 @@ function renderSettings(){
 
     (isAdmin() ? '<div class="card" style="margin-bottom:18px"><div id="salary-section"></div></div>' : '') +
 
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">💬 Contact Support</div>' +
+      '<div style="font-size:12px;color:#78716C;margin-bottom:14px">Send a message to ClassCore support team. We respond within 24 hours.</div>' +
+      '<div class="form-grid">' +
+        '<div class="fg"><label>Subject</label><input id="sup-subject" placeholder="e.g. Payment issue, Bug report"></div>' +
+        '<div class="fg full"><label>Message</label><textarea id="sup-msg" rows="3" placeholder="Describe your issue..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;font-family:inherit;background:var(--input-bg);color:var(--text-main)"></textarea></div>' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="sendSupportMessage()">📨 Send to Support</button>' +
+    '</div>' +
+
     '</div>';
   if(isAdmin()) setTimeout(()=>renderSalaries(),50);
 }
+async function sendSupportMessage(){
+  const subject=(document.getElementById('sup-subject')?.value||'').trim();
+  const message=(document.getElementById('sup-msg')?.value||'').trim();
+  if(!message){toast('Write your message first','err');return;}
+  const reg=getRegistration();
+  const users=getUsers();
+  const admin=users.find(u=>u.role==='admin');
+  toast('Sending message...','ok');
+  const result=await sendToSheets('support',{
+    name:reg?.name||admin?.name||'User',
+    email:reg?.email||admin?.email||'',
+    mobile:reg?.mobile||'',
+    institute:localStorage.getItem('tuitionName')||'',
+    subject:subject||'Support Request',
+    message,
+  });
+  if(result?.ok){
+    toast('✅ Message sent! We will reply within 24 hours.');
+    document.getElementById('sup-subject').value='';
+    document.getElementById('sup-msg').value='';
+  } else {
+    toast('Could not send. Email us: coreclass.2025@gmail.com','warn');
+  }
+}
+
 function prevLogo(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
@@ -3111,7 +3343,7 @@ function deleteUser(username){
 
 // ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────
 // Replace this URL with your Google Apps Script Web App URL after setup
-const GSHEET_URL = 'AKfycbxazHXsZ4B67DXx7GdSuqRDDwZ-6LRR0581MqVM5d6ZCUO-1Zj7Mu_jTdimyMC8Jh52';
+const GSHEET_URL = 'https://script.google.com/macros/library/d/1NNJtHeLenk6yXZP2yDKJwcqn6lqieZpHnB9OmdePCeZ_J1Snv_1Gj4L5/2';
 
 // Generate device fingerprint to prevent trial abuse
 async function getDeviceId(){
@@ -3251,11 +3483,20 @@ async function doRegister(){
     }
   }
 
-  setRegMsg('✅ Registered! Check your email for login details.', 'ok');
+  setRegMsg('✅ Registered successfully!', 'ok');
+
+  // Always show credentials on screen (in case email doesn't arrive)
+  const credsBox=document.getElementById('reg-creds-box');
+  if(credsBox){
+    credsBox.style.display='block';
+    document.getElementById('reg-creds-user').textContent=tempUser;
+    document.getElementById('reg-creds-pass').textContent=tempPass;
+  }
+
   setTimeout(()=>{
     document.getElementById('reg-screen').style.display = 'none';
     checkAndShowLicense();
-  }, 1500);
+  }, 4000);
 }
 
 async function doRegWithKey(){
@@ -3689,37 +3930,32 @@ function openCourseForm(id){
   const teacherOpts=`<option value="">— No Teacher —</option>`+teachers.map(t=>`<option value="${esc(t.username)}"${c?.teacher===t.username?' selected':''}>${esc(t.name||t.username)} (${esc(t.role||'')})</option>`).join('');
   const colors=['#E8622A','#2A9D8F','#457B9D','#6D6875','#E9C46A','#264653','#E76F51','#18181B'];
   const selColor=c?.color||'#E8622A';
-  document.getElementById('page-courses-form').innerHTML=`
-  <div style="max-width:580px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px">
-      <button class="btn btn-ghost btn-sm" onclick="gotoPage('courses')">← Back</button>
-      <h2 style="font-size:18px;font-weight:700">${id?'Edit Course':'Create New Course'}</h2>
-    </div>
-    <div class="card"><div class="form-grid">
-      <div class="fg full"><label>Course Name ★</label><input id="cf2-name" value="${esc(c?.name||'')}" placeholder="e.g. Python Programming, Drawing, Yoga"></div>
-      <div class="fg full"><label>Description</label><textarea id="cf2-desc" style="background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;resize:none;height:80px;font-family:inherit">${esc(c?.description||'')}</textarea></div>
-      <div class="fg"><label>Course Fee (₹)</label><input id="cf2-fee" type="number" value="${c?.fee||''}" placeholder="e.g. 5000"></div>
-      <div class="fg"><label>Duration</label><select id="cf2-duration">
-        <option value="">— Select —</option>
-        ${COURSE_DURATIONS.map(d=>`<option value="${d}"${c?.duration===d?' selected':''}>${d}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Start Date</label><input id="cf2-start" type="date" value="${c?.startDate||''}"></div>
-      <div class="fg"><label>Max Students</label><input id="cf2-max" type="number" value="${c?.maxStudents||''}" placeholder="Unlimited"></div>
-      <div class="fg full"><label>Assign Teacher</label><select id="cf2-teacher">${teacherOpts}</select></div>
-      <div class="fg full"><label>Course Color</label>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-          ${colors.map(col=>`<div onclick="document.querySelectorAll('.ccsw').forEach(x=>x.style.border='3px solid transparent');this.style.border='3px solid #18181B';document.getElementById('cf2-color').value='${col}'" class="ccsw" style="width:32px;height:32px;border-radius:50%;background:${col};cursor:pointer;border:${selColor===col?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
-          <input type="hidden" id="cf2-color" value="${selColor}">
-        </div>
+  document.getElementById('modal-crs-title').textContent=id?'Edit Course':'Create New Course';
+  document.getElementById('modal-crs-body').innerHTML=`
+  <div class="form-grid">
+    <div class="fg full"><label>Course Name ★</label><input id="cf2-name" value="${esc(c?.name||'')}" placeholder="e.g. Python Programming, Drawing, Yoga"></div>
+    <div class="fg full"><label>Description</label><textarea id="cf2-desc" style="background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;outline:none;resize:none;height:72px;font-family:inherit;color:var(--text-main)">${esc(c?.description||'')}</textarea></div>
+    <div class="fg"><label>Course Fee (₹)</label><input id="cf2-fee" type="number" value="${c?.fee||''}" placeholder="e.g. 5000"></div>
+    <div class="fg"><label>Duration</label><select id="cf2-duration">
+      <option value="">— Select —</option>
+      ${COURSE_DURATIONS.map(d=>`<option value="${d}"${c?.duration===d?' selected':''}>${d}</option>`).join('')}
+    </select></div>
+    <div class="fg"><label>Start Date</label><input id="cf2-start" type="date" value="${c?.startDate||''}"></div>
+    <div class="fg"><label>Max Students</label><input id="cf2-max" type="number" value="${c?.maxStudents||''}" placeholder="Unlimited"></div>
+    <div class="fg full"><label>Assign Teacher</label><select id="cf2-teacher">${teacherOpts}</select></div>
+    <div class="fg full"><label>Course Color</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+        ${colors.map(col=>`<div onclick="document.querySelectorAll('.ccsw').forEach(x=>x.style.border='3px solid transparent');this.style.border='3px solid #18181B';document.getElementById('cf2-color').value='${col}'" class="ccsw" style="width:32px;height:32px;border-radius:50%;background:${col};cursor:pointer;border:${selColor===col?'3px solid #18181B':'3px solid transparent'};transition:.15s"></div>`).join('')}
+        <input type="hidden" id="cf2-color" value="${selColor}">
       </div>
-      <div class="fg full"><label>Notes</label><input id="cf2-notes" value="${esc(c?.notes||'')}" placeholder="Additional information"></div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button class="btn btn-ghost" onclick="gotoPage('courses')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCourse()">💾 ${id?'Update Course':'Create Course'}</button>
-    </div></div>
+    <div class="fg full"><label>Notes</label><input id="cf2-notes" value="${esc(c?.notes||'')}" placeholder="Additional information"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeFormModal('course')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveCourse()">💾 ${id?'Update Course':'Create Course'}</button>
   </div>`;
-  gotoPage('courses-form');
+  openModal('modal-course-form');
 }
 
 function saveCourse(){
@@ -3737,9 +3973,11 @@ function saveCourse(){
     notes:document.getElementById('cf2-notes').value||'',
     students:editCourseId?courses.find(x=>x.id===editCourseId)?.students||[]:[],
   };
-  if(editCourseId){courses=courses.map(x=>x.id===editCourseId?obj:x);toast('Course updated!');}
-  else{courses.push(obj);toast('Course created: '+obj.name);}
-  persist();gotoPage('courses');
+  if(editCourseId){courses=courses.map(x=>x.id===editCourseId?obj:x);toast('✅ Course updated!');}
+  else{courses.push(obj);toast('✅ Course created: '+obj.name);}
+  closeFormModal('course');
+  renderCourses();
+  persist();
 }
 
 function delCourse(id){

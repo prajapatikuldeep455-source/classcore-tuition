@@ -1,4 +1,4 @@
 {
-  "version": "1.3.3",
-  "notes": "Broadcast Send Queue - one parent at a time with progress tracker"
+  "version": "1.3.9",
+  "notes": "Unified modal system for Student/Batch/Course/Expense forms, attendance global search, smooth animations"
 }
