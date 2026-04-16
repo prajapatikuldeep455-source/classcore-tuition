@@ -1339,7 +1339,8 @@ function getMediumValue(){
 }
 
 function getSelectedCourseIds(){
-  const checks=document.querySelectorAll('#page-students-form input[data-cid]:checked');
+  // Search in modal body (new system) OR old page (fallback)
+  const checks=document.querySelectorAll('#modal-stu-body input[data-cid]:checked, #page-students-form input[data-cid]:checked');
   return [...checks].map(c=>c.getAttribute('data-cid'));
 }
 
@@ -1394,59 +1395,73 @@ function updateFeePreview(){
   }
 }
 
-function saveStu(){
-  const name=(document.getElementById('sf-name').value||'').trim();
+async function saveStu(){
+  const btn=document.querySelector('#modal-stu-body .modal-foot .btn-primary');
+  const name=(document.getElementById('sf-name')?.value||'').trim();
   if(!name){toast('Student name is required','err');return;}
   const cls=getClsValue();
   if(!cls){toast('Please select a class','err');return;}
-  const mobile=(document.getElementById('sf-mobile').value||'').trim();
-  if(mobile && (mobile.length!==10 || !/^\d{10}$/.test(mobile))){toast('Mobile must be exactly 10 digits','err');return;}
-  const ft=document.getElementById('sf-feetype').value||'monthly';
-  const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
-  const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
-  const disc=parseFloat(document.getElementById('sf-discount')?.value||0);
-  // totalFees = gross annual, finalFees = after discount
-  const totalFees=ft==='monthly'?monthly*12:annual;
-  const finalFees=Math.max(0,totalFees-disc);
-  const ex=editStuId?students.find(x=>x.id===editStuId):null;
-  const obj={
-    id:ex?.id||uid(),name,cls,mobile,
-    roll:(document.getElementById('sf-roll').value||'').trim()||('S'+(students.length+1).toString().padStart(3,'0')),
-    batch:document.getElementById('sf-batch').value||'',
-    parent:document.getElementById('sf-parent').value||'',
-    subject:document.getElementById('sf-subject').value||'',
-    school:document.getElementById('sf-school').value||'',
-    medium:getMediumValue(),
-    admDate:document.getElementById('sf-admdate').value||'',
-    feeType:ft,
-    monthlyFees:ft==='monthly'?monthly:Math.round(finalFees/12),
-    annualFees:ft==='annual'?annual:(monthly*12),
-    totalFees, discount:disc, finalFees,
-    paid:ex?.paid||0,history:ex?.history||[],
-    addr:document.getElementById('sf-addr').value||'',
-    email:document.getElementById('sf-email').value||'',
-    inactive:document.getElementById('sf-status').value==='inactive',
-    notes:document.getElementById('sf-notes').value||'',
-    courseIds:getSelectedCourseIds(),
-    photo:document.getElementById('sf-photo-data')?.value||ex?.photo||'',
-    joinDate:ex?.joinDate||todayStr(),
-  };
-  if(ex){students=students.map(x=>x.id===ex.id?obj:x);toast('✅ Student updated!');}
-  else{students.push(obj);toast('✅ Student added: '+obj.name);}
-  // Sync course enrollment
-  const sid=obj.id;
-  courses=courses.map(c=>{
-    const studs=[...(c.students||[])];
-    const inCourse=(obj.courseIds||[]).includes(c.id);
-    const idx=studs.indexOf(sid);
-    if(inCourse&&idx===-1) studs.push(sid);
-    if(!inCourse&&idx!==-1) studs.splice(idx,1);
-    return{...c,students:studs};
-  });
-  // Navigate — close modal, refresh student list
-  closeFormModal('student');
-  renderStus();
-  persist();
+  const mobile=(document.getElementById('sf-mobile')?.value||'').trim();
+  if(mobile&&(mobile.length!==10||!/^\d{10}$/.test(mobile))){toast('Mobile must be exactly 10 digits','err');return;}
+
+  // Show saving state
+  if(btn){btn.textContent='⏳ Saving…';btn.disabled=true;}
+
+  try{
+    const ft=document.getElementById('sf-feetype')?.value||'monthly';
+    const monthly=parseFloat(document.getElementById('sf-monthly')?.value||0);
+    const annual=parseFloat(document.getElementById('sf-annual')?.value||0);
+    const disc=parseFloat(document.getElementById('sf-discount')?.value||0);
+    const totalFees=ft==='monthly'?monthly*12:annual;
+    const finalFees=Math.max(0,totalFees-disc);
+    const ex=editStuId?students.find(x=>x.id===editStuId):null;
+    const obj={
+      id:ex?.id||uid(),name,cls,mobile,
+      roll:(document.getElementById('sf-roll')?.value||'').trim()||('S'+(students.length+1).toString().padStart(3,'0')),
+      batch:document.getElementById('sf-batch')?.value||'',
+      parent:document.getElementById('sf-parent')?.value||'',
+      subject:document.getElementById('sf-subject')?.value||'',
+      school:document.getElementById('sf-school')?.value||'',
+      medium:getMediumValue(),
+      admDate:document.getElementById('sf-admdate')?.value||'',
+      feeType:ft,
+      monthlyFees:ft==='monthly'?monthly:Math.round(finalFees/12),
+      annualFees:ft==='annual'?annual:(monthly*12),
+      totalFees,discount:disc,finalFees,
+      paid:ex?.paid||0,history:ex?.history||[],
+      addr:document.getElementById('sf-addr')?.value||'',
+      email:document.getElementById('sf-email')?.value||'',
+      inactive:document.getElementById('sf-status')?.value==='inactive',
+      notes:document.getElementById('sf-notes')?.value||'',
+      courseIds:getSelectedCourseIds(),
+      photo:document.getElementById('sf-photo-data')?.value||ex?.photo||'',
+      joinDate:ex?.joinDate||todayStr(),
+    };
+    if(ex){students=students.map(x=>x.id===ex.id?obj:x);}
+    else{students.push(obj);}
+    // Sync course enrollment
+    const sid=obj.id;
+    courses=courses.map(c=>{
+      const studs=[...(c.students||[])];
+      const inCourse=(obj.courseIds||[]).includes(c.id);
+      const idx=studs.indexOf(sid);
+      if(inCourse&&idx===-1)studs.push(sid);
+      if(!inCourse&&idx!==-1)studs.splice(idx,1);
+      return{...c,students:studs};
+    });
+
+    // 1. Close modal FIRST — instant UX
+    closeFormModal('student');
+    // 2. Refresh list immediately
+    renderStus();
+    // 3. Save in background
+    await persist();
+    toast(ex?'✅ Student updated!':'✅ Student added: '+obj.name);
+  }catch(err){
+    console.error('saveStu error:',err);
+    toast('Save failed: '+err.message,'err');
+    if(btn){btn.textContent='💾 Save Student';btn.disabled=false;}
+  }
 }
 
 function delStu(id){
@@ -1633,27 +1648,39 @@ function updBatPrev(){
   const c=window._bc||'#E8622A';const el=document.getElementById('bf-prev');if(!el)return;
   el.innerHTML=name||st?`<div style="background:${c};border-radius:12px;padding:16px 20px"><div style="font-size:15px;font-weight:800;color:#fff">${esc(name)||'Preview'}</div><div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:4px">${st&&en?fmt12(st)+' – '+fmt12(en):''}${sub?' · '+esc(sub):''}</div><div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${days.map(d=>`<span style="background:rgba(255,255,255,.2);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px">${d}</span>`).join('')}</div></div>`:'';
 }
-function saveBat(){
-  const name=(document.getElementById('bf-name').value||'').trim();if(!name){toast('Batch name required','err');return;}
-  const st=document.getElementById('bf-st').value;if(!st){toast('Set start time','err');return;}
-  const en=document.getElementById('bf-en').value;if(!en){toast('Set end time','err');return;}
+async function saveBat(){
+  const btn=document.querySelector('#modal-bat-body .modal-foot .btn-primary');
+  const name=(document.getElementById('bf-name')?.value||'').trim();
+  if(!name){toast('Batch name required','err');return;}
+  const st=document.getElementById('bf-st')?.value;
+  if(!st){toast('Set start time','err');return;}
+  const en=document.getElementById('bf-en')?.value;
+  if(!en){toast('Set end time','err');return;}
   const days=[...document.querySelectorAll('#bf-days .day-btn.on')].map(e=>e.textContent);
   if(!days.length){toast('Select at least one day','err');return;}
-  const teacher=document.getElementById('bf-teacher')?.value||'';
-  const subjectFee=parseFloat(document.getElementById('bf-fee')?.value||0)||0;
-  const notes=document.getElementById('bf-notes')?.value||'';
-  const obj={
-    id:editBatId||uid(),name,startTime:st,endTime:en,days,
-    subject:document.getElementById('bf-sub').value||'',
-    maxStudents:parseInt(document.getElementById('bf-max').value)||20,
-    color:window._bc||'#E8622A',
-    teacher, subjectFee, notes
-  };
-  if(editBatId){batches=batches.map(x=>x.id===editBatId?obj:x);toast('✅ Batch updated!');}
-  else{batches.push(obj);toast('✅ Batch created: '+obj.name);}
-  closeFormModal('batch');
-  renderBats();
-  persist();
+
+  if(btn){btn.textContent='⏳ Saving…';btn.disabled=true;}
+  try{
+    const obj={
+      id:editBatId||uid(),name,startTime:st,endTime:en,days,
+      subject:document.getElementById('bf-sub')?.value||'',
+      maxStudents:parseInt(document.getElementById('bf-max')?.value)||20,
+      color:window._bc||'#E8622A',
+      teacher:document.getElementById('bf-teacher')?.value||'',
+      subjectFee:parseFloat(document.getElementById('bf-fee')?.value||0)||0,
+      notes:document.getElementById('bf-notes')?.value||''
+    };
+    if(editBatId){batches=batches.map(x=>x.id===editBatId?obj:x);}
+    else{batches.push(obj);}
+    closeFormModal('batch');
+    renderBats();
+    await persist();
+    toast(editBatId?'✅ Batch updated!':'✅ Batch created: '+obj.name);
+  }catch(err){
+    console.error('saveBat error:',err);
+    toast('Save failed: '+err.message,'err');
+    if(btn){btn.textContent='💾 Save';btn.disabled=false;}
+  }
 }
 function delBat(id){
   if(!confirm('Delete this batch?'))return;
@@ -2595,7 +2622,8 @@ function closeExpenseForm(){
   editExpId=null;
 }
 
-function saveExpense(){
+async function saveExpense(){
+  const btn=document.querySelector('#modal-exp-body .modal-foot .btn-primary');
   const date=document.getElementById('ef-date')?.value||todayISO();
   const category=document.getElementById('ef-cat')?.value||'Other';
   const desc=(document.getElementById('ef-desc')?.value||'').trim();
@@ -2603,16 +2631,24 @@ function saveExpense(){
   const amount=parseFloat(document.getElementById('ef-amt')?.value||0);
   if(!desc){toast('Enter description','err');return;}
   if(!amount||amount<=0){toast('Enter a valid amount','err');return;}
-  if(editExpId){
-    expenses=expenses.map(e=>e.id===editExpId?{...e,date,category,desc,paidTo,amount}:e);
-    toast('Expense updated!');
-  } else {
-    expenses.push({id:uid(),date,category,desc,paidTo,amount});
-    toast('Expense added!');
+
+  if(btn){btn.textContent='⏳ Saving…';btn.disabled=true;}
+  try{
+    if(editExpId){
+      expenses=expenses.map(e=>e.id===editExpId?{...e,date,category,desc,paidTo,amount}:e);
+    } else {
+      expenses.push({id:uid(),date,category,desc,paidTo,amount});
+    }
+    closeFormModal('expense');
+    renderExpenses();
+    await persist();
+    toast(editExpId?'✅ Expense updated!':'✅ Expense added!');
+    editExpId=null;
+  }catch(err){
+    console.error('saveExpense error:',err);
+    toast('Save failed: '+err.message,'err');
+    if(btn){btn.textContent='💾 Save';btn.disabled=false;}
   }
-  closeFormModal('expense');
-  persist();
-  renderExpenses();
 }
 
 function editExpense(id){ openExpenseForm(id); }
@@ -3958,26 +3994,36 @@ function openCourseForm(id){
   openModal('modal-course-form');
 }
 
-function saveCourse(){
-  const name=(document.getElementById('cf2-name').value||'').trim();
+async function saveCourse(){
+  const btn=document.querySelector('#modal-crs-body .modal-foot .btn-primary');
+  const name=(document.getElementById('cf2-name')?.value||'').trim();
   if(!name){toast('Course name required','err');return;}
-  const obj={
-    id:editCourseId||uid(), name,
-    description:document.getElementById('cf2-desc').value||'',
-    fee:parseFloat(document.getElementById('cf2-fee').value||0)||0,
-    duration:document.getElementById('cf2-duration').value||'',
-    startDate:document.getElementById('cf2-start').value||'',
-    maxStudents:parseInt(document.getElementById('cf2-max').value||0)||0,
-    teacher:document.getElementById('cf2-teacher').value||'',
-    color:document.getElementById('cf2-color').value||'#E8622A',
-    notes:document.getElementById('cf2-notes').value||'',
-    students:editCourseId?courses.find(x=>x.id===editCourseId)?.students||[]:[],
-  };
-  if(editCourseId){courses=courses.map(x=>x.id===editCourseId?obj:x);toast('✅ Course updated!');}
-  else{courses.push(obj);toast('✅ Course created: '+obj.name);}
-  closeFormModal('course');
-  renderCourses();
-  persist();
+
+  if(btn){btn.textContent='⏳ Saving…';btn.disabled=true;}
+  try{
+    const obj={
+      id:editCourseId||uid(),name,
+      description:document.getElementById('cf2-desc')?.value||'',
+      fee:parseFloat(document.getElementById('cf2-fee')?.value||0)||0,
+      duration:document.getElementById('cf2-duration')?.value||'',
+      startDate:document.getElementById('cf2-start')?.value||'',
+      maxStudents:parseInt(document.getElementById('cf2-max')?.value||0)||0,
+      teacher:document.getElementById('cf2-teacher')?.value||'',
+      color:document.getElementById('cf2-color')?.value||'#E8622A',
+      notes:document.getElementById('cf2-notes')?.value||'',
+      students:editCourseId?courses.find(x=>x.id===editCourseId)?.students||[]:[],
+    };
+    if(editCourseId){courses=courses.map(x=>x.id===editCourseId?obj:x);}
+    else{courses.push(obj);}
+    closeFormModal('course');
+    renderCourses();
+    await persist();
+    toast(editCourseId?'✅ Course updated!':'✅ Course created: '+obj.name);
+  }catch(err){
+    console.error('saveCourse error:',err);
+    toast('Save failed: '+err.message,'err');
+    if(btn){btn.textContent='💾 Save';btn.disabled=false;}
+  }
 }
 
 function delCourse(id){
