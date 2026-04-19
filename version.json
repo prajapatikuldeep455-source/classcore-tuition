@@ -1,4 +1,4 @@
 {
-  "version": "1.4.0",
-  "notes": "Modal close + auto-refresh fixed for all forms. Saving spinner added. Course ID selector fixed."
+  "version": "1.5.0",
+  "notes": "Reports page added (6-month trend, fee aging, expense breakdown, attendance summary). Dashboard enhanced with 3-month mini-trend, overdue counter, and quick stats grid. Bug fixes: duplicate exportData removed, duplicate dark theme renamed, missing printStudents() and openBroadcastForm() added. Reports nav item added to sidebar."
 }

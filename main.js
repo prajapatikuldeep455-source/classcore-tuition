@@ -1,56 +1,77 @@
-const { app, BrowserWindow, ipcMain, ipcRenderer, dialog } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const https = require('https');
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  ClassCore — main.js  (Electron Main Process)                           ║
+// ║  Place this file at:                                                    ║
+// ║  C:\Users\via\Documents\My Project\ClassCore_Desktop\ClassCore\main.js  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 
-const dataDir = path.join(app.getPath('documents'), 'ClassCore');
-const dataFile = path.join(dataDir, 'classcore_data.json');
-const versionFile = path.join(dataDir, 'version.json');
-const indexFile = path.join(__dirname, 'index.html');
+'use strict';
 
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } = require('electron');
+const { autoUpdater } = require('electron-updater');
+const path   = require('path');
+const fs     = require('fs');
+const os     = require('os');
 
-const GITHUB_USER = 'prajapatikuldeep455-source';
-const GITHUB_REPO = 'classcore-tuition';
-const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/version.json`;
-const INDEX_URL   = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/index.html`;
+// ── 1. PATHS ────────────────────────────────────────────────────────────────
+// Data file: stored in the user's Documents/ClassCore folder so it
+// survives app updates and reinstalls.
+const DATA_DIR  = path.join(os.homedir(), 'Documents', 'ClassCore');
+const DATA_FILE = path.join(DATA_DIR, 'classcore_data.json');
+const META_FILE = path.join(DATA_DIR, 'update_meta.json');  // tracks "just updated"
+const LOG_FILE  = path.join(DATA_DIR, 'classcore.log');
 
-let mainWindow;
-let latestData = null; // keep last known data in memory
+// Ensure the data directory exists
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// ── 2. SIMPLE FILE LOGGER ───────────────────────────────────────────────────
+function log(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try { fs.appendFileSync(LOG_FILE, line); } catch (_) {}
+  console.log(msg);
+}
+
+// ── 3. MAIN WINDOW ──────────────────────────────────────────────────────────
+let mainWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280, height: 800, minWidth: 900, minHeight: 600,
-    title: 'ClassCore Tuition Management',
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
+    width:           1280,
+    height:          800,
+    minWidth:        900,
+    minHeight:       600,
+    icon:            path.join(__dirname, 'assets', 'icon.png'),   // optional
+    title:           'ClassCore — Tuition Management',
     backgroundColor: '#F7F5F0',
-    show: false
+    webPreferences: {
+      preload:          path.join(__dirname, 'preload.js'),
+      contextIsolation: true,    // ← SECURITY: keep enabled
+      nodeIntegration:  false,   // ← SECURITY: keep disabled
+      sandbox:          false,
+    },
   });
-  mainWindow.loadFile('index.html');
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    setTimeout(() => checkForUpdates(), 4000);
+
+  // Load the app
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+  // Send version to renderer as soon as it's ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('app-version', app.getVersion());
+    log(`App loaded — v${app.getVersion()}`);
   });
+
+  // Remove default menu bar (optional — cleaner look)
   mainWindow.setMenuBarVisibility(false);
 
-  // Before window closes → ask renderer to send data, then save synchronously
-  mainWindow.on('close', (e) => {
-    if (latestData) {
-      try {
-        fs.writeFileSync(dataFile, JSON.stringify(latestData, null, 2), 'utf8');
-      } catch(err) {
-        console.error('Final save error:', err);
-      }
-    }
-  });
+  mainWindow.on('closed', () => { mainWindow = null; });
 }
 
+// ── 4. APP LIFECYCLE ────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
+
+  // Check for updates 3 seconds after launch (gives app time to paint)
+  setTimeout(() => setupAutoUpdater(), 3000);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -60,198 +81,289 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ── Data ──────────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  5. AUTO-UPDATER  ← THE CORE UPDATE SYSTEM
+//
+//  electron-updater checks your GitHub Releases page for a file called
+//  latest.yml.  If the version number in that file is higher than the
+//  running app's version, it downloads the new installer automatically.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function setupAutoUpdater() {
+  // ── Config ────────────────────────────────────────────────────────────────
+  autoUpdater.autoDownload    = false;  // Ask user before downloading
+  autoUpdater.autoInstallOnAppQuit = false;  // We control when to install
+
+  // Allow pre-releases if you publish beta builds (set true for beta channel)
+  autoUpdater.allowPrerelease = false;
+
+  // ── Logging ───────────────────────────────────────────────────────────────
+  autoUpdater.logger = { info: log, warn: log, error: log, debug: () => {} };
+
+  // ── Events ────────────────────────────────────────────────────────────────
+
+  // 1. Checking starts
+  autoUpdater.on('checking-for-update', () => {
+    log('Checking for updates...');
+  });
+
+  // 2. NEW VERSION FOUND → tell renderer to show the popup
+  autoUpdater.on('update-available', (info) => {
+    log(`Update available: v${info.version}`);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-available', info.version);
+    }
+  });
+
+  // 3. Already on latest version
+  autoUpdater.on('update-not-available', (info) => {
+    log(`Already up to date: v${info.version}`);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-not-available', info.version);
+    }
+  });
+
+  // 4. DOWNLOAD PROGRESS → send % to renderer for progress bar
+  autoUpdater.on('download-progress', (progress) => {
+    const pct = Math.round(progress.percent);
+    log(`Download progress: ${pct}% (${Math.round(progress.bytesPerSecond / 1024)} KB/s)`);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-progress', pct);
+    }
+  });
+
+  // 5. DOWNLOAD COMPLETE → tell renderer to show "Restart & Install" button
+  autoUpdater.on('update-downloaded', (info) => {
+    log(`Update downloaded: v${info.version}`);
+    // Write a flag so the app knows it just updated (shows success message)
+    try {
+      fs.writeFileSync(META_FILE, JSON.stringify({
+        justUpdated: true,
+        version:     info.version,
+        updatedAt:   new Date().toISOString(),
+      }));
+    } catch (_) {}
+    if (mainWindow) {
+      mainWindow.webContents.send('update-downloaded', info.version);
+    }
+  });
+
+  // 6. ERROR handling
+  autoUpdater.on('error', (err) => {
+    log(`Update error: ${err.message}`);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', err.message);
+    }
+  });
+
+  // ── Start the check ───────────────────────────────────────────────────────
+  try {
+    autoUpdater.checkForUpdates();
+  } catch (err) {
+    log(`checkForUpdates failed: ${err.message}`);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  6. IPC HANDLERS  — these are the bridge between index.html and main.js
+//     index.html calls:  window.classcore.someMethod()
+//     preload.js exposes: ipcRenderer.invoke('channel-name', args)
+//     main.js handles:   ipcMain.handle('channel-name', handler)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── App version ───────────────────────────────────────────────────────────
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+// ── Data path (shown in Settings) ────────────────────────────────────────
+ipcMain.handle('get-data-path', () => DATA_FILE);
+
+// ── Update meta (was app just updated?) ──────────────────────────────────
+ipcMain.handle('get-update-meta', () => {
+  try {
+    if (!fs.existsSync(META_FILE)) return null;
+    const meta = JSON.parse(fs.readFileSync(META_FILE, 'utf8'));
+    // Delete the flag so it only shows once
+    fs.unlinkSync(META_FILE);
+    return meta;
+  } catch (_) { return null; }
+});
+
+// ── LOAD DATA ────────────────────────────────────────────────────────────
 ipcMain.handle('load-data', () => {
   try {
-    if (fs.existsSync(dataFile)) {
-      const d = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-      latestData = d; // cache it
-      return d;
-    }
+    if (!fs.existsSync(DATA_FILE)) return null;
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch (err) {
+    log(`loadData error: ${err.message}`);
     return null;
-  } catch(e) { return null; }
+  }
 });
 
-// Async save (called after every change)
-ipcMain.handle('save-data', (e, data) => {
+// ── SAVE DATA (async) ─────────────────────────────────────────────────────
+ipcMain.handle('save-data', (event, payload) => {
   try {
-    latestData = data; // always update memory cache
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), 'utf8');
+    fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
     return { ok: true };
-  } catch(e) {
-    console.error('Save error:', e);
-    return { ok: false, error: e.message };
+  } catch (err) {
+    log(`saveData error: ${err.message}`);
+    return { ok: false, error: err.message };
   }
 });
 
-// Synchronous save (called from sendSync on close)
-ipcMain.on('save-data-sync', (e, data) => {
+// ── SAVE DATA SYNC (called on window close) ───────────────────────────────
+// Note: ipcMain.on (not handle) because renderer uses sendSync
+ipcMain.on('save-data-sync', (event, payload) => {
   try {
-    latestData = data;
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), 'utf8');
-    e.returnValue = true;
-  } catch(err) {
-    console.error('Sync save error:', err);
-    e.returnValue = false;
+    fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
+    event.returnValue = { ok: true };
+  } catch (err) {
+    log(`saveDataSync error: ${err.message}`);
+    event.returnValue = { ok: false, error: err.message };
   }
 });
 
-ipcMain.handle('get-data-path', () => dataFile);
-
-// ── Backup ────────────────────────────────────────────────────────────────
-ipcMain.handle('export-backup', async (e, data) => {
-  const { filePath } = await dialog.showSaveDialog({
-    title: 'Export ClassCore Backup',
-    defaultPath: `ClassCore_Backup_${new Date().toISOString().slice(0,10)}.json`,
-    filters: [{ name: 'JSON Backup', extensions: ['json'] }]
-  });
-  if (!filePath) return { ok: false };
-  try { fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8'); return { ok: true }; }
-  catch(e) { return { ok: false, error: e.message }; }
-});
-
-ipcMain.handle('import-backup', async () => {
-  const { filePaths } = await dialog.showOpenDialog({
-    title: 'Import ClassCore Backup',
-    filters: [{ name: 'JSON Backup', extensions: ['json'] }],
-    properties: ['openFile']
-  });
-  if (!filePaths || !filePaths[0]) return { ok: false };
-  try { return { ok: true, data: JSON.parse(fs.readFileSync(filePaths[0], 'utf8')) }; }
-  catch(e) { return { ok: false, error: 'Invalid backup file' }; }
-});
-
-// ── Auto Update ───────────────────────────────────────────────────────────
-function fetchURL(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'Cache-Control': 'no-cache', 'User-Agent': 'ClassCore-App' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) return fetchURL(res.headers.location).then(resolve).catch(reject);
-      if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode));
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
-  });
-}
-
-function getCurrentVersion() {
+// ── CHECK FOR UPDATE (manual, from Settings button) ───────────────────────
+ipcMain.handle('check-update', () => {
   try {
-    if (fs.existsSync(versionFile)) return JSON.parse(fs.readFileSync(versionFile, 'utf8')).version || '1.0.0';
-  } catch(e) {}
-  return '1.0.0';
-}
-
-async function checkForUpdates() {
-  try {
-    const raw = await fetchURL(VERSION_URL);
-    const remote = JSON.parse(raw);
-    const current = getCurrentVersion();
-    if (remote.version && remote.version !== current) {
-      mainWindow.webContents.send('update-available', remote.version, remote.notes || '');
-    }
-  } catch(e) { console.log('Update check failed:', e.message); }
-}
-
-ipcMain.handle('check-update', async () => { await checkForUpdates(); return { ok: true }; });
-
-ipcMain.handle('download-update', async (e, currentData) => {
-  try {
-    // STEP 1: Save current data to main file (make sure nothing is lost)
-    mainWindow.webContents.send('update-progress', 5);
-    if (currentData) {
-      fs.writeFileSync(dataFile, JSON.stringify(currentData, null, 2), 'utf8');
-    } else if (latestData) {
-      fs.writeFileSync(dataFile, JSON.stringify(latestData, null, 2), 'utf8');
-    }
-
-    // STEP 2: Create a backup copy before update
-    const backupFile = path.join(dataDir, `backup_before_update_${Date.now()}.json`);
-    if (fs.existsSync(dataFile)) {
-      fs.copyFileSync(dataFile, backupFile);
-    }
-    mainWindow.webContents.send('update-progress', 15);
-
-    // STEP 3: Download new index.html from GitHub
-    const newIndex = await fetchURL(INDEX_URL);
-    mainWindow.webContents.send('update-progress', 60);
-
-    // STEP 4: Download new version.json
-    const newVersion = await fetchURL(VERSION_URL);
-    mainWindow.webContents.send('update-progress', 85);
-
-    // STEP 5: Write new files
-    fs.writeFileSync(indexFile, newIndex, 'utf8');
-    fs.writeFileSync(versionFile, newVersion, 'utf8');
-
-    // STEP 6: Mark that we just updated (so app shows "updated" message on restart)
-    const updateMeta = { justUpdated: true, version: JSON.parse(newVersion).version, timestamp: new Date().toISOString() };
-    fs.writeFileSync(path.join(dataDir, 'update_meta.json'), JSON.stringify(updateMeta), 'utf8');
-
-    mainWindow.webContents.send('update-progress', 100);
-    mainWindow.webContents.send('update-downloaded');
+    autoUpdater.checkForUpdates();
     return { ok: true };
-  } catch(e) {
-    console.error('Update download error:', e);
-    return { ok: false, error: e.message };
+  } catch (err) {
+    return { ok: false, error: err.message };
   }
 });
 
+// ── DOWNLOAD UPDATE (user clicked "Update Now") ───────────────────────────
+ipcMain.handle('download-update', async (event, payload) => {
+  // 1. Save current data BEFORE downloading (data safety)
+  if (payload) {
+    try {
+      fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
+      log('Data saved before update download.');
+    } catch (err) {
+      log(`Pre-update save error: ${err.message}`);
+    }
+  }
+  // 2. Start download
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    log(`downloadUpdate error: ${err.message}`);
+    return { ok: false, error: err.message };
+  }
+});
+
+// ── INSTALL UPDATE (user clicked "Restart & Install") ────────────────────
 ipcMain.handle('install-update', () => {
-  // Final data save before restart
-  if (latestData) {
-    try { fs.writeFileSync(dataFile, JSON.stringify(latestData, null, 2), 'utf8'); } catch(e) {}
-  }
-  app.relaunch();
-  app.exit(0);
+  autoUpdater.quitAndInstall(false, true);
 });
 
-ipcMain.handle('get-app-version', () => getCurrentVersion());
-
-// Check if we just updated and return meta info
-ipcMain.handle('get-update-meta', () => {
-  const metaFile = path.join(dataDir, 'update_meta.json');
+// ── EXPORT BACKUP ────────────────────────────────────────────────────────
+ipcMain.handle('export-backup', async (event, data) => {
+  const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+    title:       'Export ClassCore Backup',
+    defaultPath: path.join(os.homedir(), 'Desktop', `ClassCore_Backup_${_dateStr()}.json`),
+    filters:     [{ name: 'JSON Backup', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { ok: false };
   try {
-    if (fs.existsSync(metaFile)) {
-      const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
-      fs.unlinkSync(metaFile); // delete so it only shows once
-      return meta;
-    }
-  } catch(e) {}
-  return null;
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    return { ok: true, filePath };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
-// ── Print ─────────────────────────────────────────────────────────────────
-ipcMain.handle('print-content', async (e, html) => {
-  return new Promise((resolve) => {
-    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
-    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-    win.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
-        win.webContents.print({ silent: false, printBackground: true }, (success, err) => {
-          win.close(); resolve({ ok: success, error: err });
-        });
-      }, 500);
-    });
+// ── IMPORT BACKUP ────────────────────────────────────────────────────────
+ipcMain.handle('import-backup', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
+    title:      'Import ClassCore Backup',
+    filters:    [{ name: 'JSON Backup', extensions: ['json'] }],
+    properties: ['openFile'],
   });
+  if (canceled || !filePaths.length) return { ok: false };
+  try {
+    const raw  = fs.readFileSync(filePaths[0], 'utf8');
+    const data = JSON.parse(raw);
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
-// ── PDF ───────────────────────────────────────────────────────────────────
-ipcMain.handle('save-pdf', async (e, html, defaultName) => {
-  const { filePath } = await dialog.showSaveDialog({
-    title: 'Save as PDF',
-    defaultPath: (defaultName || 'ClassCore_Export') + '.pdf',
-    filters: [{ name: 'PDF File', extensions: ['pdf'] }]
+// ── PRINT ────────────────────────────────────────────────────────────────
+ipcMain.handle('print-content', async (event, html, paperSize) => {
+  const win = new BrowserWindow({
+    show:            false,
+    webPreferences:  { nodeIntegration: false, contextIsolation: true },
   });
-  if (!filePath) return { ok: false };
-  return new Promise((resolve) => {
-    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
-    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
-    win.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
-        win.webContents.printToPDF({ printBackground: true, pageSize: 'A4', margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 } })
-          .then(data => { fs.writeFileSync(filePath, data); win.close(); resolve({ ok: true }); })
-          .catch(err => { win.close(); resolve({ ok: false, error: err.message }); });
-      }, 500);
+  win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  await new Promise(res => win.webContents.once('did-finish-load', res));
+  try {
+    await win.webContents.print({
+      silent:          false,
+      printBackground: true,
+      pageSize:        paperSize || 'A4',
     });
-  });
+    win.close();
+    return { ok: true };
+  } catch (err) {
+    win.close();
+    return { ok: false, error: err.message };
+  }
 });
+
+// ── SAVE PDF ────────────────────────────────────────────────────────────
+ipcMain.handle('save-pdf', async (event, html, filename, paperSize) => {
+  const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+    title:       'Save PDF',
+    defaultPath: path.join(os.homedir(), 'Desktop', (filename || 'ClassCore') + '.pdf'),
+    filters:     [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+  if (canceled || !filePath) return { ok: false };
+  return _generatePDF(html, filePath, paperSize);
+});
+
+// ── SAVE PDF SILENTLY (no dialog — for WhatsApp share) ────────────────
+ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize) => {
+  const filePath = path.join(os.homedir(), 'Documents', 'ClassCore', 'Receipts',
+                             (filename || 'Receipt') + '.pdf');
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const result = await _generatePDF(html, filePath, paperSize);
+  if (result.ok) shell.showItemInFolder(filePath);
+  return result;
+});
+
+// ── PDF HELPER ────────────────────────────────────────────────────────
+async function _generatePDF(html, filePath, paperSize) {
+  const win = new BrowserWindow({
+    show:           false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
+  win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  await new Promise(res => win.webContents.once('did-finish-load', res));
+  try {
+    const sizeMap = { A4:'A4', A5:'A5', A6:'A6', A7:[74,105] };
+    const pdfSize = sizeMap[paperSize] || 'A4';
+    const pdfOpts = typeof pdfSize === 'string'
+      ? { pageSize: pdfSize, printBackground: true, marginsType: 1 }
+      : { pageSize: { width: pdfSize[0]*1000, height: pdfSize[1]*1000 }, printBackground: true, marginsType: 1 };
+    const pdfData = await win.webContents.printToPDF(pdfOpts);
+    fs.writeFileSync(filePath, pdfData);
+    win.close();
+    return { ok: true, filePath };
+  } catch (err) {
+    win.close();
+    log(`PDF error: ${err.message}`);
+    return { ok: false, error: err.message };
+  }
+}
+
+// ── DATE STRING HELPER ────────────────────────────────────────────────
+function _dateStr() {
+  return new Date().toISOString().slice(0, 10);
+}

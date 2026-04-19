@@ -459,24 +459,85 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   <div class="modal-box" style="width:560px"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
 </div>
 
-<!-- Auto Update Banner -->
-<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:12px 24px;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
+<!-- ═══════════════════════════════════════════════════════════════
+     UPDATE MODAL — Professional popup shown when update is found
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:20px;padding:0;width:420px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden;animation:modalIn .25s cubic-bezier(.34,1.56,.64,1)">
+
+    <!-- Header gradient -->
+    <div style="background:linear-gradient(135deg,#18181B 0%,#2d2d40 100%);padding:28px 28px 24px;text-align:center;position:relative">
+      <div style="font-size:48px;margin-bottom:8px">🚀</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">New Version Available!</div>
+      <div id="upd-version-badge" style="display:inline-block;background:rgba(232,98,42,.9);color:#fff;font-size:12px;font-weight:700;padding:3px 14px;border-radius:20px;letter-spacing:.5px">v—</div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:22px 28px">
+
+      <!-- What's new section -->
+      <div style="background:#F7F5F0;border-radius:12px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">What's New</div>
+        <div id="upd-notes" style="font-size:12.5px;color:#18181B;line-height:1.6">Bug fixes and performance improvements.</div>
+      </div>
+
+      <!-- Data safety badge -->
+      <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🔒</span>
+        <div style="font-size:12px;color:#16A34A;font-weight:600">Your student data is saved automatically before the update starts — no data will be lost.</div>
+      </div>
+
+      <!-- Progress section (hidden until download starts) -->
+      <div id="upd-progress-section" style="display:none;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;font-weight:600">
+          <span id="upd-progress-label" style="color:#18181B">Downloading update…</span>
+          <span id="upd-pct-label" style="color:var(--primary)">0%</span>
+        </div>
+        <div style="height:8px;background:#E7E2D9;border-radius:10px;overflow:hidden">
+          <div id="upd-progress-fill" style="height:100%;background:linear-gradient(90deg,#E8622A,#CF5522);border-radius:10px;width:0%;transition:width .3s"></div>
+        </div>
+        <div id="upd-speed" style="font-size:10px;color:#78716C;margin-top:4px"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:10px">
+        <button id="upd-later-btn" onclick="updLater()"
+          style="flex:1;background:transparent;border:1.5px solid #E7E2D9;border-radius:10px;padding:11px;font-size:13px;font-weight:600;color:#78716C;cursor:pointer;font-family:inherit;transition:.15s"
+          onmouseover="this.style.background='#F7F5F0'" onmouseout="this.style.background='transparent'">
+          Later
+        </button>
+        <button id="upd-action-btn" onclick="updStart()"
+          style="flex:2;background:linear-gradient(135deg,#18181B,#2d2d40);border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s"
+          onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
+          <span>⬇️</span> Update Now
+        </button>
+      </div>
+
+      <div style="text-align:center;margin-top:10px;font-size:10px;color:#A0A0A0">
+        The app will restart automatically after the update installs.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slim top banner — shown during download/install (replaces old banner) -->
+<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:10px 24px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)">
   <div style="display:flex;align-items:center;gap:10px">
-    <span style="font-size:20px">🚀</span>
+    <span style="font-size:18px">🚀</span>
     <div>
-      <div id="update-title" style="font-size:13px;font-weight:700">New update available!</div>
-      <div id="update-sub" style="font-size:11px;color:rgba(255,255,255,.6)">ClassCore has a new version ready</div>
+      <div id="update-title" style="font-size:12px;font-weight:700">Downloading update…</div>
+      <div id="update-sub" style="font-size:10px;color:rgba(255,255,255,.6)">Please wait</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div id="update-progress-wrap" style="display:none;align-items:center;gap:8px">
-      <div style="width:140px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
+      <div style="width:140px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
         <div id="update-progress-bar" style="height:100%;background:#E8622A;border-radius:3px;width:0%;transition:width .3s"></div>
       </div>
       <span id="update-pct" style="font-size:11px;color:rgba(255,255,255,.7)">0%</span>
     </div>
-    <button id="update-btn" class="btn btn-primary btn-sm" onclick="doUpdate()">⬇️ Update Now</button>
-    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="document.getElementById('update-banner').style.display='none'">Later</button>
+    <button id="update-btn" class="btn btn-primary btn-sm" onclick="doUpdate()" style="display:none">⬇️ Update Now</button>
+    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="hideUpdateBanner()">Later</button>
   </div>
 </div>
 
@@ -3872,47 +3933,169 @@ function buyPlan(){
 // ── END LICENSE SYSTEM ─────────────────────────────────────────────────────
 
 
-function showUpdateBanner(msg, sub){
-  const b=document.getElementById('update-banner');
-  document.getElementById('update-title').textContent=msg;
-  document.getElementById('update-sub').textContent=sub||'';
-  b.style.display='flex';
-  // Push content down so banner doesn't cover topbar
-  document.getElementById('app').style.paddingTop='52px';
+// ═══════════════════════════════════════════════════════════════════
+// UPDATE SYSTEM — Professional modal + progress
+// ═══════════════════════════════════════════════════════════════════
+
+let _updateVersion = '';
+
+/** Show the professional update popup */
+function showUpdateModal(version, notes) {
+  _updateVersion = version || '';
+  const modal = document.getElementById('update-modal');
+  if (!modal) return;
+  // Set version badge
+  const badge = document.getElementById('upd-version-badge');
+  if (badge) badge.textContent = 'v' + version;
+  // Set release notes if available
+  const notesEl = document.getElementById('upd-notes');
+  if (notesEl && notes) notesEl.textContent = notes;
+  modal.style.display = 'flex';
 }
-function hideUpdateBanner(){
-  document.getElementById('update-banner').style.display='none';
-  document.getElementById('app').style.paddingTop='';
+
+/** User clicked "Later" */
+function updLater() {
+  document.getElementById('update-modal').style.display = 'none';
 }
-async function doUpdate(){
-  document.getElementById('update-btn').style.display='none';
-  document.getElementById('update-progress-wrap').style.display='flex';
-  document.getElementById('update-title').textContent='Saving your data...';
-  // Pass current data so it gets saved BEFORE update
+
+/** User clicked "Update Now" — save data then start download */
+async function updStart() {
+  const btn   = document.getElementById('upd-action-btn');
+  const later = document.getElementById('upd-later-btn');
+  const prog  = document.getElementById('upd-progress-section');
+
+  // Disable buttons, show progress
+  btn.disabled   = true;
+  later.disabled = true;
+  later.style.opacity = '.4';
+  btn.innerHTML  = '⏳ Saving data…';
+  prog.style.display = 'block';
+
+  // Also show the slim banner (visible if modal is dismissed)
+  showUpdateBanner('⬇️ Downloading v' + _updateVersion + '…', 'Do not close the app');
+
+  // Hand off to doUpdate() which calls window.classcore.downloadUpdate()
+  await doUpdate();
+}
+
+/** Called by "Update Now" button on the slim banner too */
+async function doUpdate() {
+  const btn = document.getElementById('update-btn');
+  if (btn) btn.style.display = 'none';
+  document.getElementById('update-progress-wrap').style.display = 'flex';
+  document.getElementById('update-title').textContent = 'Saving your data…';
+
+  // Pass current data payload → main.js saves it BEFORE downloading
   const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayload() : null);
-  if(!r.ok){
-    toast('Update failed: '+(r.error||'unknown error'),'err');
-    document.getElementById('update-btn').style.display='flex';
-    document.getElementById('update-progress-wrap').style.display='none';
+
+  if (!r.ok) {
+    toast('Update failed: ' + (r.error || 'unknown error'), 'err');
+    // Re-enable buttons
+    const ab = document.getElementById('upd-action-btn');
+    const lb = document.getElementById('upd-later-btn');
+    if (ab) { ab.disabled = false; ab.innerHTML = '⬇️ Update Now'; }
+    if (lb) { lb.disabled = false; lb.style.opacity = '1'; }
+    if (btn) btn.style.display = 'flex';
+    document.getElementById('update-progress-wrap').style.display = 'none';
   }
 }
-if(IS_ELECTRON()){
-  window.classcore.onUpdateAvailable(version=>{
-    showUpdateBanner('🚀 New version v'+version+' available!','Click "Update Now" to download and install automatically');
+
+function showUpdateBanner(msg, sub) {
+  const b = document.getElementById('update-banner');
+  if (!b) return;
+  document.getElementById('update-title').textContent = msg;
+  document.getElementById('update-sub').textContent   = sub || '';
+  b.style.display = 'flex';
+  document.getElementById('app').style.paddingTop = '48px';
+}
+
+function hideUpdateBanner() {
+  const b = document.getElementById('update-banner');
+  if (b) b.style.display = 'none';
+  document.getElementById('app').style.paddingTop = '';
+}
+
+// Wire up IPC events from main.js
+if (IS_ELECTRON()) {
+
+  // ── Update found → show modal ─────────────────────────────────────
+  window.classcore.onUpdateAvailable(version => {
+    showUpdateModal(version);
   });
-  window.classcore.onUpdateProgress(pct=>{
-    document.getElementById('update-progress-bar').style.width=pct+'%';
-    document.getElementById('update-pct').textContent=pct+'%';
-    document.getElementById('update-title').textContent='Downloading... '+pct+'%';
+
+  // ── Download progress → update both modal and banner bars ─────────
+  window.classcore.onUpdateProgress(pct => {
+    // Modal progress
+    const fill  = document.getElementById('upd-progress-fill');
+    const pctLb = document.getElementById('upd-pct-label');
+    const label = document.getElementById('upd-progress-label');
+    const actBtn= document.getElementById('upd-action-btn');
+    if (fill)  fill.style.width  = pct + '%';
+    if (pctLb) pctLb.textContent = pct + '%';
+    if (label) label.textContent = pct < 100 ? 'Downloading update…' : 'Finalising…';
+    if (actBtn) actBtn.innerHTML = '⬇️ ' + pct + '% downloaded…';
+
+    // Slim banner progress
+    const bar   = document.getElementById('update-progress-bar');
+    const bPct  = document.getElementById('update-pct');
+    const title = document.getElementById('update-title');
+    if (bar)   bar.style.width     = pct + '%';
+    if (bPct)  bPct.textContent    = pct + '%';
+    if (title) title.textContent   = 'Downloading… ' + pct + '%';
   });
-  window.classcore.onUpdateDownloaded(()=>{
-    document.getElementById('update-progress-wrap').style.display='none';
-    document.getElementById('update-title').textContent='✅ Update ready to install!';
-    document.getElementById('update-sub').textContent='App will restart to apply the update';
-    const btn=document.getElementById('update-btn');
-    btn.textContent='🔄 Restart & Install';
-    btn.style.display='flex';
-    btn.onclick=()=>window.classcore.installUpdate();
+
+  // ── Download complete → show "Restart & Install" ──────────────────
+  window.classcore.onUpdateDownloaded(version => {
+    // Update the modal to show restart button
+    const modal   = document.getElementById('update-modal');
+    const prog    = document.getElementById('upd-progress-section');
+    const pctLb   = document.getElementById('upd-pct-label');
+    const label   = document.getElementById('upd-progress-label');
+    const fill    = document.getElementById('upd-progress-fill');
+    const actBtn  = document.getElementById('upd-action-btn');
+    const laterBtn= document.getElementById('upd-later-btn');
+    const notes   = document.getElementById('upd-notes');
+
+    if (fill)    { fill.style.width = '100%'; fill.style.background = '#16A34A'; }
+    if (pctLb)   pctLb.textContent  = '100%';
+    if (label)   label.textContent  = '✅ Download complete!';
+    if (notes)   notes.textContent  = 'The update is ready. Click "Restart & Install" to apply it now. Your data is safe.';
+    if (laterBtn){ laterBtn.textContent = 'Later'; laterBtn.disabled = false; laterBtn.style.opacity='1'; }
+    if (actBtn)  {
+      actBtn.innerHTML  = '🔄 Restart & Install';
+      actBtn.disabled   = false;
+      actBtn.style.background = 'linear-gradient(135deg,#16A34A,#15803D)';
+      actBtn.onclick    = () => window.classcore.installUpdate();
+    }
+    if (modal) modal.style.display = 'flex';  // Re-show if dismissed
+
+    // Update slim banner too
+    document.getElementById('update-progress-wrap').style.display = 'none';
+    const title = document.getElementById('update-title');
+    const sub   = document.getElementById('update-sub');
+    const btn   = document.getElementById('update-btn');
+    if (title) title.textContent = '✅ Update ready — v' + (version || '');
+    if (sub)   sub.textContent   = 'App will restart to apply the update';
+    if (btn)   {
+      btn.textContent = '🔄 Restart & Install';
+      btn.style.display = 'flex';
+      btn.onclick = () => window.classcore.installUpdate();
+    }
+    showUpdateBanner('✅ Update ready!', 'Click Restart & Install to apply');
+  });
+
+  // ── Manual check result — "no update" ─────────────────────────────
+  window.classcore.onUpdateNotAvailable && window.classcore.onUpdateNotAvailable(version => {
+    toast('✅ ClassCore is up to date (v' + version + ')');
+  });
+
+  // ── Update error ──────────────────────────────────────────────────
+  window.classcore.onUpdateError && window.classcore.onUpdateError(msg => {
+    if (msg && msg.includes('net::')) {
+      toast('⚠️ No internet — cannot check for updates', 'warn');
+    } else {
+      console.warn('Update error:', msg);
+    }
   });
 }
 
