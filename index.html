@@ -459,85 +459,24 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   <div class="modal-box" style="width:560px"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     UPDATE MODAL — Professional popup shown when update is found
-     ═══════════════════════════════════════════════════════════════ -->
-<div id="update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:#fff;border-radius:20px;padding:0;width:420px;max-width:95vw;box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden;animation:modalIn .25s cubic-bezier(.34,1.56,.64,1)">
-
-    <!-- Header gradient -->
-    <div style="background:linear-gradient(135deg,#18181B 0%,#2d2d40 100%);padding:28px 28px 24px;text-align:center;position:relative">
-      <div style="font-size:48px;margin-bottom:8px">🚀</div>
-      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">New Version Available!</div>
-      <div id="upd-version-badge" style="display:inline-block;background:rgba(232,98,42,.9);color:#fff;font-size:12px;font-weight:700;padding:3px 14px;border-radius:20px;letter-spacing:.5px">v—</div>
-    </div>
-
-    <!-- Body -->
-    <div style="padding:22px 28px">
-
-      <!-- What's new section -->
-      <div style="background:#F7F5F0;border-radius:12px;padding:14px 16px;margin-bottom:18px">
-        <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">What's New</div>
-        <div id="upd-notes" style="font-size:12.5px;color:#18181B;line-height:1.6">Bug fixes and performance improvements.</div>
-      </div>
-
-      <!-- Data safety badge -->
-      <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">🔒</span>
-        <div style="font-size:12px;color:#16A34A;font-weight:600">Your student data is saved automatically before the update starts — no data will be lost.</div>
-      </div>
-
-      <!-- Progress section (hidden until download starts) -->
-      <div id="upd-progress-section" style="display:none;margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;font-weight:600">
-          <span id="upd-progress-label" style="color:#18181B">Downloading update…</span>
-          <span id="upd-pct-label" style="color:var(--primary)">0%</span>
-        </div>
-        <div style="height:8px;background:#E7E2D9;border-radius:10px;overflow:hidden">
-          <div id="upd-progress-fill" style="height:100%;background:linear-gradient(90deg,#E8622A,#CF5522);border-radius:10px;width:0%;transition:width .3s"></div>
-        </div>
-        <div id="upd-speed" style="font-size:10px;color:#78716C;margin-top:4px"></div>
-      </div>
-
-      <!-- Action buttons -->
-      <div style="display:flex;gap:10px">
-        <button id="upd-later-btn" onclick="updLater()"
-          style="flex:1;background:transparent;border:1.5px solid #E7E2D9;border-radius:10px;padding:11px;font-size:13px;font-weight:600;color:#78716C;cursor:pointer;font-family:inherit;transition:.15s"
-          onmouseover="this.style.background='#F7F5F0'" onmouseout="this.style.background='transparent'">
-          Later
-        </button>
-        <button id="upd-action-btn" onclick="updStart()"
-          style="flex:2;background:linear-gradient(135deg,#18181B,#2d2d40);border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s"
-          onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
-          <span>⬇️</span> Update Now
-        </button>
-      </div>
-
-      <div style="text-align:center;margin-top:10px;font-size:10px;color:#A0A0A0">
-        The app will restart automatically after the update installs.
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Slim top banner — shown during download/install (replaces old banner) -->
-<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:10px 24px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+<!-- Auto Update Banner -->
+<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:12px 24px;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
   <div style="display:flex;align-items:center;gap:10px">
-    <span style="font-size:18px">🚀</span>
+    <span style="font-size:20px">🚀</span>
     <div>
-      <div id="update-title" style="font-size:12px;font-weight:700">Downloading update…</div>
-      <div id="update-sub" style="font-size:10px;color:rgba(255,255,255,.6)">Please wait</div>
+      <div id="update-title" style="font-size:13px;font-weight:700">New update available!</div>
+      <div id="update-sub" style="font-size:11px;color:rgba(255,255,255,.6)">ClassCore has a new version ready</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div id="update-progress-wrap" style="display:none;align-items:center;gap:8px">
-      <div style="width:140px;height:5px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
+      <div style="width:140px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
         <div id="update-progress-bar" style="height:100%;background:#E8622A;border-radius:3px;width:0%;transition:width .3s"></div>
       </div>
       <span id="update-pct" style="font-size:11px;color:rgba(255,255,255,.7)">0%</span>
     </div>
-    <button id="update-btn" class="btn btn-primary btn-sm" onclick="doUpdate()" style="display:none">⬇️ Update Now</button>
-    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="hideUpdateBanner()">Later</button>
+    <button id="update-btn" class="btn btn-primary btn-sm" onclick="doUpdate()">⬇️ Update Now</button>
+    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="document.getElementById('update-banner').style.display='none'">Later</button>
   </div>
 </div>
 
@@ -2982,6 +2921,242 @@ function undoSalary(username){
 }
 
 // SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+// SUBSCRIPTION & PLAN STATUS CARD
+// ═══════════════════════════════════════════════════════════════════
+function renderSubscriptionCard(){
+  const lic     = getLicense();
+  const status  = checkLicense();
+  const reg     = getRegistration();
+  const now     = Date.now();
+
+  // ── Derive all display values ────────────────────────────────────
+  let planLabel='', planColor='', planBg='', planIcon='';
+  let expiryStr='', daysLeft=0, daysTotal=0, progressPct=0;
+  let statusBadge='', statusColor='', statusBg='';
+  let alertHtml='';
+
+  if(status==='none'){
+    planLabel='No Plan'; planColor='#78716C'; planBg='#F4F4F5'; planIcon='⚪';
+    statusBadge='Not Started'; statusColor='#78716C'; statusBg='#F4F4F5';
+  } else if(status.status==='trial'){
+    planLabel='Free Trial'; planColor='#92400E'; planBg='#FEF9C3'; planIcon='⏳';
+    daysLeft  = status.daysLeft;
+    daysTotal = 30;
+    progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
+    const trialEnd = parseInt(localStorage.getItem('cc_trial_start')||'0') + 30*86400000;
+    expiryStr = new Date(trialEnd).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    statusBadge='Trial Active'; statusColor='#92400E'; statusBg='#FEF9C3';
+    if(daysLeft<=7){
+      alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">⚠️</span>
+        <div><div style="font-size:12px;font-weight:700;color:#DC2626">Trial expires in ${daysLeft} day${daysLeft===1?'':'s'}!</div>
+        <div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a license key to keep your data and continue.</div></div>
+      </div>`;
+    }
+  } else if(status.status==='active'){
+    if(lic.plan==='lifetime'){
+      planLabel='Lifetime'; planColor='#1D4ED8'; planBg='#EFF6FF'; planIcon='♾️';
+      expiryStr='Never expires';
+      progressPct=100;
+      statusBadge='Active — Lifetime'; statusColor='#1D4ED8'; statusBg='#EFF6FF';
+    } else if(lic.plan==='yearly'){
+      planLabel='Yearly'; planColor='#16A34A'; planBg='#F0FDF4'; planIcon='📅';
+      daysLeft  = status.daysLeft;
+      daysTotal = 365;
+      progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
+      expiryStr = new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      statusBadge='Active — Yearly'; statusColor='#16A34A'; statusBg='#DCFCE7';
+      if(daysLeft<=30){
+        alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">⏰</span>
+          <div><div style="font-size:12px;font-weight:700;color:#92400E">License expires in ${daysLeft} days</div>
+          <div style="font-size:11px;color:#92400E;margin-top:2px">Renew now to avoid any interruption.</div></div>
+        </div>`;
+      }
+    } else {
+      planLabel='Monthly'; planColor='#2A9D8F'; planBg='#F0FDFA'; planIcon='🗓️';
+      daysLeft  = status.daysLeft;
+      daysTotal = 30;
+      progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
+      expiryStr = new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      statusBadge='Active — Monthly'; statusColor='#2A9D8F'; statusBg='#CCFBF1';
+      if(daysLeft<=7){
+        alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">⏰</span>
+          <div><div style="font-size:12px;font-weight:700;color:#92400E">License expires in ${daysLeft} days</div>
+          <div style="font-size:11px;color:#92400E;margin-top:2px">Renew now to avoid any interruption.</div></div>
+        </div>`;
+      }
+    }
+  } else if(status.status==='expired'){
+    planLabel='Expired'; planColor='#DC2626'; planBg='#FEE2E2'; planIcon='❌';
+    expiryStr = lic?.expiry ? new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    progressPct=100;
+    statusBadge='Expired'; statusColor='#DC2626'; statusBg='#FEE2E2';
+    alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">❌</span>
+      <div><div style="font-size:12px;font-weight:700;color:#DC2626">Your license has expired</div>
+      <div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a new key to continue using ClassCore.</div></div>
+    </div>`;
+  }
+
+  // ── Progress bar color ────────────────────────────────────────────
+  const barColor = progressPct>80 ? '#DC2626' : progressPct>50 ? '#E9C46A' : '#16A34A';
+
+  // ── Registration info ─────────────────────────────────────────────
+  const regHtml = reg ? `
+    <div style="background:#F7F5F0;border-radius:10px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Registered Account</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${reg.name?`<div><div style="font-size:10px;color:#78716C">Name</div><div style="font-size:12.5px;font-weight:600">${esc(reg.name)}</div></div>`:''}
+        ${reg.email?`<div><div style="font-size:10px;color:#78716C">Email</div><div style="font-size:12.5px;font-weight:600">${esc(reg.email)}</div></div>`:''}
+        ${reg.mobile?`<div><div style="font-size:10px;color:#78716C">Mobile</div><div style="font-size:12.5px;font-weight:600">${esc(reg.mobile)}</div></div>`:''}
+        ${reg.institute?`<div><div style="font-size:10px;color:#78716C">Institute</div><div style="font-size:12.5px;font-weight:600">${esc(reg.institute)}</div></div>`:''}
+      </div>
+    </div>` : '';
+
+  // ── License key display ───────────────────────────────────────────
+  const keyHtml = lic?.key ? `
+    <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div>
+        <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:1px">License Key</div>
+        <div style="font-size:12px;font-weight:700;font-family:monospace;color:#18181B;margin-top:2px;letter-spacing:1px">${esc(lic.key)}</div>
+      </div>
+      <span style="font-size:18px">🔑</span>
+    </div>` : '';
+
+  // ── Plan comparison table ─────────────────────────────────────────
+  const plansHtml = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Available Plans</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${[
+          {key:'monthly', icon:'🗓️', name:'Monthly', price:'₹499', sub:'/month', color:'#2A9D8F', days:'30 days'},
+          {key:'yearly',  icon:'📅', name:'Yearly',  price:'₹4,499', sub:'/year', color:'#E8622A', days:'365 days', popular:true},
+          {key:'lifetime',icon:'♾️', name:'Lifetime',price:'₹19,999', sub:'once',  color:'#1D4ED8', days:'Forever'},
+        ].map(p=>`
+          <div style="border:2px solid ${lic?.plan===p.key?p.color:'#E7E2D9'};border-radius:12px;padding:12px 10px;text-align:center;background:${lic?.plan===p.key?p.color+'11':'#fff'};position:relative">
+            ${p.popular&&lic?.plan!==p.key?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#E8622A;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</div>`:''}
+            ${lic?.plan===p.key?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:${p.color};color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">✓ CURRENT</div>`:''}
+            <div style="font-size:18px;margin-bottom:4px">${p.icon}</div>
+            <div style="font-size:11px;font-weight:700;color:#78716C">${p.name}</div>
+            <div style="font-size:17px;font-weight:900;color:${p.color};margin:4px 0">${p.price}</div>
+            <div style="font-size:10px;color:#78716C">${p.sub}</div>
+            <div style="font-size:9px;color:#A0A0A0;margin-top:2px">${p.days}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // ── Activate key section ──────────────────────────────────────────
+  const activateHtml = `
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">
+        ${status.status==='active'&&lic?.plan==='lifetime' ? '🔑 Your License Key' : '🔑 Activate / Renew License Key'}
+      </div>
+      ${status.status==='active'&&lic?.plan==='lifetime' ? '' : `
+      <div style="display:flex;gap:8px">
+        <input id="set-lic-key" placeholder="CCTR-XXXX-XXXX-XXXX"
+          style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:var(--input-bg);outline:none;color:var(--text-main);font-family:monospace"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="btn btn-primary" onclick="activateLicenseFromSettings()">✅ Activate</button>
+      </div>
+      <div id="set-lic-msg" style="margin-top:8px;font-size:12px;font-weight:600;min-height:18px"></div>
+      <div style="margin-top:10px;text-align:center;font-size:11px;color:#78716C">
+        Don't have a key? <a href="mailto:coreclass.2025@gmail.com" style="color:var(--primary);font-weight:700;text-decoration:none">Contact us →</a>
+      </div>`}
+    </div>`;
+
+  return `
+  <div class="card" style="margin-bottom:18px;border:1.5px solid ${planColor}22">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px">
+        💎 Subscription & Plan
+      </div>
+      <span style="background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid ${statusColor}33">
+        ${planIcon} ${statusBadge}
+      </span>
+    </div>
+
+    ${alertHtml}
+
+    <!-- Plan details -->
+    <div style="background:linear-gradient(135deg,${planColor}15,${planColor}05);border:1.5px solid ${planColor}33;border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+        <div>
+          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Plan</div>
+          <div style="font-size:18px;margin-bottom:2px">${planIcon}</div>
+          <div style="font-size:14px;font-weight:800;color:${planColor}">${planLabel}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
+            ${status.status==='trial'?'Trial Ends':status.status==='active'&&lic?.plan==='lifetime'?'Validity':'Renews / Expires'}
+          </div>
+          <div style="font-size:13px;font-weight:700;color:#18181B;margin-top:8px">${expiryStr||'—'}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
+            ${lic?.plan==='lifetime'?'Status':'Days Left'}
+          </div>
+          <div style="font-size:${lic?.plan==='lifetime'?'13':'22'}px;font-weight:800;color:${planColor};margin-top:${lic?.plan==='lifetime'?'8':'2'}px">
+            ${lic?.plan==='lifetime'?'✅ Forever':daysLeft||'—'}
+          </div>
+        </div>
+      </div>
+
+      ${lic?.plan!=='lifetime' && (status.status==='trial'||status.status==='active') ? `
+      <div style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#78716C;margin-bottom:5px">
+          <span>${status.status==='trial'?'Trial usage':'Plan usage'}</span>
+          <span>${progressPct}% used</span>
+        </div>
+        <div style="height:7px;background:#E7E2D9;border-radius:4px;overflow:hidden">
+          <div style="height:100%;background:${barColor};border-radius:4px;width:${progressPct}%;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#78716C;margin-top:4px">
+          <span>${status.status==='trial'?'Started':'Activated'}</span>
+          <span style="font-weight:700;color:${daysLeft<=7?'#DC2626':planColor}">${daysLeft} day${daysLeft!==1?'s':''} remaining</span>
+        </div>
+      </div>` : ''}
+    </div>
+
+    ${regHtml}
+    ${keyHtml}
+    ${plansHtml}
+    ${activateHtml}
+  </div>`;
+}
+
+// Activate key from Settings (separate from the license screen flow)
+async function activateLicenseFromSettings(){
+  const key = (document.getElementById('set-lic-key')?.value||'').trim().toUpperCase();
+  const msg  = document.getElementById('set-lic-msg');
+  if(!key||key.length<15||!key.startsWith('CCTR-')){
+    msg.style.color='#DC2626'; msg.textContent='❌ Enter a valid key (CCTR-XXXX-XXXX-XXXX)'; return;
+  }
+  msg.style.color='#E8622A'; msg.textContent='⏳ Verifying key…';
+  try{
+    const result = await verifyKeyOnline(key);
+    if(result.valid){
+      saveLicense({key, plan:result.plan, expiry:result.expiry, name:result.name||''});
+      const reg=getRegistration();
+      if(reg) sendToSheets('activate_key',{email:reg.email,mobile:reg.mobile,name:reg.name,key,plan:result.plan,status:'active'});
+      msg.style.color='#16A34A';
+      const planLabel=result.plan==='lifetime'?'Lifetime':result.plan==='yearly'?'1 Year':'1 Month';
+      msg.textContent='✅ License activated! Plan: '+planLabel;
+      // Refresh the subscription card after a moment
+      setTimeout(()=>renderSettings(), 1200);
+      toast('✅ License activated! Plan: '+planLabel);
+    } else {
+      msg.style.color='#DC2626'; msg.textContent='❌ '+(result.reason||'Invalid or expired key');
+    }
+  } catch(err){
+    msg.style.color='#E8622A'; msg.textContent='⚠️ No internet — cannot verify key online';
+  }
+}
+
 function renderSettings(){
   const tName = localStorage.getItem('tuitionName')||'ClassCore Tuition';
   const tAddr  = localStorage.getItem('tuitionAddress')||'';
@@ -2996,6 +3171,7 @@ function renderSettings(){
   document.getElementById('page-settings').innerHTML =
     '<div style="max-width:520px">' +
     renderThemePicker() +
+    renderSubscriptionCard() +
 
     '<div class="card" style="margin-bottom:18px">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">🔐 Change Login Credentials</div>' +
@@ -3933,169 +4109,47 @@ function buyPlan(){
 // ── END LICENSE SYSTEM ─────────────────────────────────────────────────────
 
 
-// ═══════════════════════════════════════════════════════════════════
-// UPDATE SYSTEM — Professional modal + progress
-// ═══════════════════════════════════════════════════════════════════
-
-let _updateVersion = '';
-
-/** Show the professional update popup */
-function showUpdateModal(version, notes) {
-  _updateVersion = version || '';
-  const modal = document.getElementById('update-modal');
-  if (!modal) return;
-  // Set version badge
-  const badge = document.getElementById('upd-version-badge');
-  if (badge) badge.textContent = 'v' + version;
-  // Set release notes if available
-  const notesEl = document.getElementById('upd-notes');
-  if (notesEl && notes) notesEl.textContent = notes;
-  modal.style.display = 'flex';
+function showUpdateBanner(msg, sub){
+  const b=document.getElementById('update-banner');
+  document.getElementById('update-title').textContent=msg;
+  document.getElementById('update-sub').textContent=sub||'';
+  b.style.display='flex';
+  // Push content down so banner doesn't cover topbar
+  document.getElementById('app').style.paddingTop='52px';
 }
-
-/** User clicked "Later" */
-function updLater() {
-  document.getElementById('update-modal').style.display = 'none';
+function hideUpdateBanner(){
+  document.getElementById('update-banner').style.display='none';
+  document.getElementById('app').style.paddingTop='';
 }
-
-/** User clicked "Update Now" — save data then start download */
-async function updStart() {
-  const btn   = document.getElementById('upd-action-btn');
-  const later = document.getElementById('upd-later-btn');
-  const prog  = document.getElementById('upd-progress-section');
-
-  // Disable buttons, show progress
-  btn.disabled   = true;
-  later.disabled = true;
-  later.style.opacity = '.4';
-  btn.innerHTML  = '⏳ Saving data…';
-  prog.style.display = 'block';
-
-  // Also show the slim banner (visible if modal is dismissed)
-  showUpdateBanner('⬇️ Downloading v' + _updateVersion + '…', 'Do not close the app');
-
-  // Hand off to doUpdate() which calls window.classcore.downloadUpdate()
-  await doUpdate();
-}
-
-/** Called by "Update Now" button on the slim banner too */
-async function doUpdate() {
-  const btn = document.getElementById('update-btn');
-  if (btn) btn.style.display = 'none';
-  document.getElementById('update-progress-wrap').style.display = 'flex';
-  document.getElementById('update-title').textContent = 'Saving your data…';
-
-  // Pass current data payload → main.js saves it BEFORE downloading
+async function doUpdate(){
+  document.getElementById('update-btn').style.display='none';
+  document.getElementById('update-progress-wrap').style.display='flex';
+  document.getElementById('update-title').textContent='Saving your data...';
+  // Pass current data so it gets saved BEFORE update
   const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayload() : null);
-
-  if (!r.ok) {
-    toast('Update failed: ' + (r.error || 'unknown error'), 'err');
-    // Re-enable buttons
-    const ab = document.getElementById('upd-action-btn');
-    const lb = document.getElementById('upd-later-btn');
-    if (ab) { ab.disabled = false; ab.innerHTML = '⬇️ Update Now'; }
-    if (lb) { lb.disabled = false; lb.style.opacity = '1'; }
-    if (btn) btn.style.display = 'flex';
-    document.getElementById('update-progress-wrap').style.display = 'none';
+  if(!r.ok){
+    toast('Update failed: '+(r.error||'unknown error'),'err');
+    document.getElementById('update-btn').style.display='flex';
+    document.getElementById('update-progress-wrap').style.display='none';
   }
 }
-
-function showUpdateBanner(msg, sub) {
-  const b = document.getElementById('update-banner');
-  if (!b) return;
-  document.getElementById('update-title').textContent = msg;
-  document.getElementById('update-sub').textContent   = sub || '';
-  b.style.display = 'flex';
-  document.getElementById('app').style.paddingTop = '48px';
-}
-
-function hideUpdateBanner() {
-  const b = document.getElementById('update-banner');
-  if (b) b.style.display = 'none';
-  document.getElementById('app').style.paddingTop = '';
-}
-
-// Wire up IPC events from main.js
-if (IS_ELECTRON()) {
-
-  // ── Update found → show modal ─────────────────────────────────────
-  window.classcore.onUpdateAvailable(version => {
-    showUpdateModal(version);
+if(IS_ELECTRON()){
+  window.classcore.onUpdateAvailable(version=>{
+    showUpdateBanner('🚀 New version v'+version+' available!','Click "Update Now" to download and install automatically');
   });
-
-  // ── Download progress → update both modal and banner bars ─────────
-  window.classcore.onUpdateProgress(pct => {
-    // Modal progress
-    const fill  = document.getElementById('upd-progress-fill');
-    const pctLb = document.getElementById('upd-pct-label');
-    const label = document.getElementById('upd-progress-label');
-    const actBtn= document.getElementById('upd-action-btn');
-    if (fill)  fill.style.width  = pct + '%';
-    if (pctLb) pctLb.textContent = pct + '%';
-    if (label) label.textContent = pct < 100 ? 'Downloading update…' : 'Finalising…';
-    if (actBtn) actBtn.innerHTML = '⬇️ ' + pct + '% downloaded…';
-
-    // Slim banner progress
-    const bar   = document.getElementById('update-progress-bar');
-    const bPct  = document.getElementById('update-pct');
-    const title = document.getElementById('update-title');
-    if (bar)   bar.style.width     = pct + '%';
-    if (bPct)  bPct.textContent    = pct + '%';
-    if (title) title.textContent   = 'Downloading… ' + pct + '%';
+  window.classcore.onUpdateProgress(pct=>{
+    document.getElementById('update-progress-bar').style.width=pct+'%';
+    document.getElementById('update-pct').textContent=pct+'%';
+    document.getElementById('update-title').textContent='Downloading... '+pct+'%';
   });
-
-  // ── Download complete → show "Restart & Install" ──────────────────
-  window.classcore.onUpdateDownloaded(version => {
-    // Update the modal to show restart button
-    const modal   = document.getElementById('update-modal');
-    const prog    = document.getElementById('upd-progress-section');
-    const pctLb   = document.getElementById('upd-pct-label');
-    const label   = document.getElementById('upd-progress-label');
-    const fill    = document.getElementById('upd-progress-fill');
-    const actBtn  = document.getElementById('upd-action-btn');
-    const laterBtn= document.getElementById('upd-later-btn');
-    const notes   = document.getElementById('upd-notes');
-
-    if (fill)    { fill.style.width = '100%'; fill.style.background = '#16A34A'; }
-    if (pctLb)   pctLb.textContent  = '100%';
-    if (label)   label.textContent  = '✅ Download complete!';
-    if (notes)   notes.textContent  = 'The update is ready. Click "Restart & Install" to apply it now. Your data is safe.';
-    if (laterBtn){ laterBtn.textContent = 'Later'; laterBtn.disabled = false; laterBtn.style.opacity='1'; }
-    if (actBtn)  {
-      actBtn.innerHTML  = '🔄 Restart & Install';
-      actBtn.disabled   = false;
-      actBtn.style.background = 'linear-gradient(135deg,#16A34A,#15803D)';
-      actBtn.onclick    = () => window.classcore.installUpdate();
-    }
-    if (modal) modal.style.display = 'flex';  // Re-show if dismissed
-
-    // Update slim banner too
-    document.getElementById('update-progress-wrap').style.display = 'none';
-    const title = document.getElementById('update-title');
-    const sub   = document.getElementById('update-sub');
-    const btn   = document.getElementById('update-btn');
-    if (title) title.textContent = '✅ Update ready — v' + (version || '');
-    if (sub)   sub.textContent   = 'App will restart to apply the update';
-    if (btn)   {
-      btn.textContent = '🔄 Restart & Install';
-      btn.style.display = 'flex';
-      btn.onclick = () => window.classcore.installUpdate();
-    }
-    showUpdateBanner('✅ Update ready!', 'Click Restart & Install to apply');
-  });
-
-  // ── Manual check result — "no update" ─────────────────────────────
-  window.classcore.onUpdateNotAvailable && window.classcore.onUpdateNotAvailable(version => {
-    toast('✅ ClassCore is up to date (v' + version + ')');
-  });
-
-  // ── Update error ──────────────────────────────────────────────────
-  window.classcore.onUpdateError && window.classcore.onUpdateError(msg => {
-    if (msg && msg.includes('net::')) {
-      toast('⚠️ No internet — cannot check for updates', 'warn');
-    } else {
-      console.warn('Update error:', msg);
-    }
+  window.classcore.onUpdateDownloaded(()=>{
+    document.getElementById('update-progress-wrap').style.display='none';
+    document.getElementById('update-title').textContent='✅ Update ready to install!';
+    document.getElementById('update-sub').textContent='App will restart to apply the update';
+    const btn=document.getElementById('update-btn');
+    btn.textContent='🔄 Restart & Install';
+    btn.style.display='flex';
+    btn.onclick=()=>window.classcore.installUpdate();
   });
 }
 
