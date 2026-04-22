@@ -2,7 +2,10 @@
   "CCTR-KULD-NE7B-5UHX": {
     "plan": "lifetime",
     "expiry": 9999999999999,
-    "name": "kuldeep",
-    "expiryDate": "lifetime"
+    "name": "Kuldeep Prajapati",
+    "institute": "CLASSCORE",
+    "approved": true,
+    "issued": "2026-04-22",
+    "note": "Owner / Developer License"
   }
 }
