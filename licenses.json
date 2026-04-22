@@ -4,19 +4,21 @@
     "expiry": 9999999999999,
     "name": "Kuldeep Prajapati",
     "institute": "CLASSCORE",
-    "approved": true,
+    "mobile": "9904020671",
+    "email": "prajapatikuldeep455@gmail.com",
+    "expiryDate": "lifetime",
     "issued": "2026-04-22",
     "note": "Owner / Developer License"
-  }
-}
-{
-  "CCTR-SHUB-G7UT-YUKR": {
+  },
+  "CCTR-SHUB-9OOU-PRU6": {
     "plan": "monthly",
-    "expiry": 1779419891908,
-    "name": "shubham",
-    "mobile": "8866265182",
+    "expiry": 1779408000000,
+    "name": "Shubham",
     "institute": "RADHIKA",
-    "approved": true,
-    "issued": "2026-04-22"
+    "mobile": "8866265182",
+    "email": "shubhamsonar056@gmail.com",
+    "expiryDate": "2026-05-22",
+    "issued": "2026-04-22",
+    "note": ""
   }
 }
