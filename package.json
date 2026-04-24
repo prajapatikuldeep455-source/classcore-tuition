@@ -1,0 +1,61 @@
+{
+  "name": "classcore",
+  "version": "1.5.4",
+  "description": "ClassCore — Tuition Management System",
+  "main": "main.js",
+  "author": {
+    "name": "Kuldeep Prajapati",
+    "email": "coreclass.2025@gmail.com"
+  },
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.classcore.tuition",
+    "productName": "ClassCore",
+    "copyright": "Copyright © 2025 ClassCore",
+    "directories": { "output": "dist" },
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**",
+      "!dist/**",
+      "!*.md",
+      "!*.bat",
+      "!logo_b64*",
+      "!logo_ico*",
+      "!logo_png*",
+      "!MAKE_ICON*",
+      "!BUILD_EXE*",
+      "!README*",
+      "!keygen.html",
+      "!firebase/**"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ClassCore",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "prajapatikuldeep455-source",
+      "repo": "classcore-tuition",
+      "releaseType": "release"
+    }
+  }
+}

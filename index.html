@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClassCore — Tuition Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -156,15 +157,8 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRegWithKey()">🔑 Activate Key</button>
     </div>
     <div id="reg-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
-    <!-- Credentials box shown after registration -->
-    <div id="reg-creds-box" style="display:none;margin-top:14px;background:#F0FDF4;border:2px solid #16A34A;border-radius:12px;padding:14px 16px">
-      <div style="font-size:12px;font-weight:700;color:#16A34A;margin-bottom:8px">✅ Your Login Details — Save These!</div>
-      <div style="background:#fff;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:13px">
-        <div>👤 Username: <b id="reg-creds-user" style="color:#1B3154"></b></div>
-        <div style="margin-top:4px">🔒 Password: <b id="reg-creds-pass" style="color:#1B3154"></b></div>
-      </div>
-      <div style="font-size:11px;color:#78716C;margin-top:8px">⚠️ Screenshot this! Also sent to your email.<br>You must change this password on first login.</div>
-    </div>
+    <!-- Safe confirmation box shown after registration (NO credentials shown here) -->
+    <div id="reg-creds-box" style="display:none;margin-top:14px;border-radius:12px;padding:14px 16px"></div>
   </div>
 </div>
 
@@ -289,29 +283,29 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
     <div style="text-align:center;margin-bottom:20px">
       <div style="font-size:32px;margin-bottom:8px">🔑</div>
       <div style="font-size:17px;font-weight:700;margin-bottom:6px">Reset Password</div>
-      <div style="font-size:12px;color:#78716C">Enter your registered email and mobile to receive OTP</div>
+      <div style="font-size:12px;color:#78716C">Enter your registered email and mobile to verify your identity</div>
     </div>
 
     <!-- Step 1: Verify identity -->
     <div id="fp-step1">
       <div class="fg" style="margin-bottom:12px"><label>Registered Email ★</label><input id="fp-email" type="email" placeholder="your@email.com"></div>
       <div class="fg" style="margin-bottom:16px"><label>Registered Mobile ★</label><input id="fp-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="sendForgotOTP()">📧 Send OTP to Email</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="sendForgotOTP()">🔍 Verify My Identity</button>
     </div>
 
-    <!-- Step 2: Enter OTP -->
+    <!-- Step 2: Set new password (OTP field hidden — local verification) -->
     <div id="fp-step2" style="display:none">
-      <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 14px;font-size:12px;color:#16A34A;margin-bottom:16px;text-align:center">
-        ✅ OTP sent to your email! Check inbox.
+      <div id="fp-verified-banner" style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:10px;padding:10px 14px;font-size:12px;color:#16A34A;margin-bottom:16px;text-align:center">
+        ✅ Identity verified! Set your new password below.
       </div>
-      <div class="fg" style="margin-bottom:12px"><label>Enter OTP ★</label><input id="fp-otp" placeholder="6-digit OTP" maxlength="6" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:4px"></div>
+      <div class="fg" style="display:none;margin-bottom:12px"><label>Enter OTP ★</label><input id="fp-otp" placeholder="000000" value="000000" maxlength="6" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:4px"></div>
       <div class="fg" style="margin-bottom:12px"><label>New Username</label><input id="fp-newuser" placeholder="Leave blank to keep current"></div>
       <div class="fg" style="margin-bottom:12px"><label>New Password ★</label><input id="fp-newpass" type="password" placeholder="Min 6 characters"></div>
       <div class="fg" style="margin-bottom:16px"><label>Confirm Password ★</label><input id="fp-newpass2" type="password" placeholder="Re-enter password"></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="verifyForgotOTP()">✅ Reset Password</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="verifyForgotOTP()">✅ Save New Password</button>
     </div>
 
-    <button onclick="document.getElementById('forgot-screen').style.display='none'" style="width:100%;background:none;border:none;color:#78716C;font-size:12px;cursor:pointer;margin-top:12px">← Back to Login</button>
+    <button onclick="document.getElementById('forgot-screen').style.display='none';document.getElementById('fp-step1').style.display='block';document.getElementById('fp-step2').style.display='none';document.getElementById('fp-msg').textContent=''" style="width:100%;background:none;border:none;color:#78716C;font-size:12px;cursor:pointer;margin-top:12px">← Back to Login</button>
     <div id="fp-msg" style="margin-top:10px;font-size:12px;text-align:center;font-weight:600"></div>
   </div>
 </div>
@@ -545,7 +539,9 @@ function buildPayload(){
     tuitionAddress:localStorage.getItem('tuitionAddress')||'',
     tuitionLogo:localStorage.getItem('tuitionLogo')||'',
     rcptNo:localStorage.getItem('rcptNo')||'1000',
-    ops_logged:localStorage.getItem('ops_logged')||'',
+    // NOTE: ops_logged is intentionally NOT saved here.
+    // If we save it, Electron's beforeunload restores it after logout → auto-login bug.
+    // Session state lives only in memory / localStorage, never in the data file.
   };
 }
 
@@ -612,6 +608,8 @@ function showSaveChip(state){
 
 // Save data when app is closing — use SYNCHRONOUS save so it completes before close
 window.addEventListener('beforeunload', (e)=>{
+  // Skip saving if we're logging out — doLogout() already saved without ops_logged
+  if(window._loggingOut) return;
   const payload = buildPayload();
   if(IS_ELECTRON()){
     try { window.classcore.saveDataSync(payload); } catch(err) { console.error('Sync save failed', err); }
@@ -643,7 +641,8 @@ async function loadAllData(){
       if(d.tuitionAddress) localStorage.setItem('tuitionAddress',d.tuitionAddress);
       if(d.tuitionLogo) localStorage.setItem('tuitionLogo',d.tuitionLogo);
       if(d.rcptNo) localStorage.setItem('rcptNo',d.rcptNo);
-      if(d.ops_logged) localStorage.setItem('ops_logged',d.ops_logged);
+      // NOTE: ops_logged is deliberately NOT restored from file.
+      // Session state is only in localStorage and must be set by explicit login.
     } else {
       students=SEED_S;batches=SEED_B;courses=[];classFees={};stuFeeOvr={};attData={};monthFees={};
     }
@@ -803,7 +802,45 @@ function doLogin(){
   document.getElementById('app').style.display='flex';
   initApp();
 }
-function doLogout(){localStorage.removeItem('ops_logged');localStorage.removeItem('ops_cur_user');currentUser=null;location.reload();}
+function doLogout(){
+  // ── 1. Clear ALL session-related localStorage keys ────────────────
+  localStorage.removeItem('ops_logged');
+  localStorage.removeItem('ops_cur_user');
+  currentUser = null;
+
+  // ── 2. Save data to disk WITHOUT session state ────────────────────
+  //    (buildPayload no longer includes ops_logged)
+  if(IS_ELECTRON()){
+    try{ window.classcore.saveDataSync(buildPayload()); }catch(e){}
+  } else {
+    try{
+      sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+      sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
+    }catch(e){}
+  }
+
+  // ── 3. Reset UI directly — NO location.reload() ───────────────────
+  //    reload() triggers loadAllData() which reads old file → auto-login again
+  //    By hiding/showing elements instead, we avoid the whole cycle.
+  document.getElementById('app').style.display          = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('license-screen').style.display = 'none';
+
+  // ── 4. Clear login form fields ────────────────────────────────────
+  const lu = document.getElementById('l-user');
+  const lp = document.getElementById('l-pass');
+  if(lu){ lu.value = ''; }
+  if(lp){ lp.value = ''; }
+  if(lu) setTimeout(()=>lu.focus(), 100);
+
+  // ── 5. Reset nav to dashboard for next login ──────────────────────
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const dash = document.getElementById('page-dashboard');
+  if(dash) dash.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const di = document.querySelector('.nav-item[data-page="dashboard"]');
+  if(di) di.classList.add('active');
+}
 
 // ── FORCE CHANGE PASSWORD (first login) ────────────────────────────────────
 let _pendingUser = null;
@@ -868,97 +905,95 @@ async function sendForgotOTP(){
 
   msg.style.color='#E8622A';msg.textContent='⏳ Verifying...';
 
-  // Check against Google Sheets
-  const result = await sendToSheets('check_reset', { email, mobile });
+  // ── LOCAL VERIFICATION — check against stored registration ──────────
+  // No Google Sheets needed. Works 100% offline.
+  const reg = getRegistration();
+  const users = getUsers();
 
-  if(result && result.ok === false && !result.msg?.includes('not configured')){
+  // Check if email+mobile matches the registered owner
+  const ownerMatch = reg && reg.email === email && (reg.mobile === mobile || reg.mobile === mobile.replace(/\D/g,''));
+  // Check if email+mobile matches any employee user
+  const empMatch = users.find(u => u.email === email && u.mobile === mobile);
+
+  if(!ownerMatch && !empMatch){
     msg.style.color='#DC2626';
-    msg.textContent='❌ Email and mobile not found in our records';
+    msg.textContent='❌ Email and mobile not found. Check your details and try again.';
     return;
   }
 
-  // Generate 6-digit OTP
-  _otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  _otpEmail = email;
+  // ── Verified — skip OTP, go directly to password reset ─────────────
+  _otpEmail  = email;
   _otpMobile = mobile;
+  _otpCode   = '000000'; // dummy — not used in local mode
 
-  // Send OTP via Google Sheets (which sends email)
-  const sent = await sendToSheets('send_otp', {
-    email, mobile,
-    otp: _otpCode,
-    otpExpiry: Date.now() + 10 * 60 * 1000 // 10 minutes
-  });
-
-  if(sent && sent.ok === false && !sent.msg?.includes('not configured')){
-    msg.style.color='#DC2626';
-    msg.textContent='❌ Could not send OTP. Try again.';
-    return;
-  }
-
-  // Show OTP step
+  // Show reset form directly (no OTP needed)
   document.getElementById('fp-step1').style.display='none';
   document.getElementById('fp-step2').style.display='block';
-  msg.textContent='';
-  // Store OTP locally as fallback
-  localStorage.setItem('_fp_otp', JSON.stringify({code:_otpCode,exp:Date.now()+600000,email}));
+  msg.style.color='#16A34A';
+  msg.textContent='✅ Identity verified! Set your new password below.';
+
+  // Hide the OTP field since we don't need it
+  const otpField = document.getElementById('fp-otp')?.closest('.fg');
+  if(otpField) otpField.style.display='none';
 }
 
 function verifyForgotOTP(){
-  const otp=(document.getElementById('fp-otp').value||'').trim();
   const newUser=(document.getElementById('fp-newuser').value||'').trim();
   const newPass=(document.getElementById('fp-newpass').value||'').trim();
   const newPass2=(document.getElementById('fp-newpass2').value||'').trim();
   const msg=document.getElementById('fp-msg');
 
-  if(!otp||otp.length!==6){msg.style.color='#DC2626';msg.textContent='Enter 6-digit OTP';return;}
   if(!newPass||newPass.length<6){msg.style.color='#DC2626';msg.textContent='Password must be at least 6 characters';return;}
   if(newPass!==newPass2){msg.style.color='#DC2626';msg.textContent='Passwords do not match';return;}
 
-  // Verify OTP
-  const stored = JSON.parse(localStorage.getItem('_fp_otp')||'null');
-  const validOTP = (otp===_otpCode) || (stored&&stored.code===otp&&Date.now()<stored.exp&&stored.email===_otpEmail);
+  // ── Find the user to reset ──────────────────────────────────────────
+  const users = getUsers();
+  const reg   = getRegistration();
+  let targetUser = null;
 
-  if(!validOTP){msg.style.color='#DC2626';msg.textContent='❌ Invalid or expired OTP';return;}
-
-  // Reset password for admin (or find user by email)
-  const users=getUsers();
-  const reg=getRegistration();
-  let targetUser=null;
-  // Find by registration email
-  if(reg&&reg.email===_otpEmail){
-    targetUser=users.find(x=>x.role==='admin');
+  // Find by registration email (owner)
+  if(reg && reg.email === _otpEmail){
+    targetUser = users.find(x=>x.role==='admin');
   }
   // Or find employee by stored email
   if(!targetUser){
-    targetUser=users.find(x=>x.email===_otpEmail);
+    targetUser = users.find(x=>x.email===_otpEmail);
   }
-  if(!targetUser) targetUser=users[0]; // fallback to first admin
+  // Fallback to first admin
+  if(!targetUser) targetUser = users[0];
 
-  if(!targetUser){msg.style.color='#DC2626';msg.textContent='User not found';return;}
+  if(!targetUser){msg.style.color='#DC2626';msg.textContent='User not found. Please contact support.';return;}
 
-  const idx=users.indexOf(targetUser);
-  if(newUser) users[idx].username=newUser;
-  users[idx].password=newPass;
-  users[idx].mustChange=false;
+  const idx = users.indexOf(targetUser);
+  if(newUser && newUser !== users[idx].username){
+    // Check username not taken
+    if(users.find(x=>x.username===newUser&&x.username!==users[idx].username)){
+      msg.style.color='#DC2626';msg.textContent='Username already taken. Try another.';return;
+    }
+    users[idx].username = newUser;
+  }
+  users[idx].password  = newPass;
+  users[idx].mustChange = false;
   saveUsers(users);
+
   if(users[idx].role==='admin'){
-    localStorage.setItem('username',users[idx].username);
-    localStorage.setItem('password',newPass);
+    localStorage.setItem('username', users[idx].username);
+    localStorage.setItem('password', newPass);
   }
   localStorage.removeItem('_fp_otp');
   persist();
 
   msg.style.color='#16A34A';
-  msg.textContent='✅ Password reset! You can now login.';
+  msg.textContent='✅ Password reset successfully! Logging you in...';
+
   setTimeout(()=>{
     document.getElementById('forgot-screen').style.display='none';
-    document.getElementById('l-user').value=users[idx].username;
-    document.getElementById('l-pass').value='';
+    document.getElementById('l-user').value = users[idx].username;
+    document.getElementById('l-pass').value = '';
     document.getElementById('l-pass').focus();
-  },1500);
-
-  // Notify sheets
-  sendToSheets('password_reset', {email:_otpEmail, mobile:_otpMobile});
+    msg.textContent='';
+    toast('✅ Password reset! Please log in with your new password.');
+  }, 1500);
 }
 
 // NAV
@@ -1700,22 +1735,41 @@ function renderFees(){
   const curMonth=MONTHS[curMonthIdx];
   const curYear=new Date().getFullYear();
 
+  // ── Preserve currently selected month if page already rendered ──────
+  const existingFilter=document.getElementById('fee-month-filter');
+  const selM=existingFilter?.value||curMonth;
+
   // Stats for selected month
-  const selM=document.getElementById('fee-month-filter')?.value||curMonth;
   const colMonth=list.reduce((a,s)=>{
     const h=(s.history||[]).filter(x=>x.month===selM&&(x.year||curYear)===curYear);
     return a+h.reduce((b,x)=>b+(x.amount||0),0);
   },0);
-  // Monthly expected = sum of each student's monthly fee
   const expMonth=list.reduce((a,s)=>a+monthlyFee(s),0);
   const penMonth=Math.max(0,expMonth-colMonth);
-  // Count students not paid this month
   const notPaidCount=list.filter(s=>{
     const paid=(s.history||[]).some(h=>h.month===selM&&(h.year||curYear)===curYear);
     return !paid && monthlyFee(s)>0;
   }).length;
 
-  document.getElementById('page-fees').innerHTML=`
+  // ── If page already built, update only stats + table (no full rebuild) ─
+  const pageEl=document.getElementById('page-fees');
+  const alreadyBuilt=pageEl.querySelector('#fee-tbody');
+
+  if(alreadyBuilt){
+    // Update stat cards
+    const statCols=pageEl.querySelectorAll('.grid-3 .card');
+    if(statCols[0]) statCols[0].innerHTML=`<div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div>`;
+    if(statCols[1]) statCols[1].innerHTML=`<div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${notPaidCount} students)</div>`;
+    if(statCols[2]) statCols[2].innerHTML=`<div style="font-size:20px">💰</div><div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(expMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Expected</div>`;
+    // Rebuild only the table body
+    const tbody=document.getElementById('fee-tbody');
+    if(tbody) tbody.innerHTML=makeFeeRows(list,selM);
+    renderPendingAlert(list,selM);
+    return;
+  }
+
+  // ── First render — build the full page ─────────────────────────────
+  pageEl.innerHTML=`
   <div class="grid-3" style="margin-bottom:16px">
     <div class="card" style="text-align:center"><div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div></div>
     <div class="card" style="text-align:center"><div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${notPaidCount} students)</div></div>
@@ -1724,7 +1778,7 @@ function renderFees(){
   <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
     <div class="search-box" style="flex:1"><span>🔍</span><input id="fee-srch" placeholder="Search student…" oninput="filterFees(this.value)"></div>
     <select id="fee-month-filter" onchange="renderFees()" style="padding:7px 14px;font-size:13px;font-weight:600;border-radius:8px;border:1.5px solid #E7E2D9;background:#fff;cursor:pointer">
-      ${MONTHS.map(m=>`<option value="${m}"${m===curMonth?' selected':''}>${m}</option>`).join('')}
+      ${MONTHS.map(m=>`<option value="${m}"${m===selM?' selected':''}>${m}</option>`).join('')}
     </select>
     <button class="btn btn-ink btn-sm" onclick="openClassFeesMod()">⚙️ Set Class Fees</button>
     <button class="btn btn-primary btn-sm" onclick="openBulkFee()">⚡ Bulk Collect</button>
@@ -1732,13 +1786,13 @@ function renderFees(){
   <div id="fee-pending-alert"></div>
   <div class="table-wrap"><table>
     <thead><tr><th>Student</th><th>Class</th><th>Fee</th><th>This Month</th><th>Collect</th><th>History</th><th>💬</th></tr></thead>
-    <tbody id="fee-tbody">${makeFeeRows(list)}</tbody>
+    <tbody id="fee-tbody">${makeFeeRows(list,selM)}</tbody>
   </table></div>`;
-  renderPendingAlert(list);
+  renderPendingAlert(list,selM);
 }
 
-function renderPendingAlert(list){
-  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+function renderPendingAlert(list,selMonth){
+  selMonth=selMonth||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
   const curMonthIdx=MONTHS.indexOf(selMonth);
   const curYear=new Date().getFullYear();
   const overdue=[];
@@ -1779,32 +1833,33 @@ function quickCollectPending(sid,month){
   if(!s)return;
   const mFee=monthlyFee(s);
   if(!mFee){toast('Set monthly fee for this student first','err');return;}
-  const alreadyPaid=(s.history||[]).some(h=>h.month===month&&(h.year||new Date().getFullYear())===new Date().getFullYear());
+  const curYear=new Date().getFullYear();
+  const alreadyPaid=(s.history||[]).some(h=>h.month===month&&(h.year||curYear)===curYear);
   if(alreadyPaid){toast(month+' already collected','err');return;}
   const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
   localStorage.setItem('rcptNo',rcptNo);
   students=students.map(x=>{
     if(x.id!==sid)return x;
-    const history=[...(x.history||[]),{amount:mFee,date:todayStr(),receiptNo:rcptNo,month,year:new Date().getFullYear()}];
+    const history=[...(x.history||[]),{amount:mFee,date:todayStr(),receiptNo:rcptNo,month,year:curYear}];
     return{...x,paid:(x.paid||0)+mFee,history};
   });
   persist();
   toast(`✅ ${month} fee collected — ${fmt(mFee)}`);
   renderFees();
+  if(curPage==='dashboard') renderDash();
 }
 
-function makeFeeRows(list){
+function makeFeeRows(list,selMonth){
   if(!list.length)return`<tr><td colspan="8" style="text-align:center;padding:40px;color:#78716C">No students</td></tr>`;
-  const selMonth=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
+  selMonth=selMonth||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
   const curYear=new Date().getFullYear();
   return list.map(s=>{
     const idx=students.indexOf(s);
-    const mFee=monthlyFee(s);  // correct monthly fee
+    const mFee=monthlyFee(s);
     const paidMonths=(s.history||[]).filter(h=>h.month).map(h=>h.month);
     const alreadyPaid=(s.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
     const nextUnpaid=MONTHS.find(m=>!paidMonths.includes(m))||'';
     const totalPaidAll=s.paid||0;
-    // How many months paid total
     const totalMonthsPaid=paidMonths.length;
     return`<tr style="${alreadyPaid?'background:rgba(22,163,74,.05)':''}">
       <td>
@@ -1858,12 +1913,12 @@ function makeFeeRows(list){
 }
 
 function filterFees(q){
-  CLASSES=getClasses();
+  const selM=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
   const list=students.filter(s=>!s.inactive&&(!q||(s.name||'').toLowerCase().includes(q.toLowerCase())));
   const tb=document.getElementById('fee-tbody');
   if(tb) requestAnimationFrame(()=>{
-    tb.innerHTML=makeFeeRows(list);
-    renderPendingAlert(list);
+    tb.innerHTML=makeFeeRows(list,selM);
+    renderPendingAlert(list,selM);
   });
 }
 
@@ -1874,17 +1929,16 @@ function collectFee(sid){
   const stu0=students.find(s=>s.id===sid);
   if(!stu0){toast('Student not found','err');return;}
 
-  // ── BLOCK if this month already paid ──
-  const paidMonths=(stu0.history||[]).filter(h=>h.month).map(h=>h.month);
-  if(paidMonths.includes(selMonth)){
-    toast(`❌ ${selMonth} fee already collected! Select next month.`,'err');
-    // Auto-select next unpaid month
-    const nextUnpaid=MONTHS.find(m=>!paidMonths.includes(m));
+  // Block duplicate payment for same month+year
+  const curYear=new Date().getFullYear();
+  const alreadyPaid=(stu0.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
+  if(alreadyPaid){
+    toast(`❌ ${selMonth} fee already collected!`,'err');
+    const nextUnpaid=MONTHS.find(m=>!(stu0.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear));
     if(nextUnpaid&&monthEl) monthEl.value=nextUnpaid;
     return;
   }
 
-  // ── Check employee permission ──
   if(!isAdmin() && !hasPermission('collect_fees')){
     toast('You do not have permission to collect fees','err');return;
   }
@@ -1893,20 +1947,29 @@ function collectFee(sid){
   const enteredAmt=parseFloat(inp?.value||0);
   const amt=enteredAmt>0?enteredAmt:mFee;
   if(!amt||amt<=0){toast('Enter fee amount or set monthly fee for student first','err');return;}
+
   const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
   localStorage.setItem('rcptNo',rcptNo);
+
+  // Update students array immediately
   students=students.map(s=>{
     if(s.id!==sid)return s;
     const newPaid=(s.paid||0)+amt;
-    const history=[...(s.history||[]),{amount:amt,date:todayStr(),receiptNo:rcptNo,month:selMonth,year:new Date().getFullYear()}];
+    const history=[...(s.history||[]),{amount:amt,date:todayStr(),receiptNo:rcptNo,month:selMonth,year:curYear}];
     return{...s,paid:newPaid,history};
   });
+
+  // Save and refresh immediately — don't wait for persist
   persist();
   if(inp)inp.value='';
+
   const stu=students.find(s=>s.id===sid);
   toast(`✅ ${selMonth} fee collected — ${fmt(amt)}`);
   showReceiptPrev(stu,amt,rcptNo,null,selMonth);
+
+  // Instant UI update without full page rebuild
   renderFees();
+  if(curPage==='dashboard') renderDash();
 }
 function sendWA(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
@@ -2925,236 +2988,287 @@ function undoSalary(username){
 // SUBSCRIPTION & PLAN STATUS CARD
 // ═══════════════════════════════════════════════════════════════════
 function renderSubscriptionCard(){
-  const lic     = getLicense();
-  const status  = checkLicense();
-  const reg     = getRegistration();
-  const now     = Date.now();
+  const lic    = getLicense();
+  const status = checkLicense();
+  const reg    = getRegistration();
+  const now    = Date.now();
 
-  // ── Derive all display values ────────────────────────────────────
-  let planLabel='', planColor='', planBg='', planIcon='';
-  let expiryStr='', daysLeft=0, daysTotal=0, progressPct=0;
+  // ── Derive display values ────────────────────────────────────────
+  let planLabel='Free Trial', planColor='#92400E', planIcon='⏳';
+  let expiryStr='', daysLeft=0, daysTotal=30, progressPct=0;
   let statusBadge='', statusColor='', statusBg='';
-  let alertHtml='';
+  let alertHtml='', barColor='#16A34A';
 
   if(status==='none'){
-    planLabel='No Plan'; planColor='#78716C'; planBg='#F4F4F5'; planIcon='⚪';
+    planLabel='No Plan'; planColor='#78716C'; planIcon='⚪';
     statusBadge='Not Started'; statusColor='#78716C'; statusBg='#F4F4F5';
+    daysLeft=30; daysTotal=30; progressPct=0;
+    expiryStr='Not started';
   } else if(status.status==='trial'){
-    planLabel='Free Trial'; planColor='#92400E'; planBg='#FEF9C3'; planIcon='⏳';
-    daysLeft  = status.daysLeft;
-    daysTotal = 30;
-    progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
-    const trialEnd = parseInt(localStorage.getItem('cc_trial_start')||'0') + 30*86400000;
-    expiryStr = new Date(trialEnd).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    planLabel='Free Trial'; planColor='#92400E'; planIcon='⏳';
+    daysLeft=status.daysLeft; daysTotal=30;
+    progressPct=Math.round(((30-daysLeft)/30)*100);
+    barColor=daysLeft<=7?'#DC2626':daysLeft<=15?'#E9C46A':'#16A34A';
+    const ts=parseInt(localStorage.getItem('cc_trial_start')||'0')+30*86400000;
+    expiryStr=new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
     statusBadge='Trial Active'; statusColor='#92400E'; statusBg='#FEF9C3';
-    if(daysLeft<=7){
-      alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">⚠️</span>
-        <div><div style="font-size:12px;font-weight:700;color:#DC2626">Trial expires in ${daysLeft} day${daysLeft===1?'':'s'}!</div>
-        <div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a license key to keep your data and continue.</div></div>
-      </div>`;
-    }
+    if(daysLeft<=7) alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">⚠️</span><div><div style="font-size:12px;font-weight:700;color:#DC2626">Trial expires in ${daysLeft} day${daysLeft===1?'':'s'}!</div><div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a license key to keep your data and continue using ClassCore.</div></div></div>`;
   } else if(status.status==='active'){
     if(lic.plan==='lifetime'){
-      planLabel='Lifetime'; planColor='#1D4ED8'; planBg='#EFF6FF'; planIcon='♾️';
-      expiryStr='Never expires';
-      progressPct=100;
+      planLabel='Lifetime'; planColor='#1D4ED8'; planIcon='♾️';
+      expiryStr='Never expires'; daysLeft=9999; daysTotal=9999; progressPct=100; barColor='#1D4ED8';
       statusBadge='Active — Lifetime'; statusColor='#1D4ED8'; statusBg='#EFF6FF';
     } else if(lic.plan==='yearly'){
-      planLabel='Yearly'; planColor='#16A34A'; planBg='#F0FDF4'; planIcon='📅';
-      daysLeft  = status.daysLeft;
-      daysTotal = 365;
-      progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
-      expiryStr = new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      planLabel='Yearly'; planColor='#16A34A'; planIcon='📅';
+      daysLeft=status.daysLeft; daysTotal=365;
+      progressPct=Math.round(((365-daysLeft)/365)*100);
+      barColor=daysLeft<=30?'#DC2626':daysLeft<=90?'#E9C46A':'#16A34A';
+      expiryStr=new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
       statusBadge='Active — Yearly'; statusColor='#16A34A'; statusBg='#DCFCE7';
-      if(daysLeft<=30){
-        alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">⏰</span>
-          <div><div style="font-size:12px;font-weight:700;color:#92400E">License expires in ${daysLeft} days</div>
-          <div style="font-size:11px;color:#92400E;margin-top:2px">Renew now to avoid any interruption.</div></div>
-        </div>`;
-      }
+      if(daysLeft<=30) alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">⏰</span><div><div style="font-size:12px;font-weight:700;color:#92400E">License renews in ${daysLeft} days</div><div style="font-size:11px;color:#92400E;margin-top:2px">Renew your key before ${expiryStr} to avoid any interruption.</div></div></div>`;
     } else {
-      planLabel='Monthly'; planColor='#2A9D8F'; planBg='#F0FDFA'; planIcon='🗓️';
-      daysLeft  = status.daysLeft;
-      daysTotal = 30;
-      progressPct = Math.round(((daysTotal-daysLeft)/daysTotal)*100);
-      expiryStr = new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+      planLabel='Monthly'; planColor='#2A9D8F'; planIcon='🗓️';
+      daysLeft=status.daysLeft; daysTotal=30;
+      progressPct=Math.round(((30-daysLeft)/30)*100);
+      barColor=daysLeft<=7?'#DC2626':'#2A9D8F';
+      expiryStr=new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
       statusBadge='Active — Monthly'; statusColor='#2A9D8F'; statusBg='#CCFBF1';
-      if(daysLeft<=7){
-        alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">⏰</span>
-          <div><div style="font-size:12px;font-weight:700;color:#92400E">License expires in ${daysLeft} days</div>
-          <div style="font-size:11px;color:#92400E;margin-top:2px">Renew now to avoid any interruption.</div></div>
-        </div>`;
-      }
+      if(daysLeft<=7) alertHtml=`<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">⏰</span><div><div style="font-size:12px;font-weight:700;color:#92400E">License expires in ${daysLeft} days</div><div style="font-size:11px;color:#92400E;margin-top:2px">Renew now to avoid any interruption.</div></div></div>`;
     }
-  } else if(status.status==='expired'){
-    planLabel='Expired'; planColor='#DC2626'; planBg='#FEE2E2'; planIcon='❌';
-    expiryStr = lic?.expiry ? new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
-    progressPct=100;
+  } else {
+    planLabel='Expired'; planColor='#DC2626'; planIcon='❌';
+    expiryStr=lic?.expiry?new Date(lic.expiry).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+    progressPct=100; barColor='#DC2626'; daysLeft=0;
     statusBadge='Expired'; statusColor='#DC2626'; statusBg='#FEE2E2';
-    alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">❌</span>
-      <div><div style="font-size:12px;font-weight:700;color:#DC2626">Your license has expired</div>
-      <div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a new key to continue using ClassCore.</div></div>
-    </div>`;
+    alertHtml=`<div style="background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px"><span style="font-size:22px">❌</span><div><div style="font-size:12px;font-weight:700;color:#DC2626">Your license has expired</div><div style="font-size:11px;color:#DC2626;margin-top:2px">Activate a new license key to continue using ClassCore.</div></div></div>`;
   }
 
-  // ── Progress bar color ────────────────────────────────────────────
-  const barColor = progressPct>80 ? '#DC2626' : progressPct>50 ? '#E9C46A' : '#16A34A';
-
-  // ── Registration info ─────────────────────────────────────────────
+  // ── Registered user info ──────────────────────────────────────────
   const regHtml = reg ? `
     <div style="background:#F7F5F0;border-radius:10px;padding:12px 14px;margin-bottom:16px">
-      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Registered Account</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">👤 Registered Account</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         ${reg.name?`<div><div style="font-size:10px;color:#78716C">Name</div><div style="font-size:12.5px;font-weight:600">${esc(reg.name)}</div></div>`:''}
-        ${reg.email?`<div><div style="font-size:10px;color:#78716C">Email</div><div style="font-size:12.5px;font-weight:600">${esc(reg.email)}</div></div>`:''}
+        ${reg.email?`<div><div style="font-size:10px;color:#78716C">Email</div><div style="font-size:12px;font-weight:600;word-break:break-all">${esc(reg.email)}</div></div>`:''}
         ${reg.mobile?`<div><div style="font-size:10px;color:#78716C">Mobile</div><div style="font-size:12.5px;font-weight:600">${esc(reg.mobile)}</div></div>`:''}
         ${reg.institute?`<div><div style="font-size:10px;color:#78716C">Institute</div><div style="font-size:12.5px;font-weight:600">${esc(reg.institute)}</div></div>`:''}
       </div>
     </div>` : '';
 
-  // ── License key display ───────────────────────────────────────────
+  // ── Current license key ───────────────────────────────────────────
   const keyHtml = lic?.key ? `
     <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div>
-        <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:1px">License Key</div>
-        <div style="font-size:12px;font-weight:700;font-family:monospace;color:#18181B;margin-top:2px;letter-spacing:1px">${esc(lic.key)}</div>
+        <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Current License Key</div>
+        <div style="font-size:12px;font-weight:700;font-family:monospace;color:#18181B;letter-spacing:1px">${esc(lic.key)}</div>
       </div>
-      <span style="font-size:18px">🔑</span>
+      <span style="font-size:20px">🔑</span>
     </div>` : '';
 
-  // ── Plan comparison table ─────────────────────────────────────────
-  const plansHtml = `
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Available Plans</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${[
-          {key:'monthly', icon:'🗓️', name:'Monthly', price:'₹499', sub:'/month', color:'#2A9D8F', days:'30 days'},
-          {key:'yearly',  icon:'📅', name:'Yearly',  price:'₹4,499', sub:'/year', color:'#E8622A', days:'365 days', popular:true},
-          {key:'lifetime',icon:'♾️', name:'Lifetime',price:'₹19,999', sub:'once',  color:'#1D4ED8', days:'Forever'},
-        ].map(p=>`
-          <div style="border:2px solid ${lic?.plan===p.key?p.color:'#E7E2D9'};border-radius:12px;padding:12px 10px;text-align:center;background:${lic?.plan===p.key?p.color+'11':'#fff'};position:relative">
-            ${p.popular&&lic?.plan!==p.key?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#E8622A;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</div>`:''}
-            ${lic?.plan===p.key?`<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:${p.color};color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">✓ CURRENT</div>`:''}
-            <div style="font-size:18px;margin-bottom:4px">${p.icon}</div>
-            <div style="font-size:11px;font-weight:700;color:#78716C">${p.name}</div>
-            <div style="font-size:17px;font-weight:900;color:${p.color};margin:4px 0">${p.price}</div>
-            <div style="font-size:10px;color:#78716C">${p.sub}</div>
-            <div style="font-size:9px;color:#A0A0A0;margin-top:2px">${p.days}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
+  // ── Plan comparison ───────────────────────────────────────────────
+  // Lifetime card is ALWAYS hidden unless the user already has a lifetime license
+  // OR has entered the correct reveal code this session (stored in sessionStorage not localStorage)
+  const lifetimeUnlocked = (lic?.plan === 'lifetime' && status.status==='active')
+                        || sessionStorage.getItem('cc_lt_unlocked') === '1';
 
-  // ── Activate key section ──────────────────────────────────────────
-  const activateHtml = `
+  const plansRows = [
+    {key:'monthly', icon:'🗓️', name:'Monthly', price:'₹499',    sub:'/month',  color:'#2A9D8F', note:'30 days'},
+    {key:'yearly',  icon:'📅', name:'Yearly',  price:'₹4,499',  sub:'/year',   color:'#E8622A', note:'365 days', popular:true},
+    {key:'lifetime',icon:'♾️', name:'Lifetime',price:'₹19,999', sub:' once',   color:'#1D4ED8', note:'Forever', hidden:!lifetimeUnlocked},
+  ].map(p=>`
+    <div id="plan-card-${p.key}" style="border:2px solid ${lic?.plan===p.key?p.color:'#E7E2D9'};border-radius:12px;padding:12px 8px;text-align:center;background:${lic?.plan===p.key?p.color+'15':'#fff'};position:relative;${p.hidden?'display:none;opacity:0;transform:scale(0.8);':''}transition:all .4s cubic-bezier(.34,1.56,.64,1);">
+      ${p.popular&&lic?.plan!==p.key?`<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#E8622A;color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">POPULAR</div>`:''}
+      ${lic?.plan===p.key?`<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:${p.color};color:#fff;font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap">✓ YOUR PLAN</div>`:''}
+      <div style="font-size:20px;margin-bottom:4px">${p.icon}</div>
+      <div style="font-size:11px;font-weight:700;color:#78716C">${p.name}</div>
+      <div style="font-size:16px;font-weight:900;color:${p.color};margin:4px 0">${p.price}</div>
+      <div style="font-size:10px;color:#78716C">${p.sub}</div>
+      <div style="font-size:9px;color:#A0A0A0;margin-top:3px">${p.note}</div>
+    </div>`).join('');
+
+  // ── Activate section ──────────────────────────────────────────────
+  const isLifetime = lic?.plan==='lifetime' && status.status==='active';
+  const activateHtml = isLifetime ? `
+    <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:12px 14px;text-align:center">
+      <div style="font-size:14px;font-weight:700;color:#1D4ED8">♾️ Lifetime License — No Renewal Needed</div>
+      <div style="font-size:11px;color:#1D4ED8;margin-top:4px">You have permanent access to all ClassCore features.</div>
+    </div>` : `
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-      <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">
-        ${status.status==='active'&&lic?.plan==='lifetime' ? '🔑 Your License Key' : '🔑 Activate / Renew License Key'}
-      </div>
-      ${status.status==='active'&&lic?.plan==='lifetime' ? '' : `
+      <div style="font-size:11px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">🔑 Activate or Renew License Key</div>
       <div style="display:flex;gap:8px">
         <input id="set-lic-key" placeholder="CCTR-XXXX-XXXX-XXXX"
           style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:var(--input-bg);outline:none;color:var(--text-main);font-family:monospace"
-          oninput="this.value=this.value.toUpperCase()">
+          oninput="this.value=this.value.toUpperCase();checkLifetimeRevealKey(this.value)">
         <button class="btn btn-primary" onclick="activateLicenseFromSettings()">✅ Activate</button>
       </div>
       <div id="set-lic-msg" style="margin-top:8px;font-size:12px;font-weight:600;min-height:18px"></div>
-      <div style="margin-top:10px;text-align:center;font-size:11px;color:#78716C">
-        Don't have a key? <a href="mailto:coreclass.2025@gmail.com" style="color:var(--primary);font-weight:700;text-decoration:none">Contact us →</a>
-      </div>`}
+      <div style="margin-top:10px;font-size:11px;color:#78716C;text-align:center">
+        Don't have a key? Contact us at
+        <a href="mailto:coreclass.2025@gmail.com" style="color:var(--primary);font-weight:700;text-decoration:none">coreclass.2025@gmail.com</a>
+      </div>
     </div>`;
 
-  return `
-  <div class="card" style="margin-bottom:18px;border:1.5px solid ${planColor}22">
+  return `<div class="card" style="margin-bottom:18px;border:2px solid ${planColor}33;overflow:visible">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px">
-        💎 Subscription & Plan
-      </div>
-      <span style="background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid ${statusColor}33">
+    <!-- Card Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px">💎 Subscription &amp; Plan</div>
+      <span style="background:${statusBg};color:${statusColor};font-size:11px;font-weight:700;padding:5px 13px;border-radius:20px;border:1.5px solid ${statusColor}44">
         ${planIcon} ${statusBadge}
       </span>
     </div>
 
     ${alertHtml}
 
-    <!-- Plan details -->
-    <div style="background:linear-gradient(135deg,${planColor}15,${planColor}05);border:1.5px solid ${planColor}33;border-radius:12px;padding:16px;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+    <!-- Plan Status Box -->
+    <div style="background:linear-gradient(135deg,${planColor}18,${planColor}08);border:1.5px solid ${planColor}44;border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-bottom:${lic?.plan==='lifetime'?'0':'14px'}">
         <div>
-          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Plan</div>
-          <div style="font-size:18px;margin-bottom:2px">${planIcon}</div>
-          <div style="font-size:14px;font-weight:800;color:${planColor}">${planLabel}</div>
+          <div style="font-size:9.5px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Plan</div>
+          <div style="font-size:22px;margin-bottom:3px">${planIcon}</div>
+          <div style="font-size:13px;font-weight:800;color:${planColor}">${planLabel}</div>
         </div>
         <div>
-          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
-            ${status.status==='trial'?'Trial Ends':status.status==='active'&&lic?.plan==='lifetime'?'Validity':'Renews / Expires'}
-          </div>
-          <div style="font-size:13px;font-weight:700;color:#18181B;margin-top:8px">${expiryStr||'—'}</div>
+          <div style="font-size:9.5px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">${status.status==='trial'?'Trial Ends':lic?.plan==='lifetime'?'Validity':'Expires On'}</div>
+          <div style="font-size:13px;font-weight:700;color:#18181B;margin-top:10px">${expiryStr}</div>
         </div>
         <div>
-          <div style="font-size:10px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">
-            ${lic?.plan==='lifetime'?'Status':'Days Left'}
-          </div>
-          <div style="font-size:${lic?.plan==='lifetime'?'13':'22'}px;font-weight:800;color:${planColor};margin-top:${lic?.plan==='lifetime'?'8':'2'}px">
-            ${lic?.plan==='lifetime'?'✅ Forever':daysLeft||'—'}
-          </div>
+          <div style="font-size:9.5px;color:#78716C;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">${lic?.plan==='lifetime'?'Access':'Days Left'}</div>
+          ${lic?.plan==='lifetime'
+            ? `<div style="font-size:13px;font-weight:700;color:#1D4ED8;margin-top:10px">✅ Forever</div>`
+            : `<div style="font-size:26px;font-weight:900;color:${planColor};line-height:1.1">${daysLeft}</div><div style="font-size:10px;color:#78716C">days</div>`}
         </div>
       </div>
 
-      ${lic?.plan!=='lifetime' && (status.status==='trial'||status.status==='active') ? `
-      <div style="margin-top:14px">
+      ${lic?.plan!=='lifetime' ? `
+      <div style="margin-top:4px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:#78716C;margin-bottom:5px">
-          <span>${status.status==='trial'?'Trial usage':'Plan usage'}</span>
-          <span>${progressPct}% used</span>
+          <span>${status.status==='trial'?'Trial progress':'Plan period used'}</span>
+          <span style="font-weight:700;color:${barColor}">${progressPct}% used — ${daysLeft} day${daysLeft!==1?'s':''} left</span>
         </div>
-        <div style="height:7px;background:#E7E2D9;border-radius:4px;overflow:hidden">
-          <div style="height:100%;background:${barColor};border-radius:4px;width:${progressPct}%;transition:width .5s"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:#78716C;margin-top:4px">
-          <span>${status.status==='trial'?'Started':'Activated'}</span>
-          <span style="font-weight:700;color:${daysLeft<=7?'#DC2626':planColor}">${daysLeft} day${daysLeft!==1?'s':''} remaining</span>
+        <div style="height:8px;background:#E7E2D9;border-radius:6px;overflow:hidden">
+          <div style="height:100%;background:${barColor};border-radius:6px;width:${progressPct}%;transition:width .6s"></div>
         </div>
       </div>` : ''}
     </div>
 
     ${regHtml}
     ${keyHtml}
-    ${plansHtml}
+
+    <!-- Plan Comparison -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Available Plans</div>
+      <div id="plans-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${plansRows}</div>
+      <!-- Secret reveal row — hidden until lifetime is unlocked -->
+      <div id="lt-reveal-row" style="display:${lifetimeUnlocked?'none':'flex'};align-items:center;gap:8px;margin-top:10px;background:#F7F5F0;border:1.5px dashed #E7E2D9;border-radius:10px;padding:10px 12px;">
+        <span style="font-size:16px">🔓</span>
+        <input id="lt-secret-input" placeholder="Enter special access code…"
+          style="flex:1;background:transparent;border:none;outline:none;font-size:12px;font-weight:600;color:var(--text-main);font-family:monospace;letter-spacing:1px"
+          oninput="this.value=this.value.toUpperCase();checkLifetimeRevealKey(this.value)"
+          onkeydown="if(event.key==='Enter')checkLifetimeRevealKey(this.value)">
+        <span style="font-size:10px;color:#78716C">Special plans available for eligible users</span>
+      </div>
+      <div id="lt-reveal-msg" style="font-size:11px;margin-top:6px;font-weight:600;min-height:14px"></div>
+    </div>
+
     ${activateHtml}
   </div>`;
 }
 
-// Activate key from Settings (separate from the license screen flow)
+// Activate key directly from Settings page
 async function activateLicenseFromSettings(){
-  const key = (document.getElementById('set-lic-key')?.value||'').trim().toUpperCase();
-  const msg  = document.getElementById('set-lic-msg');
+  const inp = document.getElementById('set-lic-key');
+  const msg = document.getElementById('set-lic-msg');
+  if(!inp||!msg) return;
+  const key=(inp.value||'').trim().toUpperCase();
   if(!key||key.length<15||!key.startsWith('CCTR-')){
-    msg.style.color='#DC2626'; msg.textContent='❌ Enter a valid key (CCTR-XXXX-XXXX-XXXX)'; return;
+    msg.style.color='#DC2626'; msg.textContent='❌ Enter a valid key — format: CCTR-XXXX-XXXX-XXXX'; return;
   }
-  msg.style.color='#E8622A'; msg.textContent='⏳ Verifying key…';
+  msg.style.color='#E8622A'; msg.textContent='⏳ Verifying key with server…';
   try{
-    const result = await verifyKeyOnline(key);
+    const result=await verifyKeyOnline(key);
     if(result.valid){
-      saveLicense({key, plan:result.plan, expiry:result.expiry, name:result.name||''});
+      saveLicense({key,plan:result.plan,expiry:result.expiry,name:result.name||''});
+      const planLabel=result.plan==='lifetime'?'Lifetime ♾️':result.plan==='yearly'?'Yearly 📅':'Monthly 🗓️';
+      msg.style.color='#16A34A'; msg.textContent='✅ License activated! Plan: '+planLabel;
       const reg=getRegistration();
       if(reg) sendToSheets('activate_key',{email:reg.email,mobile:reg.mobile,name:reg.name,key,plan:result.plan,status:'active'});
-      msg.style.color='#16A34A';
-      const planLabel=result.plan==='lifetime'?'Lifetime':result.plan==='yearly'?'1 Year':'1 Month';
-      msg.textContent='✅ License activated! Plan: '+planLabel;
-      // Refresh the subscription card after a moment
-      setTimeout(()=>renderSettings(), 1200);
       toast('✅ License activated! Plan: '+planLabel);
+      setTimeout(()=>renderSettings(),1200);
     } else {
-      msg.style.color='#DC2626'; msg.textContent='❌ '+(result.reason||'Invalid or expired key');
+      // Key found on server but invalid/expired
+      msg.style.color='#DC2626'; msg.textContent='❌ '+(result.reason||'Invalid or expired key. Contact support.');
     }
-  } catch(err){
-    msg.style.color='#E8622A'; msg.textContent='⚠️ No internet — cannot verify key online';
+  }catch(err){
+    // Real network error — show actual error message
+    if(err.message&&err.message.includes('404')){
+      msg.style.color='#DC2626';
+      msg.textContent='❌ Key not found on server. Make sure your key is added to licenses.json on GitHub.';
+    } else if(err.message&&(err.message.includes('NetworkError')||err.message.includes('Failed to fetch')||err.message.includes('net::'))){
+      msg.style.color='#E8622A';
+      msg.textContent='⚠️ No internet connection. Check your WiFi and try again.';
+    } else {
+      msg.style.color='#DC2626';
+      msg.textContent='❌ Verification error: '+(err.message||'Unknown error');
+    }
+    console.error('activateLicenseFromSettings error:',err);
   }
+}
+
+// ── LIFETIME PLAN REVEAL ──────────────────────────────────────────────────
+// The secret code to reveal the Lifetime plan card.
+// Change this to whatever you want — it is NOT the same as a license key.
+// It just makes the card visible. User still needs a valid CCTR- key to activate.
+const LIFETIME_REVEAL_CODE = 'CLASSCORE-LIFETIME-2026';
+
+function checkLifetimeRevealKey(val){
+  if(!val) return;
+  const clean = (val||'').trim().toUpperCase();
+
+  // Check both inputs (the separate reveal box AND the license key input)
+  if(clean === LIFETIME_REVEAL_CODE.toUpperCase()){
+    _revealLifetimePlan();
+    return;
+  }
+
+  // Also: if the user typed a CCTR- key that starts with the lifetime prefix, reveal it too
+  // This lets the license key box double as a reveal trigger
+  if(clean.startsWith('CCTR-') && clean.length >= 15){
+    // peek at licenses to see if it might be lifetime — just reveal the card
+    const lic = getLicense();
+    if(lic?.plan === 'lifetime') _revealLifetimePlan();
+  }
+}
+
+function _revealLifetimePlan(){
+  const card      = document.getElementById('plan-card-lifetime');
+  const revealRow = document.getElementById('lt-reveal-row');
+  const msg       = document.getElementById('lt-reveal-msg');
+
+  if(card && card.style.display !== 'none') return; // already visible
+
+  // Use sessionStorage — only lasts for this session, resets on app restart
+  sessionStorage.setItem('cc_lt_unlocked','1');
+  // Also clear old localStorage flag if it exists
+  localStorage.removeItem('cc_lt_unlocked');
+
+  if(card){
+    card.style.display    = 'block';
+    card.style.opacity    = '0';
+    card.style.transform  = 'scale(0.7)';
+    requestAnimationFrame(()=>{
+      card.style.transition = 'all .45s cubic-bezier(.34,1.56,.64,1)';
+      card.style.opacity    = '1';
+      card.style.transform  = 'scale(1)';
+    });
+  }
+  if(revealRow) revealRow.style.display = 'none';
+  if(msg){
+    msg.style.color  = '#1D4ED8';
+    msg.textContent  = '♾️ Lifetime plan unlocked! Enter a Lifetime key below to activate.';
+    setTimeout(()=>{ if(msg) msg.textContent=''; }, 4000);
+  }
+  toast('♾️ Lifetime plan is now visible!');
 }
 
 function renderSettings(){
@@ -3616,6 +3730,72 @@ function deleteUser(username){
 
 // ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────
 // Replace this URL with your Google Apps Script Web App URL after setup
+// ══════════════════════════════════════════════════════════════════════
+// EMAIL SYSTEM — EmailJS (free, no backend needed, works in Electron)
+// ══════════════════════════════════════════════════════════════════════
+// HOW TO SET UP (one-time, 10 minutes):
+//  1. Go to https://www.emailjs.com → Sign up free
+//  2. Dashboard → "Email Services" → Add Service → Gmail → Connect your Gmail
+//     Copy the Service ID (e.g. "service_abc123") → paste into EMAILJS_SERVICE_ID
+//  3. Dashboard → "Email Templates" → Create Template (see template below)
+//     Copy the Template ID → paste into EMAILJS_TEMPLATE_ID
+//  4. Dashboard → top right → Account → Public Key
+//     Copy Public Key → paste into EMAILJS_PUBLIC_KEY
+//
+//  EMAIL TEMPLATE to create in EmailJS dashboard:
+//  ┌──────────────────────────────────────────────────────────────────┐
+//  │  Subject: {{subject}}                                            │
+//  │  To: {{to_email}}                                                │
+//  │  Body:   (paste exactly what's below, including all {{vars}})   │
+//  │  {{body}}                                                        │
+//  └──────────────────────────────────────────────────────────────────┘
+//  That's it! EmailJS handles the actual email sending.
+
+const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // e.g. 'service_abc123'
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // e.g. 'template_xyz789'
+const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // e.g. 'abc123XYZdef'
+
+// Initialise EmailJS — safe even if CDN failed to load
+(function initEmailJS(){
+  try{
+    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY'){
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      console.log('[ClassCore] EmailJS ready');
+    }
+  }catch(e){ console.warn('[ClassCore] EmailJS init failed:', e.message); }
+})();
+
+/**
+ * Send an email via EmailJS.
+ * @param {string} toEmail   - recipient email address
+ * @param {string} subject   - email subject
+ * @param {string} body      - plain text email body (HTML not required)
+ * @returns {object}         - { ok: true } or { ok: false, error: string }
+ */
+async function sendEmail(toEmail, subject, body, extraVars){
+  if(typeof emailjs === 'undefined'
+     || EMAILJS_SERVICE_ID  === 'service_1ywkxn'
+     || EMAILJS_TEMPLATE_ID === 'template_3i4hfuj'
+     || EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
+    console.warn('[ClassCore] EmailJS not configured — email not sent.');
+    return { ok: false, error: 'EmailJS not configured' };
+  }
+  try{
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail,
+      subject:  subject,
+      body:     body,
+      ...(extraVars||{}),
+    });
+    console.log('[ClassCore] Email sent to', toEmail);
+    return { ok: true };
+  }catch(err){
+    console.error('[ClassCore] EmailJS error:', err);
+    return { ok: false, error: err?.text || err?.message || 'Email failed' };
+  }
+}
+
+// Google Sheets — kept for data logging, NOT used for emails anymore
 const GSHEET_URL = 'https://script.google.com/macros/library/d/1NNJtHeLenk6yXZP2yDKJwcqn6lqieZpHnB9OmdePCeZ_J1Snv_1Gj4L5/2';
 
 // Generate device fingerprint to prevent trial abuse
@@ -3694,82 +3874,147 @@ function showRegKeyEntry(){
 
 function setRegMsg(msg, type){
   const el = document.getElementById('reg-msg');
+  if(!el) return;
   el.textContent = msg;
   el.style.color = type==='err'?'#DC2626':type==='warn'?'#E8622A':'#16A34A';
 }
 
 async function doRegister(){
-  const name = (document.getElementById('reg-name').value||'').trim();
-  const email = (document.getElementById('reg-email').value||'').trim().toLowerCase();
-  const mobile = (document.getElementById('reg-mobile').value||'').trim();
+  const name      = (document.getElementById('reg-name').value||'').trim();
+  const email     = (document.getElementById('reg-email').value||'').trim().toLowerCase();
+  const mobile    = (document.getElementById('reg-mobile').value||'').trim();
   const institute = (document.getElementById('reg-institute').value||'').trim();
 
-  if(!name){ setRegMsg('Please enter your full name','err'); return; }
-  if(!email || !email.includes('@')){ setRegMsg('Please enter a valid email','err'); return; }
-  if(!mobile || mobile.length !== 10){ setRegMsg('Please enter a valid 10-digit mobile','err'); return; }
+  if(!name)                            { setRegMsg('Please enter your full name','err');    return; }
+  if(!email || !email.includes('@'))   { setRegMsg('Please enter a valid email','err');     return; }
+  if(!mobile || mobile.length !== 10)  { setRegMsg('Please enter a valid 10-digit mobile','err'); return; }
 
-  setRegMsg('⏳ Registering...', 'warn');
+  // Disable button to prevent double-submit
+  const btn = document.querySelector('#reg-screen .btn-primary');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Registering...'; }
+  setRegMsg('⏳ Setting up your account...', 'warn');
 
-  const deviceId = await getDeviceId();
+  const deviceId   = await getDeviceId();
   const trialStart = Date.now();
-  const trialEnd = trialStart + 30 * 86400000;
+  const trialEnd   = trialStart + 30 * 86400000;
 
-  // Generate temp login credentials
-  const tempUser = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8) + Math.floor(100+Math.random()*900);
+  // ── Generate credentials (NOT shown on screen) ─────────────────────
+  const tempUser = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)
+                 + Math.floor(100+Math.random()*900);
   const tempPass = genPassword();
 
-  // Save registration locally
-  const reg = { name, email, mobile, institute, deviceId, trialStart, trialEnd, registeredAt: new Date().toISOString() };
+  // ── Save registration locally ─────────────────────────────────────
+  const reg = { name, email, mobile, institute, deviceId, trialStart, trialEnd,
+                registeredAt: new Date().toISOString() };
   saveRegistration(reg);
   localStorage.setItem('cc_trial_start', trialStart.toString());
   localStorage.setItem('tuitionName', institute || name + "'s Tuition");
 
-  // Set up admin user with temp credentials + mustChange flag
-  const users = getUsers();
+  // ── Save admin user (mustChange=true forces password reset on first login) ─
+  const users    = getUsers();
   const adminIdx = users.findIndex(x=>x.role==='admin');
   if(adminIdx !== -1){
-    users[adminIdx].username = tempUser;
-    users[adminIdx].password = tempPass;
+    users[adminIdx].username  = tempUser;
+    users[adminIdx].password  = tempPass;
     users[adminIdx].mustChange = true;
-    users[adminIdx].name = name;
-    users[adminIdx].email = email;
+    users[adminIdx].name      = name;
+    users[adminIdx].email     = email;
   } else {
-    users.push({ username:tempUser, password:tempPass, role:'admin', name, email, mustChange:true });
+    users.push({ username:tempUser, password:tempPass, role:'admin',
+                 name, email, mustChange:true });
   }
   localStorage.setItem('cc_users', JSON.stringify(users));
   localStorage.setItem('username', tempUser);
   localStorage.setItem('password', tempPass);
 
-  // Send to Google Sheets + send welcome email
-  const result = await sendToSheets('register', {
+  // ── Build welcome email (professional, no credentials shown on screen) ─
+  const trialEndDate = new Date(trialEnd).toLocaleDateString('en-IN',
+    {day:'numeric', month:'long', year:'numeric'});
+
+  // ── Send email with username+password as separate template variables ─
+  // HTML template in EmailJS renders {{username}}, {{password}}, {{user_name}} etc.
+  setRegMsg('⏳ Sending login details to your email...', 'warn');
+  const emailResult = await sendEmail(
+    email,
+    'ClassCore — Your Login Details (Keep This Safe!)',
+    '', // body is built by the HTML template in EmailJS dashboard
+    {
+      username:   tempUser,
+      password:   tempPass,
+      user_name:  name,
+      institute:  institute || 'Not specified',
+      mobile:     mobile,
+      trial_end:  trialEndDate,
+    }
+  );
+
+  // ── Log to Google Sheets (data only, no email sent from Sheets) ───
+  sendToSheets('register', {
     name, email, mobile, institute, deviceId,
     trialStart: new Date(trialStart).toLocaleDateString('en-IN'),
-    trialEnd: new Date(trialEnd).toLocaleDateString('en-IN'),
-    status: 'trial',
-    tempUser, tempPass
+    trialEnd:   trialEndDate,
+    status:     'trial',
+    // DO NOT log credentials to Sheets for security
   });
 
-  if(result && result.ok === false && result.msg && !result.msg.includes('not configured')){
-    if(result.msg.includes('already registered') || result.msg.includes('device')){
-      setRegMsg('❌ This device has already used a trial. Please purchase a license.','err');
-      return;
+  // ── Show success message — NEVER show credentials on screen ───────
+  if(btn){ btn.disabled = false; btn.textContent = '🚀 Start Free Trial'; }
+
+  if(emailResult.ok){
+    setRegMsg('✅ Registered! Login details sent to your email.', 'ok');
+    // Show only a safe confirmation box — no credentials
+    const credsBox = document.getElementById('reg-creds-box');
+    if(credsBox){
+      credsBox.style.background = '#F0FDF4';
+      credsBox.style.border     = '2px solid #16A34A';
+      credsBox.innerHTML = `
+        <div style="text-align:center">
+          <div style="font-size:28px;margin-bottom:8px">📧</div>
+          <div style="font-size:13px;font-weight:700;color:#16A34A;margin-bottom:6px">
+            Login details sent to your email!
+          </div>
+          <div style="font-size:12px;color:#78716C;margin-bottom:6px">
+            Check your inbox at: <b style="color:#18181B">${email}</b>
+          </div>
+          <div style="font-size:11px;color:#78716C">
+            ⚠️ Also check your <b>Spam / Junk</b> folder.<br>
+            Log in and set your own password immediately.
+          </div>
+        </div>`;
+      credsBox.style.display = 'block';
     }
-  }
-
-  setRegMsg('✅ Registered successfully!', 'ok');
-
-  // Always show credentials on screen (in case email doesn't arrive)
-  const credsBox=document.getElementById('reg-creds-box');
-  if(credsBox){
-    credsBox.style.display='block';
-    document.getElementById('reg-creds-user').textContent=tempUser;
-    document.getElementById('reg-creds-pass').textContent=tempPass;
+  } else {
+    // Email failed — show minimal fallback ONLY (no password shown)
+    setRegMsg('✅ Registered! But email failed to send.', 'warn');
+    const credsBox = document.getElementById('reg-creds-box');
+    if(credsBox){
+      credsBox.style.background = '#FEF9C3';
+      credsBox.style.border     = '2px solid #FDE047';
+      credsBox.innerHTML = `
+        <div style="text-align:center">
+          <div style="font-size:24px;margin-bottom:8px">⚠️</div>
+          <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:6px">
+            Email could not be delivered
+          </div>
+          <div style="font-size:12px;color:#92400E;margin-bottom:8px">
+            Please contact ClassCore support to get your login details:
+          </div>
+          <div style="background:#fff;border-radius:8px;padding:8px 12px;font-size:12px">
+            📧 coreclass.2025@gmail.com<br>
+            📱 WhatsApp your registered mobile: <b>${mobile}</b>
+          </div>
+          <div style="font-size:11px;color:#92400E;margin-top:8px">
+            Tell us your name and email to receive your credentials securely.
+          </div>
+        </div>`;
+      credsBox.style.display = 'block';
+    }
   }
 
   setTimeout(()=>{
     document.getElementById('reg-screen').style.display = 'none';
     checkAndShowLicense();
-  }, 4000);
+  }, 6000);
 }
 
 async function doRegWithKey(){
@@ -4033,12 +4278,8 @@ function activateLicenseKey(){
 }
 
 // Verify key against GitHub licenses.json
-// Key is valid only if:
-// 1. It exists in licenses.json
-// 2. Approved = YES (you set this in keygen.html → GitHub upload)
-// 3. Expiry date has not passed (monthly=30 days, yearly=365 days)
 async function verifyKeyOnline(key){
-  // First try Google Sheets (most up to date)
+  // Try Google Sheets first if configured
   try{
     if(GSHEET_URL && !GSHEET_URL.includes('YOUR_GOOGLE')){
       const url = GSHEET_URL + '?action=verify_key&key=' + encodeURIComponent(key);
@@ -4051,22 +4292,44 @@ async function verifyKeyOnline(key){
         }
       }
     }
-  }catch(e){ console.warn('Sheets verify failed, trying GitHub:', e.message); }
+  }catch(e){ console.warn('Sheets verify failed:', e.message); }
 
-  // Fallback: check GitHub licenses.json
-  const url = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t='+Date.now();
-  const resp = await fetch(url, {cache:'no-store'});
-  if(!resp.ok) throw new Error('Network error: '+resp.status);
-  let licenses;
-  try{ licenses = await resp.json(); }
-  catch(e){ throw new Error('Invalid license data from server'); }
-  if(!licenses || typeof licenses !== 'object') throw new Error('Invalid license format');
+  // Method 1: GitHub raw URL
+  try{
+    const rawUrl = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t='+Date.now();
+    const resp = await fetch(rawUrl, {cache:'no-store'});
+    if(resp.ok){
+      const licenses = await resp.json();
+      return _checkKeyInLicenses(key, licenses);
+    }
+  }catch(e){ console.warn('Raw GitHub failed:', e.message); }
+
+  // Method 2: GitHub Contents API (works better in Electron)
+  try{
+    const apiUrl = 'https://api.github.com/repos/prajapatikuldeep455-source/classcore-tuition/contents/licenses.json?ref=main&t='+Date.now();
+    const resp = await fetch(apiUrl, {
+      headers:{'Accept':'application/vnd.github.v3+json'},
+      cache:'no-store'
+    });
+    if(resp.ok){
+      const data = await resp.json();
+      const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+      const licenses = JSON.parse(decoded);
+      return _checkKeyInLicenses(key, licenses);
+    }
+  }catch(e){ console.warn('GitHub API failed:', e.message); }
+
+  // All methods failed
+  throw new Error('Cannot reach GitHub. Check your internet connection.');
+}
+
+function _checkKeyInLicenses(key, licenses){
+  if(!licenses || typeof licenses !== 'object') throw new Error('Invalid license data from server');
   const lic = licenses[key];
-  if(!lic) return { valid:false, reason:'Key not found' };
-  // Check expiry for monthly/yearly
+  if(!lic) return { valid:false, reason:'Key not found. Make sure the key was pushed to GitHub.' };
   if(lic.plan !== 'lifetime'){
-    if(!lic.expiry) return { valid:false, reason:'Key has no expiry date' };
-    if(Date.now() > lic.expiry) return { valid:false, reason:'Key has expired — please renew' };
+    if(!lic.expiry) return { valid:false, reason:'Key has no expiry date. Contact support.' };
+    if(Date.now() > lic.expiry) return { valid:false, reason:'Key expired on '+new Date(lic.expiry).toLocaleDateString('en-IN')+'. Please renew.' };
   }
   return { valid:true, plan:lic.plan, expiry:lic.expiry||9999999999999, name:lic.name||'' };
 }
@@ -4543,6 +4806,8 @@ function initApp(){
 
 window.addEventListener('DOMContentLoaded',async ()=>{
   loadSavedTheme();
+  // Clear any leftover lifetime unlock flag from localStorage (migrate to sessionStorage)
+  localStorage.removeItem('cc_lt_unlocked');
   await loadAllData();
 
   // Step 1: Check if registered
