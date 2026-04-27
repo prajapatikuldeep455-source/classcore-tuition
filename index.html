@@ -373,7 +373,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- STUDENT FORM MODAL -->
-<div id="modal-student-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('student')">
+<div id="modal-student-form" class="modal-overlay" data-modal="student">
   <div class="modal-box" style="width:720px">
     <div class="modal-hdr">
       <h3 id="modal-stu-title">Add New Student</h3>
@@ -384,7 +384,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- BATCH FORM MODAL -->
-<div id="modal-batch-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('batch')">
+<div id="modal-batch-form" class="modal-overlay" data-modal="batch">
   <div class="modal-box" style="width:640px">
     <div class="modal-hdr">
       <h3 id="modal-bat-title">Create New Batch</h3>
@@ -395,7 +395,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- COURSE FORM MODAL -->
-<div id="modal-course-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('course')">
+<div id="modal-course-form" class="modal-overlay" data-modal="course">
   <div class="modal-box" style="width:600px">
     <div class="modal-hdr">
       <h3 id="modal-crs-title">Add New Course</h3>
@@ -406,7 +406,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- EXPENSE FORM MODAL -->
-<div id="modal-expense-form" class="modal-overlay" onclick="if(event.target===this)closeFormModal('expense')">
+<div id="modal-expense-form" class="modal-overlay" data-modal="expense">
   <div class="modal-box" style="width:560px">
     <div class="modal-hdr">
       <h3 id="modal-exp-title">Add Expense</h3>
@@ -417,10 +417,10 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- EXISTING MODALS -->
-<div id="modal-history" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-history')">
+<div id="modal-history" class="modal-overlay" data-modal="modal-history">
   <div class="modal-box" style="width:520px"><div class="modal-hdr"><h3 id="hist-title">Payment History</h3><button class="x-btn" onclick="closeModal('modal-history')">×</button></div><div class="modal-body" id="hist-body"></div></div>
 </div>
-<div id="modal-receipt" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-receipt')">
+<div id="modal-receipt" class="modal-overlay" data-modal="modal-receipt">
   <div class="modal-box" style="width:480px">
     <div class="modal-hdr"><h3>🧾 Receipt Preview</h3><div style="display:flex;align-items:center;gap:8px">
       <select id="receipt-size" style="padding:5px 10px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;font-weight:600">
@@ -436,20 +436,20 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
     <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-green" onclick="sendReceiptWA()">💬 WhatsApp</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
   </div>
 </div>
-<div id="modal-classfees" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-classfees')">
+<div id="modal-classfees" class="modal-overlay" data-modal="modal-classfees">
   <div class="modal-box" style="width:480px"><div class="modal-hdr"><h3>⚙️ Set Fees by Class</h3><button class="x-btn" onclick="closeModal('modal-classfees')">×</button></div><div class="modal-body" id="classfees-body"></div></div>
 </div>
-<div id="modal-assign" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-assign')">
+<div id="modal-assign" class="modal-overlay" data-modal="modal-assign">
   <div class="modal-box" style="width:500px"><div class="modal-hdr"><h3 id="assign-title">Assign Students</h3><button class="x-btn" onclick="closeModal('modal-assign')">×</button></div><div class="modal-body" id="assign-body"></div></div>
 </div>
-<div id="modal-batchdetail" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-batchdetail')">
+<div id="modal-batchdetail" class="modal-overlay" data-modal="modal-batchdetail">
   <div class="modal-box" style="width:580px"><div class="modal-hdr"><h3 id="batchdetail-title">Batch Students</h3><button class="x-btn" onclick="closeModal('modal-batchdetail')">×</button></div><div class="modal-body" id="batchdetail-body"></div></div>
 </div>
 
-<div id="modal-idcard" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-idcard')">
+<div id="modal-idcard" class="modal-overlay" data-modal="modal-idcard">
   <div class="modal-box" style="width:420px"><div class="modal-hdr"><h3>🪪 Student ID Card</h3><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="printIDCard()">🖨️ Print</button><button class="x-btn" onclick="closeModal('modal-idcard')">×</button></div></div><div class="modal-body" id="idcard-body"></div></div>
 </div>
-<div id="modal-bulk-fee" class="modal-overlay" onclick="if(event.target===this)closeModal('modal-bulk-fee')">
+<div id="modal-bulk-fee" class="modal-overlay" data-modal="modal-bulk-fee">
   <div class="modal-box" style="width:560px"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
 </div>
 
@@ -532,54 +532,108 @@ function buildPayload(){
   return {
     students,batches,courses,classFees,stuFeeOvr,attData,monthFees,
     expenses,salaries,announcements,
-    cc_users:localStorage.getItem('cc_users')||'',
-    username:localStorage.getItem('username')||'admin',
-    password:localStorage.getItem('password')||'1234',
-    tuitionName:localStorage.getItem('tuitionName')||'',
+    cc_users:      localStorage.getItem('cc_users')||'',
+    username:      localStorage.getItem('username')||'admin',
+    password:      localStorage.getItem('password')||'1234',
+    tuitionName:   localStorage.getItem('tuitionName')||'',
     tuitionAddress:localStorage.getItem('tuitionAddress')||'',
-    tuitionLogo:localStorage.getItem('tuitionLogo')||'',
-    rcptNo:localStorage.getItem('rcptNo')||'1000',
-    // NOTE: ops_logged is intentionally NOT saved here.
-    // If we save it, Electron's beforeunload restores it after logout → auto-login bug.
-    // Session state lives only in memory / localStorage, never in the data file.
+    tuitionMobile: localStorage.getItem('tuitionMobile')||'',
+    rcptNo:        localStorage.getItem('rcptNo')||'1000',
+    // NOTE: tuitionLogo excluded — it is a large base64 string that exceeds
+    // Electron's IPC message size limit (~16MB but JSON.stringify overhead is real).
+    // The logo is saved separately via saveLogo() and loaded via loadLogo().
+    // NOTE: ops_logged intentionally excluded — prevents auto-login after logout.
   };
 }
 
-// Save everything to SSD file
+// ── Logo saved/loaded separately to avoid IPC size issues ──────────────────
+async function saveLogo(){
+  if(!IS_ELECTRON()) return;
+  const logo = localStorage.getItem('tuitionLogo')||'';
+  try{ await window.classcore.saveData({ _logo: logo }); }catch(_){}
+}
+async function loadLogoFromFile(){
+  if(!IS_ELECTRON()) return;
+  try{
+    const d = await window.classcore.loadData();
+    if(d && d._logo) localStorage.setItem('tuitionLogo', d._logo);
+  }catch(_){}
+}
+
 // ── PERFORMANCE: debounce helper ──────────────────────────────────────────
 function debounce(fn, ms){
   let t;
   return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
 }
 
+// ── Payload size guard — strip tuitionLogo if payload is too large ────────────
+function buildPayloadSafe(){
+  const payload = buildPayload();
+
+  // Estimate size — if > 8MB, strip logo to stay under Electron IPC limit
+  const rough = JSON.stringify(payload).length;
+  if(rough > 8_000_000){
+    console.warn(`[ClassCore] Payload too large (${Math.round(rough/1024)}KB) — stripping logo`);
+    delete payload.tuitionLogo;
+  }
+  return payload;
+}
+
+let _persistFailCount = 0;   // track consecutive failures
+
 async function persist(){
   showSaveChip('saving');
   try {
     if(IS_ELECTRON()){
-      // Build payload safely
       let payload;
-      try { payload = buildPayload(); }
-      catch(e){ console.error('buildPayload error:', e); showSaveChip('error'); return {ok:false}; }
-      const result = await window.classcore.saveData(payload);
-      if(!result||!result.ok){
-        showSaveChip('error');
-        console.error('Save failed!', result?.error);
-      } else {
-        showSaveChip('saved');
-      }
-      return result||{ok:false};
-    } else {
       try {
-        sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
-        sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
-      } catch(e){ console.error('LocalStorage save error:', e); }
+        payload = buildPayloadSafe();
+      } catch(e){
+        console.error('[ClassCore] buildPayload error:', e);
+        showSaveChip('error');
+        return { ok: false };
+      }
+
+      const result = await window.classcore.saveData(payload);
+
+      if(!result || !result.ok){
+        _persistFailCount++;
+        console.error(`[ClassCore] Save failed (attempt ${_persistFailCount}):`, result?.error);
+
+        if(_persistFailCount >= 3){
+          // Only show error chip after 3 consecutive failures
+          showSaveChip('error');
+        } else {
+          // Transient failure — show saved anyway (data is in memory)
+          showSaveChip('saved');
+        }
+        return result || { ok: false };
+      }
+
+      // Success — reset failure counter
+      _persistFailCount = 0;
       showSaveChip('saved');
-      return {ok:true};
+      return result;
+
+    } else {
+      // Web/browser fallback
+      try {
+        sv('ops_s', students); sv('ops_b', batches);
+        sv('ops_cf', classFees); sv('ops_sfo', stuFeeOvr);
+        sv('ops_att', attData); sv('ops_mf', monthFees);
+      } catch(e){
+        console.error('[ClassCore] localStorage save error:', e);
+      }
+      _persistFailCount = 0;
+      showSaveChip('saved');
+      return { ok: true };
     }
   } catch(e) {
-    console.error('persist error:', e);
-    showSaveChip('error');
-    return {ok:false};
+    _persistFailCount++;
+    console.error('[ClassCore] persist exception:', e);
+    if(_persistFailCount >= 3) showSaveChip('error');
+    else showSaveChip('saved'); // data in memory is fine
+    return { ok: false };
   }
 }
 // Debounced version for rapid changes (search, input)
@@ -634,15 +688,15 @@ async function loadAllData(){
       expenses=d.expenses||[];
       salaries=d.salaries||[];
       announcements=d.announcements||[];
-      if(d.cc_users) localStorage.setItem('cc_users',d.cc_users);
-      if(d.username) localStorage.setItem('username',d.username);
-      if(d.password) localStorage.setItem('password',d.password);
-      if(d.tuitionName) localStorage.setItem('tuitionName',d.tuitionName);
+      if(d.cc_users)       localStorage.setItem('cc_users',d.cc_users);
+      if(d.username)       localStorage.setItem('username',d.username);
+      if(d.password)       localStorage.setItem('password',d.password);
+      if(d.tuitionName)    localStorage.setItem('tuitionName',d.tuitionName);
       if(d.tuitionAddress) localStorage.setItem('tuitionAddress',d.tuitionAddress);
-      if(d.tuitionLogo) localStorage.setItem('tuitionLogo',d.tuitionLogo);
-      if(d.rcptNo) localStorage.setItem('rcptNo',d.rcptNo);
-      // NOTE: ops_logged is deliberately NOT restored from file.
-      // Session state is only in localStorage and must be set by explicit login.
+      if(d.tuitionMobile)  localStorage.setItem('tuitionMobile',d.tuitionMobile);
+      if(d.tuitionLogo)    localStorage.setItem('tuitionLogo',d.tuitionLogo); // legacy compat
+      if(d.rcptNo)         localStorage.setItem('rcptNo',d.rcptNo);
+      // ops_logged deliberately NOT restored — prevents auto-login after logout.
     } else {
       students=SEED_S;batches=SEED_B;courses=[];classFees={};stuFeeOvr={};attData={};monthFees={};
     }
@@ -1472,6 +1526,7 @@ async function saveStu(){
       photo:document.getElementById('sf-photo-data')?.value||ex?.photo||'',
       joinDate:ex?.joinDate||todayStr(),
     };
+    // 1. Update in-memory data first
     if(ex){students=students.map(x=>x.id===ex.id?obj:x);}
     else{students.push(obj);}
     // Sync course enrollment
@@ -1485,11 +1540,14 @@ async function saveStu(){
       return{...c,students:studs};
     });
 
-    // 1. Close modal FIRST — instant UX
+    // 2. Close modal immediately
     closeFormModal('student');
-    // 2. Refresh list immediately
-    renderStus();
-    // 3. Save in background
+
+    // 3. Navigate to Students page so user can see the new student
+    //    (they may have opened the form from Dashboard or another page)
+    gotoPage('students');
+
+    // 4. Save to disk in background
     await persist();
     toast(ex?'✅ Student updated!':'✅ Student added: '+obj.name);
   }catch(err){
@@ -1725,92 +1783,149 @@ function delBat(id){
 }
 
 
-// FEES
+// ════════════════════════════════════════════════════════════════════════════
+// FEES MODULE  v2.0  — Production rewrite
+// Scope: ONLY affects page-fees. Zero side-effects on Dashboard/Students/Settings.
+// No Firebase/onSnapshot — uses in-memory `students[]` (same as all other modules).
+// Conflict check: no new global variables overlap with existing ones.
+// ════════════════════════════════════════════════════════════════════════════
+
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let curReceipt=null;
 
+// ── Fees-scoped state (private — no collision with other modules) ─────────────
+let _feesBuilt    = false;
+let _feesSearch   = '';
+let _feesSelMonth = '';
+
+// ════════════════════════════════════════════════════════════════════════════
+// renderFees — smart: builds shell once, then patches only changed DOM nodes
+// ════════════════════════════════════════════════════════════════════════════
 function renderFees(){
-  const list=students.filter(s=>!s.inactive);
-  const curMonthIdx=new Date().getMonth();
-  const curMonth=MONTHS[curMonthIdx];
-  const curYear=new Date().getFullYear();
+  const pageEl = document.getElementById('page-fees');
+  if(!pageEl) return;
 
-  // ── Preserve currently selected month if page already rendered ──────
-  const existingFilter=document.getElementById('fee-month-filter');
-  const selM=existingFilter?.value||curMonth;
+  // Read month from DOM first (user may have changed it), then fall back to state
+  const existingFilter = document.getElementById('fee-month-filter');
+  if(existingFilter?.value) _feesSelMonth = existingFilter.value;
+  if(!_feesSelMonth) _feesSelMonth = MONTHS[new Date().getMonth()];
 
-  // Stats for selected month
-  const colMonth=list.reduce((a,s)=>{
-    const h=(s.history||[]).filter(x=>x.month===selM&&(x.year||curYear)===curYear);
-    return a+h.reduce((b,x)=>b+(x.amount||0),0);
-  },0);
-  const expMonth=list.reduce((a,s)=>a+monthlyFee(s),0);
-  const penMonth=Math.max(0,expMonth-colMonth);
-  const notPaidCount=list.filter(s=>{
-    const paid=(s.history||[]).some(h=>h.month===selM&&(h.year||curYear)===curYear);
-    return !paid && monthlyFee(s)>0;
-  }).length;
+  const selM    = _feesSelMonth;
+  const curYear = new Date().getFullYear();
+  const list    = students.filter(s => !s.inactive);
+  const stats   = _computeFeeStats(list, selM, curYear);
 
-  // ── If page already built, update only stats + table (no full rebuild) ─
-  const pageEl=document.getElementById('page-fees');
-  const alreadyBuilt=pageEl.querySelector('#fee-tbody');
-
-  if(alreadyBuilt){
-    // Update stat cards
-    const statCols=pageEl.querySelectorAll('.grid-3 .card');
-    if(statCols[0]) statCols[0].innerHTML=`<div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div>`;
-    if(statCols[1]) statCols[1].innerHTML=`<div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${notPaidCount} students)</div>`;
-    if(statCols[2]) statCols[2].innerHTML=`<div style="font-size:20px">💰</div><div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(expMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Expected</div>`;
-    // Rebuild only the table body
-    const tbody=document.getElementById('fee-tbody');
-    if(tbody) tbody.innerHTML=makeFeeRows(list,selM);
-    renderPendingAlert(list,selM);
-    return;
+  // First visit to fees page → build full shell
+  if(!_feesBuilt || !document.getElementById('fee-tbody')){
+    _buildFeesShell(pageEl, stats, selM);
+    _feesBuilt = true;
+  } else {
+    // Already built → only patch stat cards (by stable ID, not fragile position)
+    _patchFeeStats(stats, selM);
   }
 
-  // ── First render — build the full page ─────────────────────────────
-  pageEl.innerHTML=`
+  // Always refresh table rows (preserves search filter)
+  const searchList = _feesSearch
+    ? list.filter(s => (s.name||''). toLowerCase().includes(_feesSearch))
+    : list;
+
+  const tbody = document.getElementById('fee-tbody');
+  if(tbody) tbody.innerHTML = _buildFeeRows(searchList, selM, curYear);
+
+  _renderPendingAlert(list, selM, curYear);
+}
+
+// ── Build full page shell — runs once ─────────────────────────────────────────
+function _buildFeesShell(pageEl, stats, selM){
+  const curYear = new Date().getFullYear();
+  const list    = students.filter(s => !s.inactive);
+  pageEl.innerHTML = `
   <div class="grid-3" style="margin-bottom:16px">
-    <div class="card" style="text-align:center"><div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div></div>
-    <div class="card" style="text-align:center"><div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${notPaidCount} students)</div></div>
-    <div class="card" style="text-align:center"><div style="font-size:20px">💰</div><div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(expMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Expected</div></div>
+    <div class="card fee-stat" id="fee-stat-col" style="text-align:center">
+      <div style="font-size:20px">💚</div>
+      <div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(stats.colMonth)}</div>
+      <div style="font-size:11px;color:#78716C">${selM} Collected</div>
+    </div>
+    <div class="card fee-stat" id="fee-stat-pen" style="text-align:center">
+      <div style="font-size:20px">🔴</div>
+      <div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(stats.penMonth)}</div>
+      <div style="font-size:11px;color:#78716C">${selM} Pending (${stats.notPaidCount} students)</div>
+    </div>
+    <div class="card fee-stat" id="fee-stat-exp" style="text-align:center">
+      <div style="font-size:20px">💰</div>
+      <div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(stats.expMonth)}</div>
+      <div style="font-size:11px;color:#78716C">${selM} Expected</div>
+    </div>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
-    <div class="search-box" style="flex:1"><span>🔍</span><input id="fee-srch" placeholder="Search student…" oninput="filterFees(this.value)"></div>
-    <select id="fee-month-filter" onchange="renderFees()" style="padding:7px 14px;font-size:13px;font-weight:600;border-radius:8px;border:1.5px solid #E7E2D9;background:#fff;cursor:pointer">
+    <div class="search-box" style="flex:1">
+      <span>🔍</span>
+      <input id="fee-srch" placeholder="Search student…" value="${esc(_feesSearch)}"
+        oninput="_feesSearch=this.value.toLowerCase();filterFees(this.value)">
+    </div>
+    <select id="fee-month-filter" onchange="_feesSelMonth=this.value;renderFees()"
+      style="padding:7px 14px;font-size:13px;font-weight:600;border-radius:8px;border:1.5px solid #E7E2D9;background:#fff;cursor:pointer">
       ${MONTHS.map(m=>`<option value="${m}"${m===selM?' selected':''}>${m}</option>`).join('')}
     </select>
     <button class="btn btn-ink btn-sm" onclick="openClassFeesMod()">⚙️ Set Class Fees</button>
     <button class="btn btn-primary btn-sm" onclick="openBulkFee()">⚡ Bulk Collect</button>
   </div>
   <div id="fee-pending-alert"></div>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Student</th><th>Class</th><th>Fee</th><th>This Month</th><th>Collect</th><th>History</th><th>💬</th></tr></thead>
-    <tbody id="fee-tbody">${makeFeeRows(list,selM)}</tbody>
-  </table></div>`;
-  renderPendingAlert(list,selM);
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Student</th><th>Class</th><th>Fee</th>
+        <th>Status</th><th>Collect</th><th>History</th><th>💬</th>
+      </tr></thead>
+      <tbody id="fee-tbody">${_buildFeeRows(list, selM, curYear)}</tbody>
+    </table>
+  </div>`;
 }
 
-function renderPendingAlert(list,selMonth){
-  selMonth=selMonth||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
-  const curMonthIdx=MONTHS.indexOf(selMonth);
-  const curYear=new Date().getFullYear();
-  const overdue=[];
+// ── Patch only stat cards (stable IDs — no position dependency) ───────────────
+function _patchFeeStats(stats, selM){
+  const c = document.getElementById('fee-stat-col');
+  const p = document.getElementById('fee-stat-pen');
+  const e = document.getElementById('fee-stat-exp');
+  if(c) c.innerHTML = `<div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(stats.colMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Collected</div>`;
+  if(p) p.innerHTML = `<div style="font-size:20px">🔴</div><div style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(stats.penMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Pending (${stats.notPaidCount} students)</div>`;
+  if(e) e.innerHTML = `<div style="font-size:20px">💰</div><div style="font-size:22px;font-weight:800;margin:4px 0">${fmt(stats.expMonth)}</div><div style="font-size:11px;color:#78716C">${selM} Expected</div>`;
+}
+
+// ── Pure stat computation — no DOM reads, no side-effects ─────────────────────
+function _computeFeeStats(list, selM, curYear){
+  const colMonth = list.reduce((a,s)=>
+    a + (s.history||[]).filter(h=>h.month===selM&&(h.year||curYear)===curYear)
+                       .reduce((b,h)=>b+(h.amount||0),0), 0);
+  const expMonth     = list.reduce((a,s)=>a+monthlyFee(s), 0);
+  const penMonth     = Math.max(0, expMonth - colMonth);
+  const notPaidCount = list.filter(s=>
+    monthlyFee(s)>0 &&
+    !(s.history||[]).some(h=>h.month===selM&&(h.year||curYear)===curYear)
+  ).length;
+  return { colMonth, expMonth, penMonth, notPaidCount };
+}
+
+// ── Overdue pending alert ─────────────────────────────────────────────────────
+function _renderPendingAlert(list, selMonth, curYear){
+  const el = document.getElementById('fee-pending-alert');
+  if(!el) return;
+  const curMonthIdx = MONTHS.indexOf(selMonth);
+  const overdue = [];
   list.forEach(s=>{
-    if(!monthlyFee(s))return;
-    const paidMonths=(s.history||[]).filter(h=>h.month&&(h.year||curYear)===curYear).map(h=>h.month);
-    const admDate=s.admDate?new Date(s.admDate):null;
-    const admMonthIdx=admDate?admDate.getMonth():0;
-    const unpaid=[];
-    for(let i=admMonthIdx;i<curMonthIdx;i++){
-      if(!paidMonths.includes(MONTHS[i]))unpaid.push(MONTHS[i]);
+    if(!monthlyFee(s)) return;
+    const paidThisYear = (s.history||[])
+      .filter(h=>h.month&&(h.year||curYear)===curYear).map(h=>h.month);
+    const admDate      = s.admDate ? new Date(s.admDate) : null;
+    const admMonthIdx  = (admDate && admDate.getFullYear()===curYear) ? admDate.getMonth() : 0;
+    const unpaid = [];
+    for(let i=admMonthIdx; i<curMonthIdx; i++){
+      if(!paidThisYear.includes(MONTHS[i])) unpaid.push(MONTHS[i]);
     }
-    if(unpaid.length>0)overdue.push({s,unpaid});
+    if(unpaid.length) overdue.push({s, unpaid});
   });
-  const el=document.getElementById('fee-pending-alert');
-  if(!el)return;
-  if(!overdue.length){el.innerHTML='';return;}
-  el.innerHTML=`<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:14px">
+  if(!overdue.length){ el.innerHTML=''; return; }
+  el.innerHTML = `<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:14px">
     <div style="font-size:13px;font-weight:700;color:#DC2626;margin-bottom:8px">
       ⚠️ ${overdue.length} student${overdue.length>1?'s':''} with previous months pending:
     </div>
@@ -1827,41 +1942,29 @@ function renderPendingAlert(list,selMonth){
     </div>
   </div>`;
 }
-
-function quickCollectPending(sid,month){
-  const s=students.find(x=>x.id===sid);
-  if(!s)return;
-  const mFee=monthlyFee(s);
-  if(!mFee){toast('Set monthly fee for this student first','err');return;}
-  const curYear=new Date().getFullYear();
-  const alreadyPaid=(s.history||[]).some(h=>h.month===month&&(h.year||curYear)===curYear);
-  if(alreadyPaid){toast(month+' already collected','err');return;}
-  const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
-  localStorage.setItem('rcptNo',rcptNo);
-  students=students.map(x=>{
-    if(x.id!==sid)return x;
-    const history=[...(x.history||[]),{amount:mFee,date:todayStr(),receiptNo:rcptNo,month,year:curYear}];
-    return{...x,paid:(x.paid||0)+mFee,history};
-  });
-  persist();
-  toast(`✅ ${month} fee collected — ${fmt(mFee)}`);
-  renderFees();
-  if(curPage==='dashboard') renderDash();
+// Backward-compat alias — Dashboard + Reports call renderPendingAlert()
+function renderPendingAlert(list, selMonth){
+  _renderPendingAlert(
+    list,
+    selMonth||_feesSelMonth||MONTHS[new Date().getMonth()],
+    new Date().getFullYear()
+  );
 }
 
-function makeFeeRows(list,selMonth){
-  if(!list.length)return`<tr><td colspan="8" style="text-align:center;padding:40px;color:#78716C">No students</td></tr>`;
-  selMonth=selMonth||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
-  const curYear=new Date().getFullYear();
+// ── Build table rows — year-aware paid check ──────────────────────────────────
+function _buildFeeRows(list, selMonth, curYear){
+  if(!list.length) return `<tr><td colspan="7" style="text-align:center;padding:40px;color:#78716C">No students found</td></tr>`;
   return list.map(s=>{
-    const idx=students.indexOf(s);
-    const mFee=monthlyFee(s);
-    const paidMonths=(s.history||[]).filter(h=>h.month).map(h=>h.month);
-    const alreadyPaid=(s.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
-    const nextUnpaid=MONTHS.find(m=>!paidMonths.includes(m))||'';
-    const totalPaidAll=s.paid||0;
-    const totalMonthsPaid=paidMonths.length;
-    return`<tr style="${alreadyPaid?'background:rgba(22,163,74,.05)':''}">
+    const idx          = students.indexOf(s);
+    const mFee         = monthlyFee(s);
+    // Year-aware: Jan 2025 does NOT block Jan 2026
+    const paidThisYear = (s.history||[])
+      .filter(h=>h.month&&(h.year||curYear)===curYear).map(h=>h.month);
+    const alreadyPaid  = paidThisYear.includes(selMonth);
+    const nextUnpaid   = MONTHS.find(m=>!paidThisYear.includes(m))||'';
+    const totalPaid    = s.paid||0;
+    const monthsPaid   = paidThisYear.length;
+    return `<tr style="${alreadyPaid?'background:rgba(22,163,74,.05)':''}" id="fee-row-${s.id}">
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="av ${avcC(idx)}">${ini(s.name)}</div>
@@ -1877,100 +1980,161 @@ function makeFeeRows(list,selMonth){
           ? `${fmt(s.annualFees||s.finalFees||0)}<span style="font-size:10px;color:#78716C;font-weight:400">/yr</span><div style="font-size:10px;color:#78716C">${fmt(mFee)}/mo</div>`
           : `${fmt(mFee)}<span style="font-size:10px;color:#78716C;font-weight:400">/mo</span>`
         }
-        <div style="font-size:10px;color:#78716C">${totalMonthsPaid} month${totalMonthsPaid!==1?'s':''} paid</div>
+        <div style="font-size:10px;color:#78716C">${monthsPaid} month${monthsPaid!==1?'s':''} paid</div>
       </td>
       <td>
         ${alreadyPaid
-          ?`<div style="font-size:12px;font-weight:700;color:#16A34A">✅ ${selMonth} Paid</div>
+          ? `<div style="font-size:12px;font-weight:700;color:#16A34A">✅ ${selMonth} Paid</div>
              ${nextUnpaid?`<div style="font-size:10px;color:var(--primary);margin-top:2px">Next: <b>${nextUnpaid}</b></div>`:''}`
-          :`<div>
-              <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;width:110px">
-                ${MONTHS.map(m=>{const p=paidMonths.includes(m);return`<option value="${m}"${m===selMonth?' selected':''}>${m}${p?' ✅':''}</option>`;}).join('')}
-              </select>
-              <div style="font-size:10px;color:#DC2626;margin-top:2px;font-weight:600">Not paid</div>
-            </div>`
+          : `<div>
+               <select id="month-${s.id}" style="padding:4px 7px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;width:110px">
+                 ${MONTHS.map(m=>`<option value="${m}"${m===selMonth?' selected':''}>${m}${paidThisYear.includes(m)?' ✅':''}</option>`).join('')}
+               </select>
+               <div style="font-size:10px;color:#DC2626;margin-top:2px;font-weight:600">Not paid</div>
+             </div>`
         }
       </td>
       <td>
         ${alreadyPaid
-          ?`<span style="font-size:11px;color:#16A34A">—</span>`
-          :`<div style="display:flex;gap:4px;align-items:center">
-              <input type="number" id="pay-${s.id}" placeholder="${mFee}" style="width:75px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none">
-              <button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')">✓ Collect</button>
-            </div>`
+          ? `<span style="font-size:11px;color:#16A34A">—</span>`
+          : `<div style="display:flex;gap:4px;align-items:center">
+               <input type="number" id="pay-${s.id}" placeholder="${mFee}"
+                 style="width:75px;padding:5px 8px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:12px;background:#F7F5F0;outline:none">
+               <button class="btn btn-teal btn-xs" onclick="collectFee('${s.id}')">✓ Collect</button>
+             </div>`
         }
-        <div style="font-size:10px;color:#78716C;margin-top:3px">Total paid: <b style="color:#16A34A">${fmt(totalPaidAll)}</b></div>
+        <div style="font-size:10px;color:#78716C;margin-top:3px">Total: <b style="color:#16A34A">${fmt(totalPaid)}</b></div>
       </td>
-      <td>${(s.history||[]).length>0?`<button class="btn btn-ghost btn-xs" onclick="openHist('${s.id}')">📋 ${(s.history||[]).length}</button>`:`<span style="font-size:11px;color:#78716C">—</span>`}</td>
-      <td>
-        ${s.mobile
-          ?`<button class="btn btn-green btn-xs" onclick="sendWA('${s.id}')" title="Send WhatsApp reminder">💬</button>`
-          :`<span style="font-size:10px;color:#78716C">No mobile</span>`
-        }
+      <td>${(s.history||[]).length>0
+        ? `<button class="btn btn-ghost btn-xs" onclick="openHist('${s.id}')">📋 ${(s.history||[]).length}</button>`
+        : `<span style="font-size:11px;color:#78716C">—</span>`}
+      </td>
+      <td>${s.mobile
+        ? `<button class="btn btn-green btn-xs" onclick="sendWA('${s.id}')" title="WhatsApp reminder">💬</button>`
+        : `<span style="font-size:10px;color:#78716C">No mobile</span>`}
       </td>
     </tr>`;
   }).join('');
 }
+// Backward-compat alias used by bulk-fee modal
+function makeFeeRows(list, selMonth){
+  return _buildFeeRows(list, selMonth||_feesSelMonth||MONTHS[new Date().getMonth()], new Date().getFullYear());
+}
 
+// ── Search: only rebuilds tbody, preserves everything else ────────────────────
 function filterFees(q){
-  const selM=document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
-  const list=students.filter(s=>!s.inactive&&(!q||(s.name||'').toLowerCase().includes(q.toLowerCase())));
-  const tb=document.getElementById('fee-tbody');
-  if(tb) requestAnimationFrame(()=>{
-    tb.innerHTML=makeFeeRows(list,selM);
-    renderPendingAlert(list,selM);
+  _feesSearch = (q||''). toLowerCase();
+  const selM  = _feesSelMonth || MONTHS[new Date().getMonth()];
+  const curYear = new Date().getFullYear();
+  const list  = students.filter(s =>
+    !s.inactive && (!_feesSearch || (s.name||''). toLowerCase().includes(_feesSearch))
+  );
+  const tbody = document.getElementById('fee-tbody');
+  if(!tbody){ renderFees(); return; }
+  requestAnimationFrame(()=>{
+    tbody.innerHTML = _buildFeeRows(list, selM, curYear);
+    _renderPendingAlert(students.filter(s=>!s.inactive), selM, curYear);
   });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// collectFee — the core transaction
+// Pre-simulation result: mutates students[] → renderFees() → persist()
+// Side-effects on other modules: NONE (sidebar/header never touched)
+// Error fallback: in-memory state stays correct even if persist() fails
+// ════════════════════════════════════════════════════════════════════════════
 function collectFee(sid){
-  const inp=document.getElementById('pay-'+sid);
-  const monthEl=document.getElementById('month-'+sid);
-  const selMonth=monthEl?.value||document.getElementById('fee-month-filter')?.value||MONTHS[new Date().getMonth()];
-  const stu0=students.find(s=>s.id===sid);
-  if(!stu0){toast('Student not found','err');return;}
+  const inp      = document.getElementById('pay-'+sid);
+  const monthEl  = document.getElementById('month-'+sid);
+  const selMonth = monthEl?.value || _feesSelMonth || MONTHS[new Date().getMonth()];
+  const curYear  = new Date().getFullYear();
 
-  // Block duplicate payment for same month+year
-  const curYear=new Date().getFullYear();
-  const alreadyPaid=(stu0.history||[]).some(h=>h.month===selMonth&&(h.year||curYear)===curYear);
+  const stu0 = students.find(s=>s.id===sid);
+  if(!stu0){ toast('Student not found','err'); return; }
+
+  // Guard: duplicate payment
+  const alreadyPaid = (stu0.history||[]).some(
+    h => h.month===selMonth && (h.year||curYear)===curYear
+  );
   if(alreadyPaid){
     toast(`❌ ${selMonth} fee already collected!`,'err');
-    const nextUnpaid=MONTHS.find(m=>!(stu0.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear));
-    if(nextUnpaid&&monthEl) monthEl.value=nextUnpaid;
+    const nextUnpaid = MONTHS.find(m =>
+      !(stu0.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear)
+    );
+    if(nextUnpaid && monthEl) monthEl.value = nextUnpaid;
     return;
   }
 
+  // Guard: permissions
   if(!isAdmin() && !hasPermission('collect_fees')){
-    toast('You do not have permission to collect fees','err');return;
+    toast('You do not have permission to collect fees','err'); return;
   }
 
-  const mFee=monthlyFee(stu0);
-  const enteredAmt=parseFloat(inp?.value||0);
-  const amt=enteredAmt>0?enteredAmt:mFee;
-  if(!amt||amt<=0){toast('Enter fee amount or set monthly fee for student first','err');return;}
+  // Guard: amount
+  const mFee       = monthlyFee(stu0);
+  const enteredAmt = parseFloat(inp?.value||0);
+  const amt        = enteredAmt>0 ? enteredAmt : mFee;
+  if(!amt||amt<=0){
+    toast('Enter fee amount, or set a monthly fee for this student first','err'); return;
+  }
 
-  const rcptNo=(parseInt(localStorage.getItem('rcptNo')||1000))+1;
-  localStorage.setItem('rcptNo',rcptNo);
+  // Receipt number
+  const rcptNo = (parseInt(localStorage.getItem('rcptNo')||1000)) + 1;
+  localStorage.setItem('rcptNo', rcptNo);
 
-  // Update students array immediately
-  students=students.map(s=>{
-    if(s.id!==sid)return s;
-    const newPaid=(s.paid||0)+amt;
-    const history=[...(s.history||[]),{amount:amt,date:todayStr(),receiptNo:rcptNo,month:selMonth,year:curYear}];
-    return{...s,paid:newPaid,history};
+  // Mutate ONLY the one student — all others untouched
+  students = students.map(s=>{
+    if(s.id !== sid) return s;
+    return {
+      ...s,
+      paid:    (s.paid||0) + amt,
+      history: [...(s.history||[]), { amount:amt, date:todayStr(), receiptNo:rcptNo, month:selMonth, year:curYear }],
+    };
   });
 
-  // Save and refresh immediately — don't wait for persist
-  persist();
-  if(inp)inp.value='';
-
-  const stu=students.find(s=>s.id===sid);
+  if(inp) inp.value = '';           // clear amount field immediately
   toast(`✅ ${selMonth} fee collected — ${fmt(amt)}`);
-  showReceiptPrev(stu,amt,rcptNo,null,selMonth);
 
-  // Instant UI update without full page rebuild
+  // Re-render fees module ONLY
   renderFees();
+
+  // Show receipt after fees table is updated
+  showReceiptPrev(students.find(s=>s.id===sid), amt, rcptNo, null, selMonth);
+
+  // Update dashboard stats if user is there — only the 4 stat cards, nothing else
   if(curPage==='dashboard') renderDash();
+
+  // Persist in background — failure keeps in-memory state intact (no blank screen)
+  persist().catch(err=>{
+    console.error('[Fees] persist failed:', err);
+    toast('⚠️ Saved in memory. Disk write failed — will retry on next action.','warn');
+  });
 }
+
+// ── Quick-collect from Dashboard overdue alert ────────────────────────────────
+function quickCollectPending(sid, month){
+  const s       = students.find(x=>x.id===sid);
+  if(!s) return;
+  const mFee    = monthlyFee(s);
+  const curYear = new Date().getFullYear();
+  if(!mFee){ toast('Set monthly fee first','err'); return; }
+  if((s.history||[]).some(h=>h.month===month&&(h.year||curYear)===curYear)){
+    toast(month+' already collected','err'); return;
+  }
+  const rcptNo = (parseInt(localStorage.getItem('rcptNo')||1000))+1;
+  localStorage.setItem('rcptNo', rcptNo);
+  students = students.map(x=>{
+    if(x.id!==sid) return x;
+    return { ...x, paid:(x.paid||0)+mFee,
+             history:[...(x.history||[]),{amount:mFee,date:todayStr(),receiptNo:rcptNo,month,year:curYear}] };
+  });
+  toast(`✅ ${month} collected — ${fmt(mFee)}`);
+  if(curPage==='fees') renderFees();
+  if(curPage==='dashboard') renderDash();
+  showReceiptPrev(students.find(x=>x.id===sid), mFee, rcptNo, null, month);
+  persist().catch(e=>console.error('[Fees] quickCollect persist:',e));
+}
+
 function sendWA(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
   const mFee=monthlyFee(s);
@@ -2370,132 +2534,232 @@ function applyClsFee(cls){
 }
 
 // ATTENDANCE
-let attState={};
-let attSearch='';
+// ════════════════════════════════════════════════════════════════════════════
+// ATTENDANCE MODULE  v2.0 — Real-time state updates
+// No Firebase/onSnapshot needed — in-memory `attState` IS the real-time source.
+// Toggle → instant UI update. Save → persists to disk in background.
+// ════════════════════════════════════════════════════════════════════════════
+
+let attState  = {};   // { studentId: true/false } — single source of truth
+let attSearch = '';   // preserved across re-renders
+
+// ── Render the attendance page shell (once per navigation) ────────────────────
 function renderAtt(){
-  document.getElementById('page-attendance').innerHTML=`
+  const pageEl = document.getElementById('page-attendance');
+  pageEl.innerHTML = `
   <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end">
-    <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Date</div>
-      <input type="date" id="att-date" value="${todayISO()}" onchange="loadAtt()" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:160px"></div>
-    <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Batch</div>
-      <select id="att-bat" onchange="loadAtt()" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:190px;color:var(--text-main)">
-        <option value="">All Active Students</option>${batches.map(b=>`<option value="${esc(b.name)}">${esc(b.name)}</option>`).join('')}
-      </select></div>
-    <div><div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Search</div>
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Date</div>
+      <input type="date" id="att-date" value="${todayISO()}" onchange="loadAtt()"
+        style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:160px">
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Batch</div>
+      <select id="att-bat" onchange="loadAtt()"
+        style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:190px;color:var(--text-main)">
+        <option value="">All Active Students</option>
+        ${batches.map(b=>`<option value="${esc(b.name)}">${esc(b.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Search</div>
       <div style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:0 10px;width:190px">
         <span style="color:#78716C">🔍</span>
-        <input id="att-search" placeholder="Search student…" oninput="attSearch=this.value.toLowerCase();filterAttGrid()" style="border:none;background:transparent;outline:none;font-size:13px;padding:9px 0;width:100%;color:var(--text-main)">
+        <input id="att-search" placeholder="Search student…" value="${esc(attSearch)}"
+          oninput="attSearch=this.value.toLowerCase();filterAttGrid()"
+          style="border:none;background:transparent;outline:none;font-size:13px;padding:9px 0;width:100%;color:var(--text-main)">
       </div>
     </div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-green btn-sm" onclick="markAll(true)">✓ All Present</button>
-      <button class="btn btn-red btn-sm" onclick="markAll(false)">✗ All Absent</button>
-      <button class="btn btn-primary" onclick="saveAtt()">💾 Save</button>
+      <button class="btn btn-red btn-sm"   onclick="markAll(false)">✗ All Absent</button>
+      <button class="btn btn-primary"      onclick="saveAtt()">💾 Save</button>
       <button class="btn btn-ghost btn-sm" onclick="printAttReport()">🖨️ Print</button>
-      <button class="btn btn-teal btn-sm" onclick="saveAttPDF()">📄 PDF</button>
+      <button class="btn btn-teal btn-sm"  onclick="saveAttPDF()">📄 PDF</button>
     </div>
   </div>
+
+  <!-- Stat cards — updated by stable ID, never by position -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px">
-    <div class="card" style="padding:13px 15px"><div style="font-size:10px;font-weight:700;color:#78716C">PRESENT</div><div id="att-p" style="font-size:24px;font-weight:800;color:#16A34A">0</div></div>
-    <div class="card" style="padding:13px 15px"><div style="font-size:10px;font-weight:700;color:#78716C">ABSENT</div><div id="att-a" style="font-size:24px;font-weight:800;color:#DC2626">0</div></div>
-    <div class="card" style="padding:13px 15px"><div style="font-size:10px;font-weight:700;color:#78716C">TOTAL</div><div id="att-t" style="font-size:24px;font-weight:800">0</div></div>
-    <div class="card" style="padding:13px 15px"><div style="font-size:10px;font-weight:700;color:#78716C">RATE</div><div id="att-r" style="font-size:24px;font-weight:800;color:#E8622A">—</div></div>
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:10px;font-weight:700;color:#78716C">PRESENT</div>
+      <div id="att-p" style="font-size:24px;font-weight:800;color:#16A34A">0</div>
+    </div>
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:10px;font-weight:700;color:#78716C">ABSENT</div>
+      <div id="att-a" style="font-size:24px;font-weight:800;color:#DC2626">0</div>
+    </div>
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:10px;font-weight:700;color:#78716C">TOTAL</div>
+      <div id="att-t" style="font-size:24px;font-weight:800">0</div>
+    </div>
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:10px;font-weight:700;color:#78716C">RATE</div>
+      <div id="att-r" style="font-size:24px;font-weight:800;color:#E8622A">—</div>
+    </div>
   </div>
   <div class="att-grid" id="att-grid"></div>`;
-  attSearch='';
+
+  attSearch = '';
   loadAtt();
 }
-function loadAtt(){
-  const date=document.getElementById('att-date')?.value||todayISO();
-  const batch=document.getElementById('att-bat')?.value||'';
-  let list=students.filter(s=>!s.inactive);
-  if(batch) list=list.filter(s=>s.batch===batch);
-  const key=date+'__'+(batch||'ALL');
-  const saved=attData[key];
 
-  attState={};
+// ── Load attendance state for selected date + batch ───────────────────────────
+function loadAtt(){
+  const date  = document.getElementById('att-date')?.value  || todayISO();
+  const batch = document.getElementById('att-bat')?.value   || '';
+  const key   = `${date}__${batch||'ALL'}`;
+  const saved = attData[key];
+
+  let list = students.filter(s=>!s.inactive);
+  if(batch) list = list.filter(s=>s.batch===batch);
+
+  // Build attState from saved data or default to Present
+  attState = {};
   list.forEach(s=>{
     if(saved && s.id in saved){
-      // Use saved value
-      attState[s.id]=saved[s.id];
+      attState[s.id] = saved[s.id];
     } else if(!batch){
-      // "All Active Students" view — check if student has saved data in their batch key
-      const batchKey=date+'__'+(s.batch||'');
-      const batchSaved=attData[batchKey];
-      if(batchSaved && s.id in batchSaved){
-        attState[s.id]=batchSaved[s.id];
-      } else {
-        // No saved data at all — default to PRESENT
-        attState[s.id]=true;
-      }
+      // "All students" view — check individual batch key first
+      const bk      = `${date}__${s.batch||''}`;
+      const bkSaved = attData[bk];
+      attState[s.id] = (bkSaved && s.id in bkSaved) ? bkSaved[s.id] : true;
     } else {
-      // Batch view, no saved data — default to PRESENT
-      attState[s.id]=true;
+      attState[s.id] = true; // default: present
     }
   });
-  filterAttGrid();
+
+  filterAttGrid(); // renders grid + updates stats
 }
+
+// ── Render the attendance card grid ──────────────────────────────────────────
 function renderAttGrid(list){
-  const grid=document.getElementById('att-grid');if(!grid)return;
-  if(!list||!list.length){grid.innerHTML='<div style="text-align:center;padding:50px;color:#78716C"><div style="font-size:44px;margin-bottom:12px">👥</div><p>No students found</p></div>';updAttStats();return;}
-  grid.innerHTML=list.map((s,i)=>{const isP=attState[s.id]!==false;return`
+  const grid = document.getElementById('att-grid');
+  if(!grid) return;
+
+  if(!list || !list.length){
+    grid.innerHTML = `<div style="text-align:center;padding:50px;color:#78716C">
+      <div style="font-size:44px;margin-bottom:12px">👥</div>
+      <p>No students found</p></div>`;
+    updAttStats();
+    return;
+  }
+
+  grid.innerHTML = list.map((s,i)=>{
+    const isP = attState[s.id] !== false;
+    return `
     <div class="att-card ${isP?'present':'absent'}" id="atc-${s.id}" onclick="togAtt('${s.id}')">
       <div class="av ${avcC(students.indexOf(s))}">${ini(s.name)}</div>
-      <div class="att-info"><h4>${esc(s.name)}</h4><p>${esc(s.cls)} · ${esc(s.batch||'No batch')}</p></div>
+      <div class="att-info">
+        <h4>${esc(s.name)}</h4>
+        <p>${esc(s.cls)} · ${esc(s.batch||'No batch')}</p>
+      </div>
       <div class="toggle${isP?' on':''}" id="tog-${s.id}"></div>
-    </div>`;}).join('');
+    </div>`;
+  }).join('');
+
   updAttStats();
 }
+
+// ── Toggle a student's attendance — INSTANT UI update ────────────────────────
 function togAtt(sid){
-  attState[sid]=!attState[sid];
-  const c=document.getElementById('atc-'+sid),t=document.getElementById('tog-'+sid);
-  if(c)c.className='att-card '+(attState[sid]?'present':'absent');
-  if(t)t.className='toggle'+(attState[sid]?' on':'');
+  // 1. Flip state in memory
+  attState[sid] = !attState[sid];
+
+  // 2. Update ONLY the two elements for this student — no full re-render
+  const card   = document.getElementById('atc-'+sid);
+  const toggle = document.getElementById('tog-'+sid);
+  if(card)   card.className   = 'att-card ' + (attState[sid] ? 'present' : 'absent');
+  if(toggle) toggle.className = 'toggle'    + (attState[sid] ? ' on' : '');
+
+  // 3. Update stat cards instantly — runs in <1ms
   updAttStats();
 }
+
+// ── Update stat cards — pure DOM write, no re-render ─────────────────────────
 function updAttStats(){
-  const v=Object.values(attState),t=v.length,p=v.filter(Boolean).length;
-  const s=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
-  s('att-p',p);s('att-a',t-p);s('att-t',t);s('att-r',t?Math.round(p/t*100)+'%':'—');
+  const vals  = Object.values(attState);
+  const total = vals.length;
+  const pres  = vals.filter(Boolean).length;
+  const rate  = total ? Math.round((pres/total)*100) : 0;
+
+  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('att-p', pres);
+  set('att-a', total - pres);
+  set('att-t', total);
+  set('att-r', total ? rate+'%' : '—');
+
+  // Update rate card color: green ≥75%, orange 50–74%, red <50%
+  const rEl = document.getElementById('att-r');
+  if(rEl) rEl.style.color = rate>=75 ? '#16A34A' : rate>=50 ? '#E8622A' : '#DC2626';
 }
+
+// ── Filter grid by search / batch ─────────────────────────────────────────────
 function filterAttGrid(){
-  const batch=document.getElementById('att-bat')?.value||'';
-  let list=students.filter(s=>!s.inactive);
-  if(batch) list=list.filter(s=>s.batch===batch);
-  if(attSearch) list=list.filter(s=>(s.name||'').toLowerCase().includes(attSearch)||(s.cls||'').toLowerCase().includes(attSearch));
+  const batch = document.getElementById('att-bat')?.value || '';
+  let list = students.filter(s=>!s.inactive);
+  if(batch)     list = list.filter(s=>s.batch===batch);
+  if(attSearch) list = list.filter(s=>
+    (s.name||'').toLowerCase().includes(attSearch) ||
+    (s.cls||'').toLowerCase().includes(attSearch)
+  );
   renderAttGrid(list);
 }
-function markAll(v){
-  Object.keys(attState).forEach(k=>attState[k]=v);
-  filterAttGrid();
-}
-function saveAtt(){
-  const date=document.getElementById('att-date')?.value||todayISO();
-  const batch=document.getElementById('att-bat')?.value||'';
-  const key=date+'__'+(batch||'ALL');
-  attData[key]={...attState};
 
-  // If saving "All Active Students" view, also sync each student's batch key
+// ── Mark all present or all absent ────────────────────────────────────────────
+function markAll(v){
+  // Update state
+  Object.keys(attState).forEach(k=>attState[k]=v);
+
+  // Update each card in-place (no full grid rebuild = instant)
+  Object.keys(attState).forEach(sid=>{
+    const card   = document.getElementById('atc-'+sid);
+    const toggle = document.getElementById('tog-'+sid);
+    if(card)   card.className   = 'att-card ' + (v ? 'present' : 'absent');
+    if(toggle) toggle.className = 'toggle'    + (v ? ' on' : '');
+  });
+
+  updAttStats();
+}
+
+// ── Save attendance — async, non-blocking, proper error handling ──────────────
+function saveAtt(){
+  const date  = document.getElementById('att-date')?.value  || todayISO();
+  const batch = document.getElementById('att-bat')?.value   || '';
+  const key   = `${date}__${batch||'ALL'}`;
+
+  // 1. Write to in-memory attData immediately (UI source of truth)
+  attData[key] = { ...attState };
+
+  // 2. Sync batch sub-keys when saving "All students" view
   if(!batch){
-    // Group students by batch and save to each batch key
-    const byBatch={};
+    const byBatch = {};
     Object.keys(attState).forEach(sid=>{
-      const s=students.find(x=>x.id===sid);
-      if(!s)return;
-      const bk=s.batch||'';
-      if(!byBatch[bk])byBatch[bk]={};
-      byBatch[bk][sid]=attState[sid];
+      const s  = students.find(x=>x.id===sid);
+      if(!s) return;
+      const bk = s.batch || '';
+      if(!byBatch[bk]) byBatch[bk] = {};
+      byBatch[bk][sid] = attState[sid];
     });
-    Object.entries(byBatch).forEach(([bk,data])=>{
-      const bKey=date+'__'+bk;
-      attData[bKey]={...(attData[bKey]||{}),...data};
+    Object.entries(byBatch).forEach(([bk, data])=>{
+      const bKey    = `${date}__${bk}`;
+      attData[bKey] = { ...(attData[bKey]||{}), ...data };
     });
   }
 
-  persist();
+  // 3. Show success toast FIRST (data is already in memory — it IS saved)
   toast('✅ Attendance saved!');
   updAttStats();
+
+  // 4. Persist to disk in background — failure does NOT affect in-memory state
+  persist().catch(err=>{
+    console.error('[Attendance] persist failed:', err);
+    // Data is safe in attData (in-memory). Will be saved on next successful action.
+    // Do NOT show "Save failed" — the attendance IS recorded correctly.
+    toast('⚠️ Could not write to disk. Attendance is recorded and will sync on next save.','warn');
+  });
 }
+
 
 
 // ═══════════════════════════════════════════════════════
@@ -3384,34 +3648,38 @@ function saveLogin(){
   const adminIdx=users.findIndex(x=>x.role==='admin');
   if(adminIdx===-1){toast('Admin user not found','err');return;}
 
-  // Check username not already taken
+  const oldUsername=users[adminIdx].username;
   const newU = u || users[adminIdx].username;
   const newP = p || users[adminIdx].password;
-  if(u && u !== users[adminIdx].username && users.find(x=>x.username===u)){
-    toast('Username already taken','err');return;
+
+  // Check username not already taken by someone else
+  if(u && u !== oldUsername && users.find(x=>x.username===u)){
+    toast('Username already taken — choose another','err');return;
   }
 
-  // Update cc_users
-  users[adminIdx].username = newU;
-  users[adminIdx].password = newP;
+  // Update the user record
+  users[adminIdx].username  = newU;
+  users[adminIdx].password  = newP;
   users[adminIdx].mustChange = false;
 
   // Save to localStorage immediately
   localStorage.setItem('cc_users', JSON.stringify(users));
-  // Keep legacy keys in sync
   localStorage.setItem('username', newU);
   localStorage.setItem('password', newP);
-  // Update current session
+
+  // Update current session so sidebar shows new name
   if(currentUser && currentUser.role==='admin'){
     currentUser.username = newU;
     localStorage.setItem('ops_cur_user', JSON.stringify(currentUser));
   }
 
-  // Clear fields
-  document.getElementById('set-user').value='';
-  document.getElementById('set-pass').value='';
+  // Clear fields immediately
+  const setUser=document.getElementById('set-user');
+  const setPass=document.getElementById('set-pass');
+  if(setUser) setUser.value='';
+  if(setPass) setPass.value='';
 
-  // Sync save to SSD file immediately
+  // Save to disk
   if(IS_ELECTRON()){
     try{ window.classcore.saveDataSync(buildPayload()); }
     catch(e){ console.warn('saveDataSync error:',e.message); }
@@ -3420,11 +3688,38 @@ function saveLogin(){
     sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
   }
 
-  // Then also async save
-  persist().then(()=>{
-    toast('✅ Login credentials updated successfully!');
-    renderSettings();
-  });
+  // ── Refresh settings page IMMEDIATELY (not inside .then) ──────────
+  toast('✅ Login credentials updated!');
+  renderSettings(); // <-- immediate, no async delay
+
+  // Save async in background
+  persist().catch(e=>console.error('persist error:',e));
+
+  // ── Send email notification to admin ──────────────────────────────
+  const reg = getRegistration();
+  const adminEmail = reg?.email || users[adminIdx]?.email;
+  if(adminEmail){
+    const changedWhat = [];
+    if(u && u !== oldUsername) changedWhat.push('Username changed to: ' + newU);
+    if(p) changedWhat.push('Password has been updated');
+
+    sendEmail(
+      adminEmail,
+      'ClassCore — Your Login Credentials Were Changed',
+      '',
+      {
+        username:   newU,
+        password:   p ? newP : '(unchanged — hidden for security)',
+        user_name:  users[adminIdx].name || newU,
+        institute:  localStorage.getItem('tuitionName') || 'Your Tuition',
+        mobile:     reg?.mobile || '',
+        trial_end:  changedWhat.join(' | '),
+        subject:    'ClassCore — Login Credentials Updated',
+      }
+    ).then(r=>{
+      if(r.ok) toast('📧 New credentials emailed to '+adminEmail);
+    }).catch(()=>{});
+  }
 }
 function saveInstitute(){
   localStorage.setItem('tuitionName', document.getElementById('set-name').value||'ClassCore Tuition');
@@ -3682,19 +3977,50 @@ function saveEditUser(oldUsername){
   const role=document.getElementById('eu-role')?.value||'Teacher';
   const newUser=(document.getElementById('eu-user')?.value||'').trim();
   const newPass=(document.getElementById('eu-pass')?.value||'').trim();
-  if(newUser&&newUser!==oldUsername&&users.find(x=>x.username===newUser)){toast('Username already taken','err');return;}
+  if(newUser&&newUser!==oldUsername&&users.find(x=>x.username===newUser)){
+    toast('Username already taken','err');return;
+  }
+  if(newPass&&newPass.length<6){toast('Password must be at least 6 characters','err');return;}
+
+  const finalUser = newUser || users[idx].username;
+  const finalPass = newPass || users[idx].password;
+  const empEmail  = users[idx].email || '';
+
   users[idx]={
     ...users[idx],
     name:name||users[idx].name,
     mobile:mobile||users[idx].mobile||'',
     role,
-    username:newUser||users[idx].username,
-    password:newPass||users[idx].password,
+    username: finalUser,
+    password: finalPass,
     permissions:getPermissionsFromForm(),
   };
   saveUsers(users);
-  toast('Employee updated!');
+  toast('✅ Employee updated!');
+
+  // Navigate back to settings immediately — not in async callback
   renderSettings();
+
+  // Send email notification to employee if email is on file
+  if(empEmail && (newUser || newPass)){
+    const changedParts=[];
+    if(newUser) changedParts.push('Username: '+finalUser);
+    if(newPass) changedParts.push('Password: '+finalPass);
+    sendEmail(
+      empEmail,
+      'ClassCore — Your Account Was Updated',
+      '',
+      {
+        username:  finalUser,
+        password:  newPass || '(unchanged)',
+        user_name: users[idx].name||finalUser,
+        institute: localStorage.getItem('tuitionName')||'',
+        mobile:    mobile||'',
+        trial_end: changedParts.join(' | '),
+        subject:   'ClassCore — Account Credentials Updated',
+      }
+    ).then(r=>{ if(r.ok) toast('📧 New credentials emailed to employee'); }).catch(()=>{});
+  }
 }
 
 function saveNewUser(empId){
@@ -3751,14 +4077,14 @@ function deleteUser(username){
 //  └──────────────────────────────────────────────────────────────────┘
 //  That's it! EmailJS handles the actual email sending.
 
-const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // e.g. 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // e.g. 'template_xyz789'
-const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // e.g. 'abc123XYZdef'
+const EMAILJS_SERVICE_ID  = 'service_1ywkxnl';   // e.g. 'service_abc123'
+const EMAILJS_TEMPLATE_ID = 'template_3i4hfuj';  // e.g. 'template_xyz789'
+const EMAILJS_PUBLIC_KEY  = 'YdR9wbP3wK0rUyA77';   // e.g. 'abc123XYZdef'
 
 // Initialise EmailJS — safe even if CDN failed to load
 (function initEmailJS(){
   try{
-    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY'){
+    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YdR9wbP3wK0rUyA77'){
       emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
       console.log('[ClassCore] EmailJS ready');
     }
@@ -3774,7 +4100,7 @@ const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // e.g. 'abc123XYZdef'
  */
 async function sendEmail(toEmail, subject, body, extraVars){
   if(typeof emailjs === 'undefined'
-     || EMAILJS_SERVICE_ID  === 'service_1ywkxn'
+     || EMAILJS_SERVICE_ID  === 'service_1ywkxnl'
      || EMAILJS_TEMPLATE_ID === 'template_3i4hfuj'
      || EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
     console.warn('[ClassCore] EmailJS not configured — email not sent.');

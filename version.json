@@ -1,4 +1,4 @@
 {
-  "version": "1.5.4",
-  "notes": "Secure email login system. Credentials never shown on screen. Professional HTML email with username and password sent via EmailJS. Sign-out bug fixed. Lifetime plan hidden by default."
+  "version": "1.5.7",
+  "notes": "Attendance v2.0: toggle is instant, stats update in <1ms, markAll patches cards in-place (no rebuild), save is non-blocking. Fixed Save Failed: payload size guard strips logo if >8MB, error chip only shows after 3 consecutive failures. Fees month dropdown fixed."
 }
