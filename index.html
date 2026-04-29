@@ -3581,7 +3581,12 @@ function renderSettings(){
           : '<button class="btn btn-teal" onclick="document.getElementById(\'import-file\').click()">📤 Import Backup</button><input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">') +
         '<button class="btn btn-red" onclick="clearAll()">🗑️ Clear All Data</button>' +
       '</div>' +
-      (IS_ELECTRON()?'<div style="margin-top:10px"><button class="btn btn-ink btn-sm" onclick="window.classcore.checkUpdate().then(()=>toast(\'Checking for updates...\',\'ok\'))">🔄 Check for Updates</button></div>':'')+
+      (IS_ELECTRON()
+        ? '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<button class="btn btn-ink btn-sm" onclick="manualCheckUpdate()">🔄 Check for Updates</button>' +
+          '<span id="update-check-msg" style="font-size:11px;color:#78716C;align-self:center"></span>' +
+          '</div>'
+        : '') +
       (IS_ELECTRON() && window._dataPath ? '<div style="margin-top:12px;font-size:11px;color:#78716C;background:#F7F5F0;padding:8px 12px;border-radius:8px;word-break:break-all">💾 Data saved at: <b>'+window._dataPath+'</b></div>' : '') +
     '</div>' +
 
@@ -4700,45 +4705,135 @@ function buyPlan(){
 
 function showUpdateBanner(msg, sub){
   const b=document.getElementById('update-banner');
+  if(!b) return;
   document.getElementById('update-title').textContent=msg;
   document.getElementById('update-sub').textContent=sub||'';
   b.style.display='flex';
-  // Push content down so banner doesn't cover topbar
-  document.getElementById('app').style.paddingTop='52px';
+  document.getElementById('app').style.paddingTop='48px';
 }
 function hideUpdateBanner(){
-  document.getElementById('update-banner').style.display='none';
+  const b=document.getElementById('update-banner');
+  if(b) b.style.display='none';
   document.getElementById('app').style.paddingTop='';
 }
+
+// Manual check from Settings button
+function manualCheckUpdate(){
+  const msgEl=document.getElementById('update-check-msg');
+  if(msgEl){msgEl.style.color='#78716C';msgEl.textContent='⏳ Checking for updates…';}
+
+  if(!IS_ELECTRON()){
+    // Web: fetch version.json with full cache-bust headers
+    fetch('version.json?nocache='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}})
+    .then(r=>r.json())
+    .then(d=>{
+      const cur=localStorage.getItem('cc_app_version')||'0';
+      const latest=d.version||'0';
+      if(msgEl){
+        if(latest!==cur){
+          msgEl.style.color='#16A34A';
+          msgEl.textContent='✅ New version v'+latest+' is available! Reload the app to update.';
+        } else {
+          msgEl.style.color='#78716C';
+          msgEl.textContent='✅ You are on the latest version (v'+cur+')';
+          setTimeout(()=>{if(msgEl)msgEl.textContent='';},4000);
+        }
+      }
+    })
+    .catch(()=>{if(msgEl){msgEl.style.color='#DC2626';msgEl.textContent='❌ Could not reach server. Check your internet.';} });
+    return;
+  }
+
+  // Electron: trigger autoUpdater.checkForUpdates() via IPC
+  window.classcore.checkUpdate()
+    .then(r=>{
+      if(msgEl&&r&&!r.ok){
+        msgEl.style.color='#DC2626';
+        msgEl.textContent='❌ Update check failed. Check your internet connection.';
+      }
+      // Feedback comes from onUpdateAvailable / onUpdateNotAvailable events below
+    })
+    .catch(()=>{if(msgEl){msgEl.style.color='#DC2626';msgEl.textContent='❌ Could not connect to update server.';}});
+}
+
 async function doUpdate(){
   document.getElementById('update-btn').style.display='none';
   document.getElementById('update-progress-wrap').style.display='flex';
   document.getElementById('update-title').textContent='Saving your data...';
-  // Pass current data so it gets saved BEFORE update
-  const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayload() : null);
-  if(!r.ok){
-    toast('Update failed: '+(r.error||'unknown error'),'err');
+  const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayloadSafe() : null);
+  if(!r||!r.ok){
+    toast('Update failed: '+(r?.error||'unknown error'),'err');
     document.getElementById('update-btn').style.display='flex';
     document.getElementById('update-progress-wrap').style.display='none';
   }
 }
 if(IS_ELECTRON()){
+
+  // Update found → show modal popup
   window.classcore.onUpdateAvailable(version=>{
-    showUpdateBanner('🚀 New version v'+version+' available!','Click "Update Now" to download and install automatically');
+    const msgEl = document.getElementById('update-check-msg');
+    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ New version v'+version+' found! See banner above.'; }
+    showUpdateModal(version);
   });
+
+  // No update → show feedback in Settings
+  window.classcore.onUpdateNotAvailable && window.classcore.onUpdateNotAvailable(version=>{
+    const msgEl = document.getElementById('update-check-msg');
+    if(msgEl){
+      msgEl.style.color='#78716C';
+      msgEl.textContent='✅ You are on the latest version (v'+version+')';
+      setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 4000);
+    }
+  });
+
+  // Download progress
   window.classcore.onUpdateProgress(pct=>{
-    document.getElementById('update-progress-bar').style.width=pct+'%';
-    document.getElementById('update-pct').textContent=pct+'%';
-    document.getElementById('update-title').textContent='Downloading... '+pct+'%';
+    const bar  = document.getElementById('update-progress-bar');
+    const pctEl= document.getElementById('update-pct');
+    const title= document.getElementById('update-title');
+    if(bar)   bar.style.width     = pct+'%';
+    if(pctEl) pctEl.textContent   = pct+'%';
+    if(title) title.textContent   = 'Downloading… '+pct+'%';
+    // Also update modal progress bar
+    const mFill = document.getElementById('upd-progress-fill');
+    const mPct  = document.getElementById('upd-pct-label');
+    const mLbl  = document.getElementById('upd-progress-label');
+    if(mFill) mFill.style.width = pct+'%';
+    if(mPct)  mPct.textContent  = pct+'%';
+    if(mLbl)  mLbl.textContent  = pct<100 ? 'Downloading update…' : 'Finalising…';
   });
-  window.classcore.onUpdateDownloaded(()=>{
-    document.getElementById('update-progress-wrap').style.display='none';
-    document.getElementById('update-title').textContent='✅ Update ready to install!';
-    document.getElementById('update-sub').textContent='App will restart to apply the update';
-    const btn=document.getElementById('update-btn');
-    btn.textContent='🔄 Restart & Install';
-    btn.style.display='flex';
-    btn.onclick=()=>window.classcore.installUpdate();
+
+  // Download complete
+  window.classcore.onUpdateDownloaded(version=>{
+    const bar  = document.getElementById('update-progress-bar');
+    const title= document.getElementById('update-title');
+    const sub  = document.getElementById('update-sub');
+    const btn  = document.getElementById('update-btn');
+    const wrap = document.getElementById('update-progress-wrap');
+    if(bar)   bar.style.width   = '100%';
+    if(title) title.textContent = '✅ Update v'+version+' ready!';
+    if(sub)   sub.textContent   = 'Click Restart & Install to apply';
+    if(wrap)  wrap.style.display= 'none';
+    if(btn){
+      btn.textContent = '🔄 Restart & Install';
+      btn.style.display = 'flex';
+      btn.onclick = ()=>window.classcore.installUpdate();
+    }
+    // Update Settings message too
+    const msgEl = document.getElementById('update-check-msg');
+    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' downloaded! Click Restart & Install in the banner.'; }
+    showUpdateBanner('✅ Update v'+version+' ready!','Click Restart & Install');
+  });
+
+  // Error — only show for non-network errors
+  window.classcore.onUpdateError && window.classcore.onUpdateError(msg=>{
+    const msgEl = document.getElementById('update-check-msg');
+    if(msg && (msg.includes('net::') || msg.includes('ENOTFOUND') || msg.includes('ETIMEDOUT'))){
+      if(msgEl){ msgEl.style.color='#78716C'; msgEl.textContent='⚠️ No internet — update check skipped'; }
+    } else if(msg){
+      if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ '+msg; }
+      console.warn('Update error:', msg);
+    }
   });
 }
 

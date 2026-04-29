@@ -69,8 +69,12 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // Check for updates 3 seconds after launch (gives app time to paint)
-  setTimeout(() => setupAutoUpdater(), 3000);
+  // Check immediately on startup (1 second — enough for window to paint)
+  // Then re-check every 30 minutes silently
+  setTimeout(() => setupAutoUpdater(), 1000);
+  setInterval(() => {
+    try { autoUpdater.checkForUpdates(); } catch(_) {}
+  }, 30 * 60 * 1000); // 30 minutes
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -93,22 +97,27 @@ app.on('window-all-closed', () => {
 function setupAutoUpdater() {
   // ── Config ────────────────────────────────────────────────────────────────
   autoUpdater.autoDownload    = false;  // Ask user before downloading
-  autoUpdater.autoInstallOnAppQuit = false;  // We control when to install
-
-  // Allow pre-releases if you publish beta builds (set true for beta channel)
+  autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = false;
+
+  // CRITICAL: Disable update cache so GitHub always returns the latest version.json
+  // Without this, the CDN serves a 5-minute cached version → updates appear slow.
+  autoUpdater.requestHeaders = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma':        'no-cache',
+    'Expires':       '0',
+  };
 
   // ── Logging ───────────────────────────────────────────────────────────────
   autoUpdater.logger = { info: log, warn: log, error: log, debug: () => {} };
 
   // ── Events ────────────────────────────────────────────────────────────────
 
-  // 1. Checking starts
   autoUpdater.on('checking-for-update', () => {
     log('Checking for updates...');
   });
 
-  // 2. NEW VERSION FOUND → tell renderer to show the popup
+  // NEW VERSION FOUND
   autoUpdater.on('update-available', (info) => {
     log(`Update available: v${info.version}`);
     if (mainWindow) {
@@ -116,7 +125,7 @@ function setupAutoUpdater() {
     }
   });
 
-  // 3. Already on latest version
+  // ALREADY LATEST
   autoUpdater.on('update-not-available', (info) => {
     log(`Already up to date: v${info.version}`);
     if (mainWindow) {
@@ -124,19 +133,18 @@ function setupAutoUpdater() {
     }
   });
 
-  // 4. DOWNLOAD PROGRESS → send % to renderer for progress bar
+  // DOWNLOAD PROGRESS
   autoUpdater.on('download-progress', (progress) => {
     const pct = Math.round(progress.percent);
-    log(`Download progress: ${pct}% (${Math.round(progress.bytesPerSecond / 1024)} KB/s)`);
+    log(`Download: ${pct}% (${Math.round(progress.bytesPerSecond / 1024)} KB/s)`);
     if (mainWindow) {
       mainWindow.webContents.send('update-progress', pct);
     }
   });
 
-  // 5. DOWNLOAD COMPLETE → tell renderer to show "Restart & Install" button
+  // DOWNLOAD COMPLETE
   autoUpdater.on('update-downloaded', (info) => {
-    log(`Update downloaded: v${info.version}`);
-    // Write a flag so the app knows it just updated (shows success message)
+    log(`Downloaded: v${info.version}`);
     try {
       fs.writeFileSync(META_FILE, JSON.stringify({
         justUpdated: true,
@@ -149,10 +157,11 @@ function setupAutoUpdater() {
     }
   });
 
-  // 6. ERROR handling
+  // ERROR — log it but never crash the app
   autoUpdater.on('error', (err) => {
     log(`Update error: ${err.message}`);
-    if (mainWindow) {
+    // Only send to renderer if it's not a network error (don't spam user)
+    if (mainWindow && !err.message.includes('net::') && !err.message.includes('ENOTFOUND')) {
       mainWindow.webContents.send('update-error', err.message);
     }
   });

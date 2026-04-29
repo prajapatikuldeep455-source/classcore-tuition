@@ -1,4 +1,4 @@
 {
   "version": "1.5.7",
-  "notes": "Attendance v2.0: toggle is instant, stats update in <1ms, markAll patches cards in-place (no rebuild), save is non-blocking. Fixed Save Failed: payload size guard strips logo if >8MB, error chip only shows after 3 consecutive failures. Fees month dropdown fixed."
+  "notes": "Update system: checks after 1s (was 3s), re-checks every 30 minutes, GitHub CDN cache disabled via request headers. Manual Check for Updates button shows instant feedback. Save Failed fixed: payload size guard, error only after 3 consecutive failures. Attendance v2.0: instant toggle updates."
 }
