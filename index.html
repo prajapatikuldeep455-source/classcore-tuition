@@ -454,23 +454,37 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 </div>
 
 <!-- Auto Update Banner -->
-<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;padding:12px 24px;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);">
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="font-size:20px">🚀</span>
-    <div>
-      <div id="update-title" style="font-size:13px;font-weight:700">New update available!</div>
-      <div id="update-sub" style="font-size:11px;color:rgba(255,255,255,.6)">ClassCore has a new version ready</div>
+<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.3);">
+  <!-- Info row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="update-icon" style="font-size:20px">🚀</span>
+      <div>
+        <div id="update-title" style="font-size:13px;font-weight:700">New version available!</div>
+        <div id="update-sub"   style="font-size:11px;color:rgba(255,255,255,.6)">Click Update Now to download and install</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <div id="update-speed-wrap" style="display:none;font-size:10px;color:rgba(255,255,255,.55);text-align:right;line-height:1.4">
+        <div id="update-speed">0 KB/s</div>
+        <div id="update-eta">Calculating…</div>
+      </div>
+      <div id="update-pct-badge" style="display:none;font-size:12px;font-weight:700;color:#E8622A">0%</div>
+      <button id="update-btn" class="btn btn-primary btn-sm" onclick="updStart()" style="white-space:nowrap">⬇️ Update Now</button>
+      <button id="update-later-btn" class="btn btn-ghost btn-sm"
+        style="color:#fff;border-color:rgba(255,255,255,.3);white-space:nowrap"
+        onclick="hideUpdateBanner()">Later</button>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <div id="update-progress-wrap" style="display:none;align-items:center;gap:8px">
-      <div style="width:140px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden">
-        <div id="update-progress-bar" style="height:100%;background:#E8622A;border-radius:3px;width:0%;transition:width .3s"></div>
-      </div>
-      <span id="update-pct" style="font-size:11px;color:rgba(255,255,255,.7)">0%</span>
+  <!-- Progress bar row — hidden until download starts -->
+  <div id="update-progress-wrap" style="display:none;padding:0 24px 10px">
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.45);margin-bottom:4px">
+      <span id="update-progress-label">Preparing download…</span>
+      <span id="update-pct">0%</span>
     </div>
-    <button id="update-btn" class="btn btn-primary btn-sm" onclick="doUpdate()">⬇️ Update Now</button>
-    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)" onclick="document.getElementById('update-banner').style.display='none'">Later</button>
+    <div style="height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden">
+      <div id="update-progress-bar" style="height:100%;background:linear-gradient(90deg,#E8622A,#CF5522);border-radius:2px;width:0%;transition:width .5s ease"></div>
+    </div>
   </div>
 </div>
 
@@ -4703,139 +4717,257 @@ function buyPlan(){
 // ── END LICENSE SYSTEM ─────────────────────────────────────────────────────
 
 
+// ═══════════════════════════════════════════════════════════════
+// UPDATE SYSTEM  v3.0  — Fast banner, speed display, ETA, no stuck 0%
+// ═══════════════════════════════════════════════════════════════
+let _updateVersion = '';
+let _downloadStartTime = 0;
+
+// Show the slim banner at top
 function showUpdateBanner(msg, sub){
-  const b=document.getElementById('update-banner');
+  const b = document.getElementById('update-banner');
   if(!b) return;
-  document.getElementById('update-title').textContent=msg;
-  document.getElementById('update-sub').textContent=sub||'';
-  b.style.display='flex';
-  document.getElementById('app').style.paddingTop='48px';
-}
-function hideUpdateBanner(){
-  const b=document.getElementById('update-banner');
-  if(b) b.style.display='none';
-  document.getElementById('app').style.paddingTop='';
+  const title = document.getElementById('update-title');
+  const subt  = document.getElementById('update-sub');
+  if(title) title.textContent = msg  || 'New version available!';
+  if(subt)  subt.textContent  = sub  || 'Click Update Now to download and install';
+  b.style.display = 'block';
+  const app = document.getElementById('app');
+  if(app) app.style.paddingTop = '64px';
 }
 
-// Manual check from Settings button
+function hideUpdateBanner(){
+  const b = document.getElementById('update-banner');
+  if(b) b.style.display = 'none';
+  const app = document.getElementById('app');
+  if(app) app.style.paddingTop = '';
+}
+
+// Manual check from Settings
 function manualCheckUpdate(){
-  const msgEl=document.getElementById('update-check-msg');
-  if(msgEl){msgEl.style.color='#78716C';msgEl.textContent='⏳ Checking for updates…';}
+  const msgEl = document.getElementById('update-check-msg');
+  if(msgEl){ msgEl.style.color='#78716C'; msgEl.textContent='⏳ Checking for updates…'; }
 
   if(!IS_ELECTRON()){
-    // Web: fetch version.json with full cache-bust headers
-    fetch('version.json?nocache='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}})
+    fetch('version.json?nocache='+Date.now(), {
+      cache:'no-store',
+      headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}
+    })
     .then(r=>r.json())
     .then(d=>{
-      const cur=localStorage.getItem('cc_app_version')||'0';
-      const latest=d.version||'0';
-      if(msgEl){
-        if(latest!==cur){
-          msgEl.style.color='#16A34A';
-          msgEl.textContent='✅ New version v'+latest+' is available! Reload the app to update.';
-        } else {
-          msgEl.style.color='#78716C';
-          msgEl.textContent='✅ You are on the latest version (v'+cur+')';
-          setTimeout(()=>{if(msgEl)msgEl.textContent='';},4000);
-        }
+      const cur    = localStorage.getItem('cc_app_version')||'0';
+      const latest = d.version||'0';
+      if(!msgEl) return;
+      if(latest !== cur){
+        msgEl.style.color   = '#16A34A';
+        msgEl.textContent   = '✅ New version v'+latest+' available! Reload the app.';
+      } else {
+        msgEl.style.color   = '#78716C';
+        msgEl.textContent   = '✅ You are on the latest version (v'+cur+')';
+        setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 4000);
       }
     })
-    .catch(()=>{if(msgEl){msgEl.style.color='#DC2626';msgEl.textContent='❌ Could not reach server. Check your internet.';} });
+    .catch(()=>{
+      if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ No internet. Check your connection.'; }
+    });
     return;
   }
 
-  // Electron: trigger autoUpdater.checkForUpdates() via IPC
   window.classcore.checkUpdate()
     .then(r=>{
-      if(msgEl&&r&&!r.ok){
-        msgEl.style.color='#DC2626';
-        msgEl.textContent='❌ Update check failed. Check your internet connection.';
+      if(r && !r.ok && msgEl){
+        msgEl.style.color   = '#DC2626';
+        msgEl.textContent   = '❌ Update check failed. Check your internet.';
       }
-      // Feedback comes from onUpdateAvailable / onUpdateNotAvailable events below
     })
-    .catch(()=>{if(msgEl){msgEl.style.color='#DC2626';msgEl.textContent='❌ Could not connect to update server.';}});
+    .catch(()=>{
+      if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ Cannot connect to update server.'; }
+    });
 }
 
-async function doUpdate(){
-  document.getElementById('update-btn').style.display='none';
-  document.getElementById('update-progress-wrap').style.display='flex';
-  document.getElementById('update-title').textContent='Saving your data...';
+// User clicked "Update Now" in banner
+async function updStart(){
+  // 1. Save data first
+  const titleEl = document.getElementById('update-title');
+  const subEl   = document.getElementById('update-sub');
+  const btn     = document.getElementById('update-btn');
+  const later   = document.getElementById('update-later-btn');
+  const progWrap= document.getElementById('update-progress-wrap');
+  const speedWrap= document.getElementById('update-speed-wrap');
+
+  if(btn)     { btn.disabled=true; btn.textContent='⏳ Saving…'; }
+  if(titleEl)   titleEl.textContent = 'Saving your data…';
+  if(subEl)     subEl.textContent   = 'This takes a few seconds';
+
+  // Record download start time for ETA
+  _downloadStartTime = Date.now();
+
+  // Show progress bar area
+  if(progWrap)  progWrap.style.display  = 'block';
+  if(speedWrap) speedWrap.style.display = 'block';
+
   const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayloadSafe() : null);
-  if(!r||!r.ok){
-    toast('Update failed: '+(r?.error||'unknown error'),'err');
-    document.getElementById('update-btn').style.display='flex';
-    document.getElementById('update-progress-wrap').style.display='none';
+
+  if(!r || !r.ok){
+    toast('Update download failed: '+(r?.error||'unknown'),'err');
+    // Restore banner to clickable state
+    if(btn)     { btn.disabled=false; btn.textContent='⬇️ Update Now'; }
+    if(titleEl)   titleEl.textContent = '🚀 New version v'+_updateVersion+' available!';
+    if(subEl)     subEl.textContent   = 'Click Update Now to download';
+    if(progWrap)  progWrap.style.display  = 'none';
+    if(speedWrap) speedWrap.style.display = 'none';
   }
 }
+
+// Alias used by old code paths
+async function doUpdate(){ return updStart(); }
+
+// ── IPC EVENT HANDLERS ────────────────────────────────────────────────────────
 if(IS_ELECTRON()){
 
-  // Update found → show modal popup
+  // 1. Update found
   window.classcore.onUpdateAvailable(version=>{
+    _updateVersion = version;
     const msgEl = document.getElementById('update-check-msg');
-    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ New version v'+version+' found! See banner above.'; }
+    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' available! See banner.'; }
+
+    // Show slim banner immediately with Update Now button visible
+    showUpdateBanner('🚀 New version v'+version+' is ready!', 'Download is ~76 MB — takes 2–5 minutes');
+
+    // Also show the modal popup
     showUpdateModal(version);
   });
 
-  // No update → show feedback in Settings
+  // 2. Already latest
   window.classcore.onUpdateNotAvailable && window.classcore.onUpdateNotAvailable(version=>{
     const msgEl = document.getElementById('update-check-msg');
     if(msgEl){
-      msgEl.style.color='#78716C';
-      msgEl.textContent='✅ You are on the latest version (v'+version+')';
+      msgEl.style.color   = '#78716C';
+      msgEl.textContent   = '✅ Already on latest version (v'+version+')';
       setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 4000);
     }
   });
 
-  // Download progress
+  // 3. Download progress — updates EVERY percent
   window.classcore.onUpdateProgress(pct=>{
-    const bar  = document.getElementById('update-progress-bar');
-    const pctEl= document.getElementById('update-pct');
-    const title= document.getElementById('update-title');
-    if(bar)   bar.style.width     = pct+'%';
-    if(pctEl) pctEl.textContent   = pct+'%';
-    if(title) title.textContent   = 'Downloading… '+pct+'%';
-    // Also update modal progress bar
+    // Banner bar
+    const bar     = document.getElementById('update-progress-bar');
+    const pctEl   = document.getElementById('update-pct');
+    const label   = document.getElementById('update-progress-label');
+    const speedEl = document.getElementById('update-speed');
+    const etaEl   = document.getElementById('update-eta');
+    const titleEl = document.getElementById('update-title');
+    const progWrap= document.getElementById('update-progress-wrap');
+    const speedWrap=document.getElementById('update-speed-wrap');
+    const btn     = document.getElementById('update-btn');
+
+    if(progWrap)  progWrap.style.display  = 'block';
+    if(speedWrap) speedWrap.style.display = 'block';
+    if(btn)       btn.style.display       = 'none';  // hide Update Now while downloading
+
+    if(bar)    bar.style.width   = pct+'%';
+    if(pctEl)  pctEl.textContent = pct+'%';
+    if(label)  label.textContent = pct < 100 ? 'Downloading v'+_updateVersion+'…' : '✅ Download complete! Finalising…';
+    if(titleEl)titleEl.textContent = 'Downloading update… '+pct+'%';
+
+    // Calculate speed and ETA
+    if(_downloadStartTime > 0 && pct > 0){
+      const elapsed   = (Date.now() - _downloadStartTime) / 1000; // seconds
+      const totalSize = 76;  // MB approximate
+      const downloaded= (pct/100) * totalSize;
+      const speedMBps = elapsed > 0 ? downloaded / elapsed : 0;
+      const remaining = speedMBps > 0 ? (totalSize - downloaded) / speedMBps : 0;
+
+      if(speedEl){
+        if(speedMBps >= 1) speedEl.textContent = speedMBps.toFixed(1)+' MB/s';
+        else               speedEl.textContent = (speedMBps*1024).toFixed(0)+' KB/s';
+      }
+      if(etaEl){
+        if(remaining <= 0 || pct >= 99)     etaEl.textContent = 'Almost done…';
+        else if(remaining < 60)              etaEl.textContent = Math.ceil(remaining)+'s left';
+        else                                 etaEl.textContent = Math.ceil(remaining/60)+'m left';
+      }
+    }
+
+    // Sync modal progress bar too
     const mFill = document.getElementById('upd-progress-fill');
     const mPct  = document.getElementById('upd-pct-label');
     const mLbl  = document.getElementById('upd-progress-label');
+    const mBtn  = document.getElementById('upd-action-btn');
     if(mFill) mFill.style.width = pct+'%';
     if(mPct)  mPct.textContent  = pct+'%';
-    if(mLbl)  mLbl.textContent  = pct<100 ? 'Downloading update…' : 'Finalising…';
+    if(mLbl)  mLbl.textContent  = pct<100 ? 'Downloading…' : '✅ Complete!';
+    if(mBtn)  mBtn.innerHTML    = '⬇️ '+pct+'% downloading…';
   });
 
-  // Download complete
+  // 4. Download complete
   window.classcore.onUpdateDownloaded(version=>{
-    const bar  = document.getElementById('update-progress-bar');
-    const title= document.getElementById('update-title');
-    const sub  = document.getElementById('update-sub');
-    const btn  = document.getElementById('update-btn');
-    const wrap = document.getElementById('update-progress-wrap');
-    if(bar)   bar.style.width   = '100%';
-    if(title) title.textContent = '✅ Update v'+version+' ready!';
-    if(sub)   sub.textContent   = 'Click Restart & Install to apply';
-    if(wrap)  wrap.style.display= 'none';
+    const bar      = document.getElementById('update-progress-bar');
+    const titleEl  = document.getElementById('update-title');
+    const subEl    = document.getElementById('update-sub');
+    const btn      = document.getElementById('update-btn');
+    const later    = document.getElementById('update-later-btn');
+    const progWrap = document.getElementById('update-progress-wrap');
+    const speedWrap= document.getElementById('update-speed-wrap');
+    const label    = document.getElementById('update-progress-label');
+    const pctEl    = document.getElementById('update-pct');
+
+    if(bar)      { bar.style.width='100%'; bar.style.background='#16A34A'; }
+    if(pctEl)      pctEl.textContent   = '100%';
+    if(label)      label.textContent   = '✅ Download complete!';
+    if(titleEl)    titleEl.textContent = '✅ v'+version+' downloaded & ready!';
+    if(subEl)      subEl.textContent   = 'Click Restart & Install — takes 30 seconds';
+    if(speedWrap)  speedWrap.style.display = 'none';
+
+    // Show restart button
     if(btn){
-      btn.textContent = '🔄 Restart & Install';
-      btn.style.display = 'flex';
-      btn.onclick = ()=>window.classcore.installUpdate();
+      btn.style.display    = 'flex';
+      btn.disabled         = false;
+      btn.textContent      = '🔄 Restart & Install';
+      btn.style.background = '#16A34A';
+      btn.onclick          = ()=>window.classcore.installUpdate();
     }
-    // Update Settings message too
+    if(later)  later.style.display = 'none';  // no "later" after download
+
+    // Settings message
     const msgEl = document.getElementById('update-check-msg');
-    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' downloaded! Click Restart & Install in the banner.'; }
-    showUpdateBanner('✅ Update v'+version+' ready!','Click Restart & Install');
+    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' ready! Click Restart & Install.'; }
+
+    toast('✅ Update downloaded! Click Restart & Install in the banner.');
+
+    // Sync modal
+    const mFill = document.getElementById('upd-progress-fill');
+    const mPct  = document.getElementById('upd-pct-label');
+    const mLbl  = document.getElementById('upd-progress-label');
+    const mBtn  = document.getElementById('upd-action-btn');
+    if(mFill){ mFill.style.width='100%'; mFill.style.background='#16A34A'; }
+    if(mPct)   mPct.textContent = '100%';
+    if(mLbl)   mLbl.textContent = '✅ Download complete!';
+    if(mBtn){
+      mBtn.innerHTML   = '🔄 Restart & Install';
+      mBtn.disabled    = false;
+      mBtn.style.background = 'linear-gradient(135deg,#16A34A,#15803D)';
+      mBtn.onclick     = ()=>window.classcore.installUpdate();
+    }
   });
 
-  // Error — only show for non-network errors
+  // 5. Error — suppress network errors silently
   window.classcore.onUpdateError && window.classcore.onUpdateError(msg=>{
+    const isNetworkErr = msg && (
+      msg.includes('net::') || msg.includes('ENOTFOUND') ||
+      msg.includes('ETIMEDOUT') || msg.includes('ECONNRESET')
+    );
     const msgEl = document.getElementById('update-check-msg');
-    if(msg && (msg.includes('net::') || msg.includes('ENOTFOUND') || msg.includes('ETIMEDOUT'))){
-      if(msgEl){ msgEl.style.color='#78716C'; msgEl.textContent='⚠️ No internet — update check skipped'; }
+    if(isNetworkErr){
+      console.warn('[Update] Network error (silent):', msg);
+      // Do NOT show error to user — just means no internet for update check
     } else if(msg){
-      if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ '+msg; }
-      console.warn('Update error:', msg);
+      console.error('[Update] Error:', msg);
+      if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ Update error: '+msg; }
     }
   });
 }
+
 
 
 // ── COURSES ────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
 {
-  "version": "1.5.7",
-  "notes": "Update system: checks after 1s (was 3s), re-checks every 30 minutes, GitHub CDN cache disabled via request headers. Manual Check for Updates button shows instant feedback. Save Failed fixed: payload size guard, error only after 3 consecutive failures. Attendance v2.0: instant toggle updates."
+  "version": "1.5.8",
+  "notes": "Update banner v3.0: Update Now button always visible, download speed shown (KB/s or MB/s), ETA countdown, progress bar moves smoothly. Network errors suppressed silently. Restart & Install shown after download completes."
 }
