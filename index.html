@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClassCore — Tuition Management</title>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- EmailJS SDK — loads before any scripts so emailjs.init() works -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" 
+        onerror="console.error('[ClassCore] EmailJS failed to load from CDN. Check internet connection.')"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -31,7 +33,53 @@ input:not([type=file]):not([type=color]):not([type=checkbox]):not([type=radio]),
 }
 .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
 table thead th{background:var(--sidebar-bg);}
-input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+/* ── PENCIL ANIMATION for fee collection ─────────────────────────── */
+@keyframes pencilWrite {
+  0%   { transform: rotate(-20deg) translateX(0px);   }
+  25%  { transform: rotate(-20deg) translateX(6px);   }
+  50%  { transform: rotate(-20deg) translateX(12px);  }
+  75%  { transform: rotate(-20deg) translateX(6px);   }
+  100% { transform: rotate(-20deg) translateX(0px);   }
+}
+@keyframes pencilBob {
+  0%,100% { transform: translateY(0px) rotate(-20deg); }
+  50%      { transform: translateY(-3px) rotate(-20deg); }
+}
+@keyframes fadeSlideIn {
+  from { opacity:0; transform:scale(.85); }
+  to   { opacity:1; transform:scale(1);   }
+}
+@keyframes flashGreen {
+  0%   { background:#DCFCE7; }
+  50%  { background:#BBF7D0; }
+  100% { background:transparent; }
+}
+.btn-collecting {
+  background: #2A9D8F !important;
+  color: #fff !important;
+  pointer-events: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  min-width: 110px;
+  justify-content: center;
+}
+.pencil-icon {
+  display: inline-block;
+  animation: pencilWrite 0.5s ease-in-out infinite;
+  font-size: 13px;
+  transform-origin: bottom right;
+}
+.btn-saved {
+  background: #16A34A !important;
+  color: #fff !important;
+  pointer-events: none !important;
+  animation: fadeSlideIn 0.2s ease;
+}
+.row-just-paid {
+  animation: flashGreen 1.2s ease forwards;
+}
+
 #app{display:flex;height:100vh;overflow:hidden;}
 .sidebar{width:225px;background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
@@ -2058,74 +2106,124 @@ function filterFees(q){
 // Error fallback: in-memory state stays correct even if persist() fails
 // ════════════════════════════════════════════════════════════════════════════
 function collectFee(sid){
-  const inp      = document.getElementById('pay-'+sid);
-  const monthEl  = document.getElementById('month-'+sid);
-  const selMonth = monthEl?.value || _feesSelMonth || MONTHS[new Date().getMonth()];
-  const curYear  = new Date().getFullYear();
+  const inp        = document.getElementById('pay-'+sid);
+  const monthEl    = document.getElementById('month-'+sid);
+  const collectBtn = document.querySelector('#fee-row-'+sid+' .btn-teal');
+  const selMonth   = monthEl?.value || _feesSelMonth || MONTHS[new Date().getMonth()];
+  const curYear    = new Date().getFullYear();
 
   const stu0 = students.find(s=>s.id===sid);
   if(!stu0){ toast('Student not found','err'); return; }
 
-  // Guard: duplicate payment
+  // Guard: duplicate payment for same month+year
   const alreadyPaid = (stu0.history||[]).some(
     h => h.month===selMonth && (h.year||curYear)===curYear
   );
   if(alreadyPaid){
-    toast(`❌ ${selMonth} fee already collected!`,'err');
-    const nextUnpaid = MONTHS.find(m =>
-      !(stu0.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear)
-    );
-    if(nextUnpaid && monthEl) monthEl.value = nextUnpaid;
+    toast('\u274C '+selMonth+' already collected!','err');
+    const next = MONTHS.find(m=>!(stu0.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear));
+    if(next && monthEl) monthEl.value = next;
     return;
   }
 
   // Guard: permissions
   if(!isAdmin() && !hasPermission('collect_fees')){
-    toast('You do not have permission to collect fees','err'); return;
+    toast('No permission to collect fees','err'); return;
   }
 
   // Guard: amount
   const mFee       = monthlyFee(stu0);
   const enteredAmt = parseFloat(inp?.value||0);
-  const amt        = enteredAmt>0 ? enteredAmt : mFee;
-  if(!amt||amt<=0){
-    toast('Enter fee amount, or set a monthly fee for this student first','err'); return;
+  const amt        = enteredAmt > 0 ? enteredAmt : mFee;
+  if(!amt || amt <= 0){
+    toast('Enter fee amount or set monthly fee for this student','err'); return;
   }
 
-  // Receipt number
+  // ── STEP 1: Show pencil animation immediately ─────────────────────────────
+  if(collectBtn){
+    collectBtn.className = 'btn btn-xs btn-collecting';
+    collectBtn.innerHTML = '<span class="pencil-icon">\u270F\uFE0F</span> Processing\u2026';
+    collectBtn.disabled  = true;
+  }
+  if(inp) inp.disabled = true;
+
+  // ── STEP 2: Receipt number ────────────────────────────────────────────────
   const rcptNo = (parseInt(localStorage.getItem('rcptNo')||1000)) + 1;
   localStorage.setItem('rcptNo', rcptNo);
 
-  // Mutate ONLY the one student — all others untouched
+  // ── STEP 3: Mutate in-memory data immediately ─────────────────────────────
   students = students.map(s=>{
     if(s.id !== sid) return s;
     return {
       ...s,
       paid:    (s.paid||0) + amt,
-      history: [...(s.history||[]), { amount:amt, date:todayStr(), receiptNo:rcptNo, month:selMonth, year:curYear }],
+      history: [...(s.history||[]), {
+        amount: amt, date: todayStr(),
+        receiptNo: rcptNo, month: selMonth, year: curYear,
+      }],
     };
   });
 
-  if(inp) inp.value = '';           // clear amount field immediately
-  toast(`✅ ${selMonth} fee collected — ${fmt(amt)}`);
+  // ── STEP 4: After 2s animation → update only this row surgically ──────────
+  setTimeout(()=>{
+    // Brief "Saved!" state
+    if(collectBtn){
+      collectBtn.className = 'btn btn-xs btn-saved';
+      collectBtn.innerHTML = '\u2705 Saved!';
+    }
 
-  // Re-render fees module ONLY
-  renderFees();
+    setTimeout(()=>{
+      // ── Surgically patch only this row — zero full page re-render ──────
+      const row = document.getElementById('fee-row-'+sid);
+      if(row){
+        const updStu = students.find(s=>s.id===sid);
+        if(updStu){
+          const nextUnpaid = MONTHS.find(m=>
+            !(updStu.history||[]).some(h=>h.month===m&&(h.year||curYear)===curYear)
+          );
+          // Status cell
+          const sc = row.cells[3];
+          if(sc) sc.innerHTML =
+            '<div style="font-size:12px;font-weight:700;color:#16A34A">\u2705 '+selMonth+' Paid</div>'+
+            (nextUnpaid ? '<div style="font-size:10px;color:var(--primary);margin-top:2px">Next: <b>'+nextUnpaid+'</b></div>' : '');
+          // Collect cell
+          const cc = row.cells[4];
+          if(cc) cc.innerHTML =
+            '<span style="font-size:11px;color:#16A34A">\u2014</span>'+
+            '<div style="font-size:10px;color:#78716C;margin-top:3px">Total: <b style="color:#16A34A">'+fmt(updStu.paid||0)+'</b></div>';
+          // History cell
+          const hc = row.cells[5];
+          if(hc) hc.innerHTML =
+            '<button class="btn btn-ghost btn-xs" onclick="openHist(\\"'+sid+'\\")">&#128203; '+(updStu.history||[]).length+'</button>';
+          // Row flash
+          row.className = 'row-just-paid';
+          setTimeout(()=>{ row.className=''; row.style.background='rgba(22,163,74,.05)'; }, 1200);
+        }
+      }
 
-  // Show receipt after fees table is updated
-  showReceiptPrev(students.find(s=>s.id===sid), amt, rcptNo, null, selMonth);
+      // Patch stat cards only — no full renderFees()
+      const list  = students.filter(s=>!s.inactive);
+      const stats = _computeFeeStats(list, selMonth, curYear);
+      _patchFeeStats(stats, selMonth);
+      _renderPendingAlert(list, selMonth, curYear);
 
-  // Update dashboard stats if user is there — only the 4 stat cards, nothing else
-  if(curPage==='dashboard') renderDash();
+      // Show receipt
+      const updStu2 = students.find(s=>s.id===sid);
+      if(updStu2) showReceiptPrev(updStu2, amt, rcptNo, null, selMonth);
+      toast('\u2705 '+selMonth+' collected \u2014 '+fmt(amt));
 
-  // Persist in background — failure keeps in-memory state intact (no blank screen)
-  persist().catch(err=>{
-    console.error('[Fees] persist failed:', err);
-    toast('⚠️ Saved in memory. Disk write failed — will retry on next action.','warn');
-  });
+      if(curPage==='dashboard') renderDash();
+
+      // Persist to disk in background
+      persist().catch(err=>{
+        console.error('[Fees] persist error:', err);
+        toast('\u26A0\uFE0F Recorded in memory. Disk save will retry.','warn');
+      });
+
+    }, 600);
+  }, 2000);
 }
 
-// ── Quick-collect from Dashboard overdue alert ────────────────────────────────
 function quickCollectPending(sid, month){
   const s       = students.find(x=>x.id===sid);
   if(!s) return;
@@ -4078,69 +4176,76 @@ function deleteUser(username){
 // ══════════════════════════════════════════════════════════════════════
 // EMAIL SYSTEM — EmailJS (free, no backend needed, works in Electron)
 // ══════════════════════════════════════════════════════════════════════
-// HOW TO SET UP (one-time, 10 minutes):
-//  1. Go to https://www.emailjs.com → Sign up free
-//  2. Dashboard → "Email Services" → Add Service → Gmail → Connect your Gmail
-//     Copy the Service ID (e.g. "service_abc123") → paste into EMAILJS_SERVICE_ID
-//  3. Dashboard → "Email Templates" → Create Template (see template below)
-//     Copy the Template ID → paste into EMAILJS_TEMPLATE_ID
-//  4. Dashboard → top right → Account → Public Key
-//     Copy Public Key → paste into EMAILJS_PUBLIC_KEY
-//
-//  EMAIL TEMPLATE to create in EmailJS dashboard:
-//  ┌──────────────────────────────────────────────────────────────────┐
-//  │  Subject: {{subject}}                                            │
-//  │  To: {{to_email}}                                                │
-//  │  Body:   (paste exactly what's below, including all {{vars}})   │
-//  │  {{body}}                                                        │
-//  └──────────────────────────────────────────────────────────────────┘
-//  That's it! EmailJS handles the actual email sending.
+// ══════════════════════════════════════════════════════════════════════
+// EMAIL SYSTEM — EmailJS Configuration
+// ══════════════════════════════════════════════════════════════════════
+// STEP 1: Replace YOUR_SERVICE_ID  → emailjs.com → Email Services → Copy ID
+// STEP 2: Replace YOUR_TEMPLATE_ID → emailjs.com → Email Templates → Copy ID
+// STEP 3: Replace YOUR_PUBLIC_KEY  → emailjs.com → Account → API Keys → Public Key
+// ══════════════════════════════════════════════════════════════════════
+const EMAILJS_SERVICE_ID  = 'service_1ywkxnl';
+const EMAILJS_TEMPLATE_ID = 'template_3i4hfuj';
+const EMAILJS_PUBLIC_KEY  = 'YdR9wbP3wK0rUyA77';
 
-const EMAILJS_SERVICE_ID  = 'service_1ywkxnl';   // e.g. 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'template_3i4hfuj';  // e.g. 'template_xyz789'
-const EMAILJS_PUBLIC_KEY  = 'YdR9wbP3wK0rUyA77';   // e.g. 'abc123XYZdef'
-
-// Initialise EmailJS — safe even if CDN failed to load
+// Auto-init EmailJS with retry (Electron CDN load can be slow)
 (function initEmailJS(){
-  try{
-    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YdR9wbP3wK0rUyA77'){
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-      console.log('[ClassCore] EmailJS ready');
+  function tryInit(attempts){
+    if(typeof emailjs !== 'undefined'){
+      if(EMAILJS_PUBLIC_KEY === 'YdR9wbP3wK0rUyA77'){
+        console.warn('[ClassCore][EmailJS] ⚠️ Public key not set. Replace YOUR_PUBLIC_KEY in index.html');
+        return;
+      }
+      try{
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+        console.log('[ClassCore][EmailJS] ✅ Ready | Service:', EMAILJS_SERVICE_ID, '| Template:', EMAILJS_TEMPLATE_ID);
+      }catch(e){
+        console.error('[ClassCore][EmailJS] ❌ init() failed:', e.message);
+      }
+    } else if(attempts > 0){
+      setTimeout(()=>tryInit(attempts - 1), 500); // retry every 500ms, up to 5s
+    } else {
+      console.error('[ClassCore][EmailJS] ❌ SDK failed to load from CDN.\nFix: Check internet connection, or add https://cdn.jsdelivr.net to Electron CSP.');
     }
-  }catch(e){ console.warn('[ClassCore] EmailJS init failed:', e.message); }
+  }
+  tryInit(10); // 10 × 500ms = 5 second max wait
 })();
 
-/**
- * Send an email via EmailJS.
- * @param {string} toEmail   - recipient email address
- * @param {string} subject   - email subject
- * @param {string} body      - plain text email body (HTML not required)
- * @returns {object}         - { ok: true } or { ok: false, error: string }
- */
 async function sendEmail(toEmail, subject, body, extraVars){
-  if(typeof emailjs === 'undefined'
-     || EMAILJS_SERVICE_ID  === 'service_1ywkxnl'
-     || EMAILJS_TEMPLATE_ID === 'template_3i4hfuj'
-     || EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
-    console.warn('[ClassCore] EmailJS not configured — email not sent.');
+  // Pre-flight checks with specific error messages
+  if(typeof emailjs === 'undefined'){
+    console.error('[ClassCore][EmailJS] ❌ SDK not loaded');
+    return { ok: false, error: 'EmailJS not loaded' };
+  }
+  if(EMAILJS_SERVICE_ID  === 'service_1ywkxnl' ||
+     EMAILJS_TEMPLATE_ID === 'template_3i4hfuj' ||
+     EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
+    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace service_1ywkxnl, template_3i4hfuj, YdR9wbP3wK0rUyA77');
     return { ok: false, error: 'EmailJS not configured' };
   }
+  if(!toEmail || !toEmail.includes('@')){
+    console.error('[ClassCore][EmailJS] ❌ Invalid email:', toEmail);
+    return { ok: false, error: 'Invalid email address' };
+  }
+
+  const params = { to_email: toEmail, subject: subject||'ClassCore', body: body||'', ...(extraVars||{}) };
+  console.log('[ClassCore][EmailJS] 📧 Sending to:', toEmail);
+
   try{
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: toEmail,
-      subject:  subject,
-      body:     body,
-      ...(extraVars||{}),
-    });
-    console.log('[ClassCore] Email sent to', toEmail);
+    const result = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params);
+    console.log('[ClassCore][EmailJS] ✅ Sent! Status:', result.status);
     return { ok: true };
   }catch(err){
-    console.error('[ClassCore] EmailJS error:', err);
-    return { ok: false, error: err?.text || err?.message || 'Email failed' };
+    const msg = err?.text || err?.message || JSON.stringify(err) || 'Unknown';
+    console.error('[ClassCore][EmailJS] ❌ Failed:', msg);
+    if(msg.includes('400')) console.error('  → Template var mismatch. Ensure {{to_email}}, {{subject}} exist in template.');
+    if(msg.includes('401')) console.error('  → Wrong Public Key.');
+    if(msg.includes('404')) console.error('  → Service ID or Template ID not found.');
+    if(msg.includes('limit')) console.error('  → 200/month free limit reached.');
+    return { ok: false, error: msg };
   }
 }
 
-// Google Sheets — kept for data logging, NOT used for emails anymore
+// Google Sheets — for data logging only
 const GSHEET_URL = 'https://script.google.com/macros/library/d/1NNJtHeLenk6yXZP2yDKJwcqn6lqieZpHnB9OmdePCeZ_J1Snv_1Gj4L5/2';
 
 // Generate device fingerprint to prevent trial abuse

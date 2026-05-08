@@ -1,4 +1,4 @@
 {
-  "version": "1.5.8",
-  "notes": "Update banner v3.0: Update Now button always visible, download speed shown (KB/s or MB/s), ETA countdown, progress bar moves smoothly. Network errors suppressed silently. Restart & Install shown after download completes."
+  "version": "1.5.9",
+  "notes": "EmailJS: full debug logging, retry init, specific error codes (400/401/404). Fees pencil animation: collect button shows writing pencil for 2s, then instant row update with green flash — no tab switch needed."
 }
