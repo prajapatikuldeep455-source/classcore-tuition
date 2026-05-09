@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClassCore — Tuition Management</title>
-<!-- EmailJS SDK — loads before any scripts so emailjs.init() works -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" 
-        onerror="console.error('[ClassCore] EmailJS failed to load from CDN. Check internet connection.')"></script>
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+        onerror="console.error('[ClassCore] EmailJS failed to load from CDN.')"></script>
+<!-- html2pdf — PDF generation in browser/Electron, no server needed -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        onerror="console.warn('[ClassCore] html2pdf not loaded — PDF export unavailable')"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -33,7 +36,7 @@ input:not([type=file]):not([type=color]):not([type=checkbox]):not([type=radio]),
 }
 .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border);}
 table thead th{background:var(--sidebar-bg);}
-/* ── PENCIL ANIMATION for fee collection ─────────────────────────── */
+/* ── UNIVERSAL ACTION ANIMATION (Fees, Attendance, Expenses) ─────── */
 @keyframes pencilWrite {
   0%   { transform: rotate(-20deg) translateX(0px);   }
   25%  { transform: rotate(-20deg) translateX(6px);   }
@@ -54,6 +57,16 @@ table thead th{background:var(--sidebar-bg);}
   50%  { background:#BBF7D0; }
   100% { background:transparent; }
 }
+@keyframes flashRed {
+  0%   { background:#FEE2E2; }
+  50%  { background:#FECACA; }
+  100% { background:transparent; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Collect / Save button states */
 .btn-collecting {
   background: #2A9D8F !important;
   color: #fff !important;
@@ -63,6 +76,7 @@ table thead th{background:var(--sidebar-bg);}
   gap: 5px;
   min-width: 110px;
   justify-content: center;
+  cursor: not-allowed !important;
 }
 .pencil-icon {
   display: inline-block;
@@ -76,9 +90,21 @@ table thead th{background:var(--sidebar-bg);}
   pointer-events: none !important;
   animation: fadeSlideIn 0.2s ease;
 }
-.row-just-paid {
-  animation: flashGreen 1.2s ease forwards;
+.btn-deleting {
+  background: #DC2626 !important;
+  color: #fff !important;
+  pointer-events: none !important;
+  opacity: .7;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
 }
+.btn-deleting .spin-icon { animation: spin .6s linear infinite; display:inline-block; }
+.row-just-paid    { animation: flashGreen 1.2s ease forwards; }
+.row-just-deleted { animation: flashRed   0.8s ease forwards; }
+/* PDF send button */
+.btn-pdf { background:#E8622A;color:#fff; }
+.btn-pdf:hover { background:#CF5522; }
 
 #app{display:flex;height:100vh;overflow:hidden;}
 .sidebar{width:225px;background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
@@ -481,7 +507,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <button class="x-btn" onclick="closeModal('modal-receipt')">×</button>
     </div></div>
     <div class="modal-body" id="receipt-body"></div>
-    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-green" onclick="sendReceiptWA()">💬 WhatsApp</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-green" onclick="sendReceiptWA()">💬 WhatsApp</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-pdf" onclick="sendReceiptAsPDF()">📤 Send PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
   </div>
 </div>
 <div id="modal-classfees" class="modal-overlay" data-modal="modal-classfees">
@@ -2264,17 +2290,21 @@ function sendWA(sid){
     `Dear ${s.parent||s.name},\n\nReminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\nMonth Due: ${selMonth}\n\nFee Details:\n  Base Fee: ₹${baseFee.toLocaleString('en-IN')}/mo${courseLines}${cFee>0?'\n  ──────────\n  Total: ₹'+mFee.toLocaleString('en-IN')+'/mo':''}\n\nKindly pay the ${selMonth} fees at the earliest.\n\nThank you!`
   ));
 }
-function deletePayment(sid, idx){
+function deletePayment(sid, histIdx){
   if(!canDo('delete_payments','You do not have permission to delete payments')) return;
-  if(!confirm('Delete this payment record?'))return;
-  students=students.map(s=>{
-    if(s.id!==sid)return s;
-    const history=[...(s.history||[])];
-    history.splice(idx,1);
-    const paid=history.reduce((a,h)=>a+(h.amount||0),0);
-    return{...s,paid,history};
+  if(!confirm('Delete this payment record?')) return;
+  students = students.map(s=>{
+    if(s.id !== sid) return s;
+    const history = [...(s.history||[])];
+    history.splice(histIdx, 1);
+    const paid = history.reduce((a,h)=>a+(h.amount||0), 0);
+    return { ...s, paid, history };
   });
-  persist();toast('Payment deleted');openHist(sid);renderFees();
+  persist().then(()=>{
+    toast('Payment deleted','err');
+    openHist(sid);
+    renderFees();
+  });
 }
 function openHist(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
@@ -2501,6 +2531,27 @@ async function printCurrentReceipt(){
 }
 
 async function saveReceiptPDF(){
+// Send current receipt as PDF via Email or WhatsApp
+async function sendReceiptAsPDF(){
+  if(!curReceipt){ toast('No receipt open','err'); return; }
+  const {s, amount, rcptNo, payDate, month} = curReceipt;
+  if(!s){ toast('No student data','err'); return; }
+  const size = getReceiptSize();
+  const html = buildReceiptHTML(s, amount, rcptNo, payDate, month, size);
+  const inst = localStorage.getItem('tuitionName')||'ClassCore Tuition';
+  const filename = 'Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
+  const mob = (s.mobile||'').replace(/\D/g,'');
+  const num = mob.length===10 ? '91'+mob : mob;
+  const waMsg = '🧾 *Fee Receipt — '+inst+'*\n\n'
+    + 'Student: *'+s.name+'*\n'
+    + 'Receipt #'+rcptNo+'\n'
+    + (month ? 'Month: '+month+'\n' : '')
+    + 'Amount: *₹'+Number(amount).toLocaleString('en-IN')+'*\n\n'
+    + '✅ Payment recorded.\n🏫 '+inst;
+  showSendPDFModal(html, filename, mob.length>=10?num:'', s.email||'', waMsg, size);
+}
+
+// Add data-exp-id attribute to expense table rows (for delete animation)
   if(!curReceipt)return;
   const{s,amount,rcptNo,payDate,month}=curReceipt;
   const size = getReceiptSize();
@@ -2620,6 +2671,30 @@ async function saveAttPDF(){
   else{const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
 }
 
+// Send attendance PDF to parent/teacher via Email or WhatsApp
+async function sendAttPDF(){
+  const html     = buildAttHTML();
+  const date     = document.getElementById('att-date')?.value || todayISO();
+  const batch    = document.getElementById('att-bat')?.value  || 'All Students';
+  const inst     = localStorage.getItem('tuitionName')||'ClassCore Tuition';
+  const filename = 'Attendance_'+date+'_'+(batch||'All').replace(/\s+/g,'_');
+
+  const vals    = Object.values(attState);
+  const total   = vals.length;
+  const present = vals.filter(Boolean).length;
+  const rate    = total ? Math.round((present/total)*100) : 0;
+
+  const waMsg =
+    '📋 *Attendance Report — '+inst+'*\n\n'
+    +'📅 Date: '+date+'\n'
+    +'🏫 Batch: '+batch+'\n'
+    +'✅ Present: '+present+' | ❌ Absent: '+(total-present)+' | 📊 Rate: '+rate+'%\n\n'
+    +'_Generated by ClassCore_';
+
+  // No individual parent — show send modal with no mobile/email pre-filled
+  showSendPDFModal(html, filename, '', '', waMsg, 'A4');
+}
+
 function openClassFeesMod(){
   document.getElementById('classfees-body').innerHTML=`
     <p style="font-size:12px;color:#78716C;margin-bottom:16px">Set monthly fee per class. Click "Apply" to update all students in that class.</p>
@@ -2688,6 +2763,7 @@ function renderAtt(){
       <button class="btn btn-primary"      onclick="saveAtt()">💾 Save</button>
       <button class="btn btn-ghost btn-sm" onclick="printAttReport()">🖨️ Print</button>
       <button class="btn btn-teal btn-sm"  onclick="saveAttPDF()">📄 PDF</button>
+      <button class="btn btn-pdf btn-sm"   onclick="sendAttPDF()">📤 Send PDF</button>
     </div>
   </div>
 
@@ -2836,40 +2912,26 @@ function markAll(v){
 
 // ── Save attendance — async, non-blocking, proper error handling ──────────────
 function saveAtt(){
-  const date  = document.getElementById('att-date')?.value  || todayISO();
-  const batch = document.getElementById('att-bat')?.value   || '';
-  const key   = `${date}__${batch||'ALL'}`;
-
-  // 1. Write to in-memory attData immediately (UI source of truth)
-  attData[key] = { ...attState };
-
-  // 2. Sync batch sub-keys when saving "All students" view
-  if(!batch){
-    const byBatch = {};
-    Object.keys(attState).forEach(sid=>{
-      const s  = students.find(x=>x.id===sid);
-      if(!s) return;
-      const bk = s.batch || '';
-      if(!byBatch[bk]) byBatch[bk] = {};
-      byBatch[bk][sid] = attState[sid];
-    });
-    Object.entries(byBatch).forEach(([bk, data])=>{
-      const bKey    = `${date}__${bk}`;
-      attData[bKey] = { ...(attData[bKey]||{}), ...data };
-    });
-  }
-
-  // 3. Show success toast FIRST (data is already in memory — it IS saved)
-  toast('✅ Attendance saved!');
-  updAttStats();
-
-  // 4. Persist to disk in background — failure does NOT affect in-memory state
-  persist().catch(err=>{
-    console.error('[Attendance] persist failed:', err);
-    // Data is safe in attData (in-memory). Will be saved on next successful action.
-    // Do NOT show "Save failed" — the attendance IS recorded correctly.
-    toast('⚠️ Could not write to disk. Attendance is recorded and will sync on next save.','warn');
-  });
+  const btn = document.querySelector('#page-attendance .btn-primary');
+  triggerAction(btn, async ()=>{
+    const date  = document.getElementById('att-date')?.value  || todayISO();
+    const batch = document.getElementById('att-bat')?.value   || '';
+    const key   = date+'__'+(batch||'ALL');
+    attData[key] = { ...attState };
+    if(!batch){
+      const byBatch = {};
+      Object.keys(attState).forEach(sid=>{
+        const s = students.find(x=>x.id===sid); if(!s) return;
+        const bk = s.batch||'';
+        if(!byBatch[bk]) byBatch[bk]={};
+        byBatch[bk][sid] = attState[sid];
+      });
+      Object.entries(byBatch).forEach(([bk,data])=>{
+        attData[date+'__'+bk] = {...(attData[date+'__'+bk]||{}),...data};
+      });
+    }
+    await persist();
+  }, { type:'save', label:'💾 Save', onDone:()=>{ updAttStats(); toast('✅ Attendance saved!'); } });
 }
 
 
@@ -3022,7 +3084,7 @@ function renderExpenses(){
   if(tbody){
     tbody.innerHTML=expenses.length===0
       ?'<tr><td colspan="6" style="text-align:center;padding:30px;color:#78716C">No expenses yet. Add one!</td></tr>'
-      :[...expenses].reverse().map(e=>`<tr>
+      :[...expenses].reverse().map(e=>`<tr data-exp-id="${esc(e.id)}">
         <td style="color:#78716C;font-size:12px">${e.date}</td>
         <td><span class="badge badge-gray">${esc(e.category)}</span></td>
         <td style="font-weight:600">${esc(e.desc)}</td>
@@ -3062,42 +3124,45 @@ function closeExpenseForm(){
 }
 
 async function saveExpense(){
-  const btn=document.querySelector('#modal-exp-body .modal-foot .btn-primary');
-  const date=document.getElementById('ef-date')?.value||todayISO();
-  const category=document.getElementById('ef-cat')?.value||'Other';
-  const desc=(document.getElementById('ef-desc')?.value||'').trim();
-  const paidTo=(document.getElementById('ef-to')?.value||'').trim();
-  const amount=parseFloat(document.getElementById('ef-amt')?.value||0);
+  const btn  = document.querySelector('#modal-exp-body .modal-foot .btn-primary');
+  const date = document.getElementById('ef-date')?.value||todayISO();
+  const category = document.getElementById('ef-cat')?.value||'Other';
+  const desc = (document.getElementById('ef-desc')?.value||'').trim();
+  const paidTo = (document.getElementById('ef-to')?.value||'').trim();
+  const amount = parseFloat(document.getElementById('ef-amt')?.value||0);
   if(!desc){toast('Enter description','err');return;}
   if(!amount||amount<=0){toast('Enter a valid amount','err');return;}
 
-  if(btn){btn.textContent='⏳ Saving…';btn.disabled=true;}
-  try{
+  await triggerAction(btn, async ()=>{
     if(editExpId){
       expenses=expenses.map(e=>e.id===editExpId?{...e,date,category,desc,paidTo,amount}:e);
     } else {
       expenses.push({id:uid(),date,category,desc,paidTo,amount});
     }
-    closeFormModal('expense');
-    renderExpenses();
     await persist();
-    toast(editExpId?'✅ Expense updated!':'✅ Expense added!');
-    editExpId=null;
-  }catch(err){
-    console.error('saveExpense error:',err);
-    toast('Save failed: '+err.message,'err');
-    if(btn){btn.textContent='💾 Save';btn.disabled=false;}
-  }
+  }, {
+    type:'save', label: editExpId ? '💾 Update' : '💾 Save',
+    onDone:()=>{
+      closeFormModal('expense');
+      editExpId = null;
+      renderExpenses();
+      toast(editExpId ? '✅ Expense updated!' : '✅ Expense added!');
+    }
+  });
 }
 
 function editExpense(id){ openExpenseForm(id); }
 
 function delExpense(id){
-  if(!confirm('Delete this expense?'))return;
-  expenses=expenses.filter(e=>e.id!==id);
-  persist();
-  renderExpenses();
-  toast('Deleted','err');
+  if(!confirm('Delete this expense?')) return;
+  const row = document.querySelector(`tr[data-exp-id="${id}"]`);
+  if(row){ row.className='row-just-deleted'; }
+  setTimeout(async ()=>{
+    expenses = expenses.filter(e=>e.id!==id);
+    await persist();
+    renderExpenses();
+    toast('Expense deleted','err');
+  }, 700);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4219,7 +4284,7 @@ async function sendEmail(toEmail, subject, body, extraVars){
   if(EMAILJS_SERVICE_ID  === 'service_1ywkxnl' ||
      EMAILJS_TEMPLATE_ID === 'template_3i4hfuj' ||
      EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
-    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace service_1ywkxnl, template_3i4hfuj, YdR9wbP3wK0rUyA77');
+    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace YOUR_SERVICE_ID, YOUR_TEMPLATE_ID, YOUR_PUBLIC_KEY');
     return { ok: false, error: 'EmailJS not configured' };
   }
   if(!toEmail || !toEmail.includes('@')){
@@ -4247,6 +4312,219 @@ async function sendEmail(toEmail, subject, body, extraVars){
 
 // Google Sheets — for data logging only
 const GSHEET_URL = 'https://script.google.com/macros/library/d/1NNJtHeLenk6yXZP2yDKJwcqn6lqieZpHnB9OmdePCeZ_J1Snv_1Gj4L5/2';
+
+// ════════════════════════════════════════════════════════════════════════════
+// UNIVERSAL ACTION ENGINE  v1.0
+// Usage: triggerAction(btn, actionFn, { type, label, onDone })
+//   btn      — the button element that was clicked
+//   actionFn — async function that performs the actual work
+//   options:
+//     type    — 'save' | 'delete'   (controls animation color)
+//     label   — original button label to restore on error
+//     onDone  — callback after animation completes
+// ════════════════════════════════════════════════════════════════════════════
+async function triggerAction(btn, actionFn, options = {}){
+  const { type = 'save', label = null, onDone = null } = options;
+  const origHTML = label || btn?.innerHTML || '';
+
+  // ── Phase 1: Pencil animation ─────────────────────────────────────────────
+  if(btn){
+    btn.disabled  = true;
+    btn.innerHTML = type === 'delete'
+      ? '<span class="spin-icon">⚙️</span> Deleting…'
+      : '<span class="pencil-icon">✏️</span> Saving…';
+    btn.className = btn.className.replace(/btn-(primary|teal|ink|ghost|red|green)\b/g,'').trim()
+                  + (type === 'delete' ? ' btn-deleting' : ' btn-collecting');
+  }
+
+  // ── Phase 2: Run the actual action ────────────────────────────────────────
+  let success = false;
+  try{
+    await actionFn();
+    success = true;
+  }catch(err){
+    console.error('[triggerAction] error:', err);
+    toast('⚠️ Action failed: ' + err.message, 'err');
+  }
+
+  if(!success){
+    // Restore button on failure
+    if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
+    return;
+  }
+
+  // ── Phase 3: Success state (brief) ────────────────────────────────────────
+  if(btn){
+    btn.innerHTML = type === 'delete' ? '✅ Deleted!' : '✅ Saved!';
+    btn.className = btn.className.replace(/btn-(collecting|deleting)\b/g,'').trim() + ' btn-saved';
+  }
+
+  // ── Phase 4: After brief pause → call onDone ─────────────────────────────
+  setTimeout(()=>{
+    if(typeof onDone === 'function') onDone();
+  }, type === 'delete' ? 800 : 600);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PDF SYSTEM  v1.0
+// Uses html2pdf.js (CDN loaded above). Falls back to window.print() if unavailable.
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Generate a PDF from an HTML string and either download it or return the blob.
+ * @param {string} html      - full HTML string to convert
+ * @param {string} filename  - output filename (no extension)
+ * @param {string} size      - 'A4' | 'A5' | 'A6' (default 'A4')
+ * @param {boolean} download - true = auto-download, false = return blob
+ */
+async function generatePDF(html, filename, size = 'A4', download = true){
+  if(typeof html2pdf === 'undefined'){
+    console.warn('[ClassCore][PDF] html2pdf not loaded — falling back to print');
+    const w = window.open('','_blank');
+    w.document.write(html); w.document.close();
+    setTimeout(()=>w.print(), 400);
+    return null;
+  }
+
+  const pageSizes = { A4:[210,297], A5:[148,210], A6:[105,148], A7:[74,105] };
+  const [pw, ph] = pageSizes[size] || pageSizes.A4;
+
+  const opt = {
+    margin:      [4, 4, 4, 4],
+    filename:    filename + '.pdf',
+    image:       { type:'jpeg', quality:0.95 },
+    html2canvas: { scale:2, useCORS:true, logging:false },
+    jsPDF:       { unit:'mm', format:[pw,ph], orientation:'portrait' },
+  };
+
+  const worker = html2pdf().set(opt).from(html);
+
+  if(download){
+    await worker.save();
+    return null;
+  } else {
+    const blob = await worker.outputPdf('blob');
+    return blob;
+  }
+}
+
+/**
+ * Show a PDF Send modal — Email + WhatsApp options.
+ * @param {string}  html        - HTML to convert to PDF
+ * @param {string}  filename    - PDF filename
+ * @param {string}  mobile      - parent mobile (10 digits)
+ * @param {string}  email       - parent email
+ * @param {string}  waMessage   - WhatsApp text message
+ * @param {string}  size        - paper size
+ */
+function showSendPDFModal(html, filename, mobile, email, waMessage, size = 'A4'){
+  // Remove existing modal if any
+  const existing = document.getElementById('modal-send-pdf');
+  if(existing) existing.remove();
+
+  const hasEmail  = email && email.includes('@');
+  const hasWA     = mobile && (mobile.replace(/\D/g,'').length >= 10);
+  const mobileNum = hasWA ? (mobile.replace(/\D/g,'').length===10 ? '91'+mobile.replace(/\D/g,'') : mobile.replace(/\D/g,'')) : '';
+
+  const modalHtml = `
+  <div id="modal-send-pdf" class="modal-overlay open" style="z-index:10000">
+    <div class="modal-box" style="width:420px">
+      <div class="modal-hdr">
+        <h3>📤 Send PDF to Parent</h3>
+        <button class="x-btn" onclick="document.getElementById('modal-send-pdf').remove()">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#F7F5F0;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+          <div style="font-size:11px;color:#78716C;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">PDF File</div>
+          <div style="font-size:14px;font-weight:700">📄 ${esc(filename)}.pdf</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <!-- Download -->
+          <button class="btn btn-ghost" style="justify-content:flex-start;gap:10px;padding:12px 16px"
+            onclick="generatePDF(${JSON.stringify(html).replace(/</g,'\\u003c')}, '${esc(filename)}', '${size}', true).then(()=>toast('✅ PDF downloaded!'))">
+            <span style="font-size:20px">💾</span>
+            <div style="text-align:left">
+              <div style="font-weight:700;font-size:13px">Download PDF</div>
+              <div style="font-size:11px;color:#78716C">Save to your computer</div>
+            </div>
+          </button>
+
+          <!-- WhatsApp -->
+          ${hasWA ? `
+          <button class="btn" style="background:#25D366;color:#fff;justify-content:flex-start;gap:10px;padding:12px 16px"
+            onclick="sendPDFWhatsApp('${mobileNum}', ${JSON.stringify(waMessage).replace(/</g,'\\u003c')}, ${JSON.stringify(html).replace(/</g,'\\u003c')}, '${esc(filename)}', '${size}')">
+            <span style="font-size:20px">💬</span>
+            <div style="text-align:left">
+              <div style="font-weight:700;font-size:13px">Send via WhatsApp</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.8)">Downloads PDF + opens WhatsApp</div>
+            </div>
+          </button>` : `
+          <div style="background:#F7F5F0;border-radius:8px;padding:10px 14px;font-size:12px;color:#78716C">
+            📱 WhatsApp unavailable — no mobile number for this student
+          </div>`}
+
+          <!-- Email -->
+          ${hasEmail ? `
+          <button class="btn" style="background:#1D4ED8;color:#fff;justify-content:flex-start;gap:10px;padding:12px 16px"
+            id="pdf-email-btn"
+            onclick="sendPDFEmail('${esc(email)}', '${esc(filename)}', ${JSON.stringify(waMessage).replace(/</g,'\\u003c')}, '${size}')">
+            <span style="font-size:20px">📧</span>
+            <div style="text-align:left">
+              <div style="font-weight:700;font-size:13px">Send via Email</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.8)">${esc(email)}</div>
+            </div>
+          </button>` : `
+          <div style="background:#F7F5F0;border-radius:8px;padding:10px 14px;font-size:12px;color:#78716C">
+            📧 Email unavailable — no email address for this student
+          </div>`}
+
+        </div>
+        <div id="pdf-send-status" style="margin-top:12px;font-size:12px;text-align:center;font-weight:600;min-height:18px"></div>
+      </div>
+    </div>
+  </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function sendPDFWhatsApp(mobileNum, message, html, filename, size){
+  const statusEl = document.getElementById('pdf-send-status');
+  if(statusEl){ statusEl.style.color='#E8622A'; statusEl.textContent='⏳ Generating PDF…'; }
+
+  // Download PDF first, then open WhatsApp
+  await generatePDF(html, filename, size, true);
+
+  if(statusEl){ statusEl.style.color='#25D366'; statusEl.textContent='✅ PDF downloaded! Opening WhatsApp…'; }
+  setTimeout(()=>{
+    window.open('https://wa.me/'+mobileNum+'?text='+encodeURIComponent(message));
+    setTimeout(()=>{ const m=document.getElementById('modal-send-pdf'); if(m) m.remove(); }, 1000);
+  }, 800);
+}
+
+async function sendPDFEmail(email, filename, bodyText, size){
+  const btn      = document.getElementById('pdf-email-btn');
+  const statusEl = document.getElementById('pdf-send-status');
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="pencil-icon">✏️</span> Sending…'; }
+  if(statusEl){ statusEl.style.color='#1D4ED8'; statusEl.textContent='⏳ Sending email…'; }
+
+  const result = await sendEmail(
+    email,
+    filename + ' — ClassCore',
+    bodyText,
+    { subject: filename + ' — ClassCore', body: bodyText, to_email: email }
+  );
+
+  if(result.ok){
+    if(statusEl){ statusEl.style.color='#16A34A'; statusEl.textContent='✅ Email sent to '+email; }
+    if(btn){ btn.innerHTML='✅ Sent!'; btn.style.background='#16A34A'; }
+    setTimeout(()=>{ const m=document.getElementById('modal-send-pdf'); if(m) m.remove(); }, 2000);
+  } else {
+    if(statusEl){ statusEl.style.color='#DC2626'; statusEl.textContent='❌ Email failed: '+result.error; }
+    if(btn){ btn.disabled=false; btn.innerHTML='<span style="font-size:20px">📧</span> <div style="text-align:left"><div style="font-weight:700;font-size:13px">Retry Email</div></div>'; }
+  }
+}
 
 // Generate device fingerprint to prevent trial abuse
 async function getDeviceId(){

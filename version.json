@@ -1,4 +1,4 @@
 {
-  "version": "1.5.9",
-  "notes": "EmailJS: full debug logging, retry init, specific error codes (400/401/404). Fees pencil animation: collect button shows writing pencil for 2s, then instant row update with green flash — no tab switch needed."
+  "version": "1.6.0",
+  "notes": "Universal triggerAction engine: pencil animation on Fees, Attendance, Expenses save/delete. PDF system: generate + Send PDF button on receipts and attendance reports. Send via WhatsApp or Email directly. html2pdf.js integrated."
 }
