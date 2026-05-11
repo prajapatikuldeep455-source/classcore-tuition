@@ -96,17 +96,13 @@ app.on('window-all-closed', () => {
 
 function setupAutoUpdater() {
   // ── Config ────────────────────────────────────────────────────────────────
-  autoUpdater.autoDownload    = false;  // Ask user before downloading
+  autoUpdater.autoDownload         = false;  // Show banner before downloading
   autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.allowPrerelease = false;
-
-  // CRITICAL: Disable update cache so GitHub always returns the latest version.json
-  // Without this, the CDN serves a 5-minute cached version → updates appear slow.
-  autoUpdater.requestHeaders = {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma':        'no-cache',
-    'Expires':       '0',
-  };
+  autoUpdater.allowPrerelease      = false;
+  // NOTE: Do NOT set requestHeaders here.
+  // AWS S3 (used by GitHub Releases) rejects downloads with custom
+  // Cache-Control / Pragma headers → 403 Forbidden → stuck at 0%.
+  // electron-updater handles caching correctly on its own.
 
   // ── Logging ───────────────────────────────────────────────────────────────
   autoUpdater.logger = { info: log, warn: log, error: log, debug: () => {} };
@@ -117,32 +113,22 @@ function setupAutoUpdater() {
     log('Checking for updates...');
   });
 
-  // NEW VERSION FOUND
   autoUpdater.on('update-available', (info) => {
     log(`Update available: v${info.version}`);
-    if (mainWindow) {
-      mainWindow.webContents.send('update-available', info.version);
-    }
+    if (mainWindow) mainWindow.webContents.send('update-available', info.version);
   });
 
-  // ALREADY LATEST
   autoUpdater.on('update-not-available', (info) => {
     log(`Already up to date: v${info.version}`);
-    if (mainWindow) {
-      mainWindow.webContents.send('update-not-available', info.version);
-    }
+    if (mainWindow) mainWindow.webContents.send('update-not-available', info.version);
   });
 
-  // DOWNLOAD PROGRESS
   autoUpdater.on('download-progress', (progress) => {
     const pct = Math.round(progress.percent);
     log(`Download: ${pct}% (${Math.round(progress.bytesPerSecond / 1024)} KB/s)`);
-    if (mainWindow) {
-      mainWindow.webContents.send('update-progress', pct);
-    }
+    if (mainWindow) mainWindow.webContents.send('update-progress', pct);
   });
 
-  // DOWNLOAD COMPLETE
   autoUpdater.on('update-downloaded', (info) => {
     log(`Downloaded: v${info.version}`);
     try {
@@ -152,16 +138,17 @@ function setupAutoUpdater() {
         updatedAt:   new Date().toISOString(),
       }));
     } catch (_) {}
-    if (mainWindow) {
-      mainWindow.webContents.send('update-downloaded', info.version);
-    }
+    if (mainWindow) mainWindow.webContents.send('update-downloaded', info.version);
   });
 
-  // ERROR — log it but never crash the app
+  // Error — only forward non-network errors to renderer (no spam)
   autoUpdater.on('error', (err) => {
     log(`Update error: ${err.message}`);
-    // Only send to renderer if it's not a network error (don't spam user)
-    if (mainWindow && !err.message.includes('net::') && !err.message.includes('ENOTFOUND')) {
+    const isNetErr = err.message.includes('net::') ||
+                     err.message.includes('ENOTFOUND') ||
+                     err.message.includes('ETIMEDOUT') ||
+                     err.message.includes('ECONNRESET');
+    if (mainWindow && !isNetErr) {
       mainWindow.webContents.send('update-error', err.message);
     }
   });
@@ -245,8 +232,13 @@ ipcMain.handle('check-update', () => {
 });
 
 // ── DOWNLOAD UPDATE (user clicked "Update Now") ───────────────────────────
+// IMPORTANT: Do NOT await autoUpdater.downloadUpdate().
+// downloadUpdate() is a long-running process (76MB download).
+// Awaiting it blocks the IPC channel — renderer never gets { ok:true }
+// → progress events never fire → UI stuck at 0%.
+// Instead: fire it and return immediately. Progress comes via events.
 ipcMain.handle('download-update', async (event, payload) => {
-  // 1. Save current data BEFORE downloading (data safety)
+  // 1. Save data BEFORE downloading (safety first)
   if (payload) {
     try {
       fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
@@ -255,9 +247,10 @@ ipcMain.handle('download-update', async (event, payload) => {
       log(`Pre-update save error: ${err.message}`);
     }
   }
-  // 2. Start download
+  // 2. Fire download — do NOT await (would block IPC for minutes)
   try {
-    await autoUpdater.downloadUpdate();
+    autoUpdater.downloadUpdate(); // fire-and-forget
+    log('Download started (non-blocking).');
     return { ok: true };
   } catch (err) {
     log(`downloadUpdate error: ${err.message}`);

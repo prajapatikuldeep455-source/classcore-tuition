@@ -1,4 +1,4 @@
 {
-  "version": "1.6.0",
-  "notes": "Universal triggerAction engine: pencil animation on Fees, Attendance, Expenses save/delete. PDF system: generate + Send PDF button on receipts and attendance reports. Send via WhatsApp or Email directly. html2pdf.js integrated."
+  "version": "1.6.1",
+  "notes": "main.js: removed requestHeaders (AWS S3 403 fix), removed await from downloadUpdate (unstick 0% bug). verifyForgotOTP: sends email with new credentials. Exams module: create exams, enter marks, generate report card PDFs with Send via WhatsApp/Email."
 }

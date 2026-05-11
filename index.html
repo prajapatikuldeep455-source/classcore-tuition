@@ -401,6 +401,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div class="nav-item" data-page="students" onclick="gotoPage('students')">🎓 Students</div>
       <div class="nav-item" data-page="batches" onclick="gotoPage('batches')">🕐 Batches</div>
       <div class="nav-item" data-page="courses" onclick="gotoPage('courses')">📚 Courses</div>
+      <div class="nav-item" data-page="exams"   onclick="gotoPage('exams')">📝 Exams</div>
       <div class="nav-item" data-page="fees" onclick="gotoPage('fees')">💰 Fees</div>
       <div class="nav-item" data-page="expenses" onclick="gotoPage('expenses')">📋 Expenses</div>
       <div class="nav-item" data-page="attendance" onclick="gotoPage('attendance')">✅ Attendance</div>
@@ -436,6 +437,7 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <div id="page-batches" class="page"></div>
       <div id="page-batches-form" class="page"></div>
       <div id="page-courses" class="page"></div>
+      <div id="page-exams"   class="page"></div>
       <div id="page-courses-form" class="page"></div>
       <div id="page-fees" class="page"></div>
       <div id="page-expenses" class="page"></div>
@@ -527,6 +529,32 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   <div class="modal-box" style="width:560px"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
 </div>
 
+<!-- EXAM FORM MODAL -->
+<div id="modal-exam-form" class="modal-overlay" data-modal="modal-exam-form">
+  <div class="modal-box" style="width:560px">
+    <div class="modal-hdr">
+      <h3 id="modal-exam-title">Create New Exam</h3>
+      <button class="x-btn" onclick="closeModal('modal-exam-form')">×</button>
+    </div>
+    <div class="modal-body" id="modal-exam-body"></div>
+  </div>
+</div>
+
+<!-- EXAM MARKS MODAL -->
+<div id="modal-exam-marks" class="modal-overlay" data-modal="modal-exam-marks">
+  <div class="modal-box" style="width:700px">
+    <div class="modal-hdr">
+      <h3 id="modal-marks-title">Enter Marks</h3>
+      <button class="x-btn" onclick="closeModal('modal-exam-marks')">×</button>
+    </div>
+    <div class="modal-body" id="modal-marks-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-exam-marks')">Close</button>
+      <button class="btn btn-primary" id="save-marks-btn" onclick="saveMarks()">💾 Save Marks</button>
+    </div>
+  </div>
+</div>
+
 <!-- Auto Update Banner -->
 <div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.3);">
   <!-- Info row -->
@@ -615,11 +643,12 @@ let monthFees={};
 let expenses=[];     // {id, date, category, desc, amount, paidTo}
 let salaries=[];     // {id, userId, month, year, amount, paid, paidDate}
 let announcements=[]; // {id, date, text, sentWA}
+let exams=[];        // {id, name, date, totalMarks, cls, subject, marks:{studentId->obtained}}
 
 function buildPayload(){
   return {
     students,batches,courses,classFees,stuFeeOvr,attData,monthFees,
-    expenses,salaries,announcements,
+    expenses,salaries,announcements,exams,
     cc_users:      localStorage.getItem('cc_users')||'',
     username:      localStorage.getItem('username')||'admin',
     password:      localStorage.getItem('password')||'1234',
@@ -776,6 +805,7 @@ async function loadAllData(){
       expenses=d.expenses||[];
       salaries=d.salaries||[];
       announcements=d.announcements||[];
+      exams=d.exams||[];
       if(d.cc_users)       localStorage.setItem('cc_users',d.cc_users);
       if(d.username)       localStorage.setItem('username',d.username);
       if(d.password)       localStorage.setItem('password',d.password);
@@ -1080,69 +1110,100 @@ async function sendForgotOTP(){
 }
 
 function verifyForgotOTP(){
-  const newUser=(document.getElementById('fp-newuser').value||'').trim();
-  const newPass=(document.getElementById('fp-newpass').value||'').trim();
-  const newPass2=(document.getElementById('fp-newpass2').value||'').trim();
-  const msg=document.getElementById('fp-msg');
+  const newUser  = (document.getElementById('fp-newuser').value||'').trim();
+  const newPass  = (document.getElementById('fp-newpass').value||'').trim();
+  const newPass2 = (document.getElementById('fp-newpass2').value||'').trim();
+  const msg      = document.getElementById('fp-msg');
 
-  if(!newPass||newPass.length<6){msg.style.color='#DC2626';msg.textContent='Password must be at least 6 characters';return;}
-  if(newPass!==newPass2){msg.style.color='#DC2626';msg.textContent='Passwords do not match';return;}
+  if(!newPass||newPass.length<6){
+    msg.style.color='#DC2626'; msg.textContent='Password must be at least 6 characters'; return;
+  }
+  if(newPass!==newPass2){
+    msg.style.color='#DC2626'; msg.textContent='Passwords do not match'; return;
+  }
 
-  // ── Find the user to reset ──────────────────────────────────────────
+  // ── Find the user to reset ──────────────────────────────────────────────
   const users = getUsers();
   const reg   = getRegistration();
   let targetUser = null;
 
-  // Find by registration email (owner)
-  if(reg && reg.email === _otpEmail){
-    targetUser = users.find(x=>x.role==='admin');
-  }
-  // Or find employee by stored email
+  if(reg && reg.email === _otpEmail)    targetUser = users.find(x=>x.role==='admin');
+  if(!targetUser)                       targetUser = users.find(x=>x.email===_otpEmail);
+  if(!targetUser)                       targetUser = users[0]; // fallback
+
   if(!targetUser){
-    targetUser = users.find(x=>x.email===_otpEmail);
+    msg.style.color='#DC2626'; msg.textContent='User not found. Please contact support.'; return;
   }
-  // Fallback to first admin
-  if(!targetUser) targetUser = users[0];
 
-  if(!targetUser){msg.style.color='#DC2626';msg.textContent='User not found. Please contact support.';return;}
+  const idx        = users.indexOf(targetUser);
+  const finalUser  = (newUser && newUser !== users[idx].username) ? newUser : users[idx].username;
 
-  const idx = users.indexOf(targetUser);
+  // Check new username not taken by someone else
   if(newUser && newUser !== users[idx].username){
-    // Check username not taken
-    if(users.find(x=>x.username===newUser&&x.username!==users[idx].username)){
-      msg.style.color='#DC2626';msg.textContent='Username already taken. Try another.';return;
+    if(users.find(x=>x.username===newUser && x.username!==users[idx].username)){
+      msg.style.color='#DC2626'; msg.textContent='Username already taken. Try another.'; return;
     }
-    users[idx].username = newUser;
   }
+
+  // ── Save new credentials ────────────────────────────────────────────────
+  users[idx].username  = finalUser;
   users[idx].password  = newPass;
   users[idx].mustChange = false;
   saveUsers(users);
 
   if(users[idx].role==='admin'){
-    localStorage.setItem('username', users[idx].username);
+    localStorage.setItem('username', finalUser);
     localStorage.setItem('password', newPass);
   }
   localStorage.removeItem('_fp_otp');
   persist();
 
+  // ── Send email with new credentials ────────────────────────────────────
+  // Email is sent immediately so user has a record of their new password
+  const inst = localStorage.getItem('tuitionName') || 'ClassCore Tuition';
+  sendEmail(
+    _otpEmail,
+    'ClassCore — Your Password Has Been Reset',
+    '',
+    {
+      username:   finalUser,
+      password:   newPass,
+      user_name:  users[idx].name || finalUser,
+      institute:  inst,
+      mobile:     _otpMobile || reg?.mobile || '',
+      trial_end:  'Your credentials have been successfully reset.',
+      subject:    'ClassCore — Password Reset Successful',
+    }
+  ).then(r=>{
+    if(r.ok){
+      console.log('[ClassCore] Password reset email sent to', _otpEmail);
+    } else {
+      console.warn('[ClassCore] Password reset email failed:', r.error);
+      // Don't block the user — credentials are saved, just email failed
+    }
+  }).catch(()=>{});
+
+  // ── Show success and redirect to login ─────────────────────────────────
   msg.style.color='#16A34A';
-  msg.textContent='✅ Password reset successfully! Logging you in...';
+  msg.textContent='✅ Password reset! New credentials emailed to '+_otpEmail;
 
   setTimeout(()=>{
     document.getElementById('forgot-screen').style.display='none';
-    document.getElementById('l-user').value = users[idx].username;
-    document.getElementById('l-pass').value = '';
+    document.getElementById('fp-step1').style.display='block';
+    document.getElementById('fp-step2').style.display='none';
+    document.getElementById('l-user').value = finalUser;
+    document.getElementById('l-pass').value  = '';
     document.getElementById('l-pass').focus();
-    msg.textContent='';
-    toast('✅ Password reset! Please log in with your new password.');
-  }, 1500);
+    msg.textContent = '';
+    toast('✅ Password reset! Check your email for the new credentials.');
+  }, 2000);
 }
 
 // NAV
 let curPage='dashboard';
 let editStuId=null,editBatId=null;
-const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',courses:'Courses','courses-form':'Course Form',fees:'Fees',expenses:'Expenses',attendance:'Attendance',broadcast:'Broadcast',settings:'Settings'};
-const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)},expenses:{lbl:'＋ Add Expense',fn:()=>openExpenseForm()},broadcast:{lbl:'📣 New Announcement',fn:()=>openBroadcastForm()}};
+const PAGE_TITLES={dashboard:'Dashboard',students:'Students','students-form':'Student Form',batches:'Batches','batches-form':'Batch Form',courses:'Courses','courses-form':'Course Form',exams:'Exams',fees:'Fees',expenses:'Expenses',attendance:'Attendance',broadcast:'Broadcast',settings:'Settings'};
+const TOP_BTNS={students:{lbl:'＋ Add Student',fn:()=>openStuForm(null)},batches:{lbl:'＋ New Batch',fn:()=>openBatForm(null)},courses:{lbl:'＋ New Course',fn:()=>openCourseForm(null)},exams:{lbl:'＋ New Exam',fn:()=>openExamForm(null)},expenses:{lbl:'＋ Add Expense',fn:()=>openExpenseForm()},broadcast:{lbl:'📣 New Announcement',fn:()=>openBroadcastForm()}};
 
 function gotoPage(pg){
   // Hide all pages
@@ -1166,6 +1227,7 @@ function gotoPage(pg){
     students:renderStus,
     batches:renderBats,
     courses:renderCourses,
+    exams:renderExams,
     fees:renderFees,
     expenses:renderExpenses,
     attendance:renderAtt,
@@ -5738,6 +5800,362 @@ function initApp(){
   if(nm)nm.textContent=currentUser.name||'Admin';
   if(rl)rl.textContent=isAdmin()?'👑 Administrator':'👤 Employee';
   updSbInst();renderDash();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXAMS MODULE  v1.0
+// Data: exams[] = {id, name, date, totalMarks, cls, subject, marks:{sid->obtained}}
+// ════════════════════════════════════════════════════════════════════════════
+
+let _editExamId = null;
+
+// ── Render exams list ─────────────────────────────────────────────────────────
+function renderExams(){
+  const el = document.getElementById('page-exams');
+  if(!exams.length){
+    el.innerHTML = `<div style="text-align:center;padding:80px;color:#78716C">
+      <div style="font-size:52px;margin-bottom:14px">📝</div>
+      <p style="font-size:15px;margin-bottom:16px">No exams yet!</p>
+      <button class="btn btn-primary" onclick="openExamForm(null)">＋ Create Exam</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+    ${exams.map(e=>makeExamCard(e)).join('')}
+  </div>`;
+}
+
+function makeExamCard(e){
+  const stuList = students.filter(s=>!s.inactive && s.cls===e.cls);
+  const marked  = Object.keys(e.marks||{}).length;
+  const avgMark = marked > 0
+    ? Math.round(Object.values(e.marks).reduce((a,v)=>a+(v||0),0) / marked)
+    : 0;
+  const avgPct  = e.totalMarks > 0 ? Math.round((avgMark/e.totalMarks)*100) : 0;
+  const color   = avgPct>=75?'#16A34A':avgPct>=50?'#E8622A':'#DC2626';
+  return `<div style="background:#fff;border:1.5px solid #E7E2D9;border-radius:16px;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#1B3154,#243d5c);padding:18px 20px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#fff">${esc(e.name)}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:3px">
+            📅 ${e.date} · Class ${esc(e.cls)} · ${esc(e.subject||'General')}
+          </div>
+        </div>
+        <div style="display:flex;gap:5px">
+          <button onclick="openExamForm('${e.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">✏️</button>
+          <button onclick="delExam('${e.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">🗑️</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 18px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#F7F5F0;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#78716C">Total Marks</div>
+          <div style="font-size:16px;font-weight:800">${e.totalMarks}</div>
+        </div>
+        <div style="background:#F7F5F0;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#78716C">Marked</div>
+          <div style="font-size:16px;font-weight:800">${marked}/${stuList.length}</div>
+        </div>
+        <div style="background:#F7F5F0;border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#78716C">Avg %</div>
+          <div style="font-size:16px;font-weight:800;color:${color}">${marked?avgPct+'%':'—'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center"
+          onclick="openMarksEntry('${e.id}')">✏️ Enter Marks</button>
+        ${marked>0?`<button class="btn btn-teal btn-sm" style="flex:1;justify-content:center"
+          onclick="downloadAllReportCards('${e.id}')">📄 All Reports</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Exam Form ─────────────────────────────────────────────────────────────────
+function openExamForm(id){
+  _editExamId = id;
+  const e = id ? exams.find(x=>x.id===id) : null;
+  document.getElementById('modal-exam-title').textContent = id ? 'Edit Exam' : 'Create New Exam';
+  document.getElementById('modal-exam-body').innerHTML = `
+  <div class="form-grid">
+    <div class="fg full"><label>Exam Name ★</label>
+      <input id="ef2-name" value="${esc(e?.name||'')}" placeholder="e.g. Unit Test 1, Mid-Term 2025"></div>
+    <div class="fg"><label>Date ★</label>
+      <input id="ef2-date" type="date" value="${e?.date||todayISO()}"></div>
+    <div class="fg"><label>Class ★</label>
+      <select id="ef2-cls">
+        <option value="">— Select Class —</option>
+        ${getClasses().map(c=>`<option${e?.cls===c?' selected':''}>${c}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label>Subject</label>
+      <input id="ef2-subj" value="${esc(e?.subject||'')}" placeholder="e.g. Mathematics"></div>
+    <div class="fg"><label>Total Marks ★</label>
+      <input id="ef2-total" type="number" value="${e?.totalMarks||100}" placeholder="100"></div>
+    <div class="fg"><label>Pass Marks</label>
+      <input id="ef2-pass" type="number" value="${e?.passMark||35}" placeholder="35"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modal-exam-form')">Cancel</button>
+    <button class="btn btn-primary" id="save-exam-btn" onclick="saveExam()">💾 ${id?'Update':'Create'} Exam</button>
+  </div>`;
+  openModal('modal-exam-form');
+}
+
+async function saveExam(){
+  const btn      = document.getElementById('save-exam-btn');
+  const name     = (document.getElementById('ef2-name')?.value||'').trim();
+  const date     = document.getElementById('ef2-date')?.value || todayISO();
+  const cls      = document.getElementById('ef2-cls')?.value  || '';
+  const subject  = (document.getElementById('ef2-subj')?.value||'').trim();
+  const total    = parseInt(document.getElementById('ef2-total')?.value||100);
+  const passMark = parseInt(document.getElementById('ef2-pass')?.value||35);
+  if(!name){ toast('Exam name required','err'); return; }
+  if(!cls){  toast('Select a class','err');     return; }
+  if(!total||total<=0){ toast('Enter total marks','err'); return; }
+
+  await triggerAction(btn, async ()=>{
+    const obj = {
+      id: _editExamId || uid(),
+      name, date, cls, subject, totalMarks:total, passMark,
+      marks: _editExamId ? (exams.find(x=>x.id===_editExamId)?.marks||{}) : {},
+    };
+    if(_editExamId){ exams = exams.map(x=>x.id===_editExamId?obj:x); }
+    else           { exams.push(obj); }
+    await persist();
+  }, {
+    type:'save', label:'💾 Save',
+    onDone:()=>{
+      closeModal('modal-exam-form');
+      renderExams();
+      toast(`✅ Exam ${_editExamId?'updated':'created'}: ${name}`);
+    }
+  });
+}
+
+function delExam(id){
+  if(!confirm('Delete this exam and all marks?')) return;
+  exams = exams.filter(x=>x.id!==id);
+  persist();
+  renderExams();
+  toast('Exam deleted','err');
+}
+
+// ── Marks Entry ───────────────────────────────────────────────────────────────
+let _currentExamId = '';
+
+function openMarksEntry(examId){
+  const e = exams.find(x=>x.id===examId);
+  if(!e) return;
+  _currentExamId = examId;
+  const stuList = students.filter(s=>!s.inactive && s.cls===e.cls);
+
+  document.getElementById('modal-marks-title').textContent = e.name+' — Class '+e.cls+' Marks';
+  document.getElementById('modal-marks-body').innerHTML = `
+  <div style="background:#F0F4FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap">
+    <div><div style="font-size:10px;color:#78716C">Exam</div><div style="font-weight:700">${esc(e.name)}</div></div>
+    <div><div style="font-size:10px;color:#78716C">Date</div><div style="font-weight:700">${e.date}</div></div>
+    <div><div style="font-size:10px;color:#78716C">Class</div><div style="font-weight:700">${esc(e.cls)}</div></div>
+    <div><div style="font-size:10px;color:#78716C">Total Marks</div><div style="font-weight:700">${e.totalMarks}</div></div>
+    <div><div style="font-size:10px;color:#78716C">Pass Marks</div><div style="font-weight:700">${e.passMark||35}</div></div>
+  </div>
+  ${!stuList.length ? '<div style="text-align:center;padding:30px;color:#78716C">No active students in Class '+esc(e.cls)+'</div>' : `
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:8px 12px;font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;border-bottom:1px solid #E7E2D9">#</th>
+      <th style="text-align:left;padding:8px 12px;font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;border-bottom:1px solid #E7E2D9">Student</th>
+      <th style="text-align:left;padding:8px 12px;font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;border-bottom:1px solid #E7E2D9">Marks (out of ${e.totalMarks})</th>
+      <th style="text-align:left;padding:8px 12px;font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;border-bottom:1px solid #E7E2D9">%</th>
+      <th style="text-align:left;padding:8px 12px;font-size:10.5px;font-weight:700;color:#78716C;text-transform:uppercase;border-bottom:1px solid #E7E2D9">Report</th>
+    </tr></thead>
+    <tbody>
+      ${stuList.map((s,i)=>{
+        const obtained = e.marks[s.id]!==undefined ? e.marks[s.id] : '';
+        const pct      = (obtained!=='' && e.totalMarks>0) ? Math.round((+obtained/e.totalMarks)*100) : null;
+        const pass     = pct!==null && pct>=(e.passMark||35)/e.totalMarks*100;
+        return `<tr style="border-bottom:1px solid #F7F5F0">
+          <td style="padding:8px 12px;font-size:11px;color:#78716C">${i+1}</td>
+          <td style="padding:8px 12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="av ${avcC(students.indexOf(s))}" style="width:28px;height:28px;font-size:10px">${ini(s.name)}</div>
+              <div><div style="font-weight:600;font-size:13px">${esc(s.name)}</div>
+              <div style="font-size:10px;color:#78716C">${esc(s.roll||'')} · ${esc(s.batch||'')}</div></div>
+            </div>
+          </td>
+          <td style="padding:8px 12px">
+            <input type="number" id="mark-${s.id}" value="${obtained}"
+              min="0" max="${e.totalMarks}" placeholder="—"
+              oninput="updateMarkPct('${s.id}','${e.id}',${e.totalMarks})"
+              style="width:80px;padding:6px 10px;border:1.5px solid #E7E2D9;border-radius:7px;font-size:13px;font-weight:700;outline:none;background:#F7F5F0">
+          </td>
+          <td style="padding:8px 12px">
+            <span id="mark-pct-${s.id}" style="font-size:13px;font-weight:700;color:${pct!==null?(pass?'#16A34A':'#DC2626'):'#78716C'}">
+              ${pct!==null ? pct+'%' : '—'}
+            </span>
+          </td>
+          <td style="padding:8px 12px">
+            <button class="btn btn-teal btn-xs" onclick="generateReportCard('${e.id}','${s.id}')">📄 Report</button>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`}`;
+  openModal('modal-exam-marks');
+}
+
+function updateMarkPct(sid, examId, totalMarks){
+  const inp = document.getElementById('mark-'+sid);
+  const pctEl = document.getElementById('mark-pct-'+sid);
+  const e = exams.find(x=>x.id===examId);
+  if(!inp || !pctEl || !e) return;
+  const val = parseFloat(inp.value);
+  if(isNaN(val) || inp.value===''){
+    pctEl.textContent = '—'; pctEl.style.color='#78716C'; return;
+  }
+  const pct  = Math.round((val/totalMarks)*100);
+  const pass = pct >= (e.passMark||35)/totalMarks*100;
+  pctEl.textContent  = pct+'%';
+  pctEl.style.color  = pass ? '#16A34A' : '#DC2626';
+}
+
+async function saveMarks(){
+  const btn = document.getElementById('save-marks-btn');
+  const e   = exams.find(x=>x.id===_currentExamId);
+  if(!e){ toast('Exam not found','err'); return; }
+
+  const stuList = students.filter(s=>!s.inactive && s.cls===e.cls);
+  const newMarks = {};
+  stuList.forEach(s=>{
+    const inp = document.getElementById('mark-'+s.id);
+    if(inp && inp.value!==''){
+      const v = parseFloat(inp.value);
+      if(!isNaN(v) && v>=0 && v<=e.totalMarks) newMarks[s.id] = v;
+    }
+  });
+
+  await triggerAction(btn, async ()=>{
+    exams = exams.map(x=> x.id===_currentExamId ? {...x, marks:{...x.marks,...newMarks}} : x);
+    await persist();
+  }, {
+    type:'save', label:'💾 Save Marks',
+    onDone:()=>{
+      // Refresh marks modal in-place
+      openMarksEntry(_currentExamId);
+      renderExams();
+      toast('✅ Marks saved for '+Object.keys(newMarks).length+' students!');
+    }
+  });
+}
+
+// ── Report Card PDF ───────────────────────────────────────────────────────────
+function generateReportCard(examId, studentId){
+  const e    = exams.find(x=>x.id===examId);
+  const s    = students.find(x=>x.id===studentId);
+  if(!e || !s){ toast('Data not found','err'); return; }
+
+  const obtained  = e.marks[s.id];
+  if(obtained===undefined){ toast('No marks entered for '+s.name,'warn'); return; }
+
+  const inst      = localStorage.getItem('tuitionName') || 'ClassCore Tuition';
+  const addr      = localStorage.getItem('tuitionAddress') || '';
+  const logo      = localStorage.getItem('tuitionLogo') || '';
+  const pct       = e.totalMarks > 0 ? Math.round((obtained/e.totalMarks)*100) : 0;
+  const pass      = pct >= Math.round(((e.passMark||35)/e.totalMarks)*100);
+  const grade     = pct>=90?'A+':pct>=80?'A':pct>=70?'B+':pct>=60?'B':pct>=50?'C':pct>=35?'D':'F';
+  const gradeColor= pct>=60?'#16A34A':pct>=35?'#E8622A':'#DC2626';
+  const filename  = 'ReportCard_'+s.name.replace(/\s+/g,'_')+'_'+e.name.replace(/\s+/g,'_');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Report Card</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',Arial,sans-serif;padding:24px;max-width:540px;margin:auto;color:#18181B;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .header{background:linear-gradient(135deg,#1B3154,#243d5c);border-radius:12px;padding:22px 26px;margin-bottom:0}
+    .logo-img{max-height:40px;border-radius:6px;background:#fff;padding:3px;margin-bottom:8px;display:block}
+    .inst-name{font-size:20px;font-weight:900;color:#fff}
+    .inst-addr{font-size:11px;color:rgba(255,255,255,.65);margin-top:3px}
+    .rc-title{background:#C9A84C;color:#1B3154;text-align:center;padding:8px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+    .student-box{background:#F5F4F0;border:1px solid #E0D9C8;border-radius:10px;padding:14px 18px;margin:18px 0;display:flex;gap:14px;align-items:center}
+    .stu-av{width:56px;height:56px;border-radius:50%;background:#1B3154;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+    .stu-name{font-size:17px;font-weight:800}
+    .stu-sub{font-size:12px;color:#5A6A7E;margin-top:3px}
+    .marks-box{border:2px solid #1B3154;border-radius:12px;overflow:hidden;margin-bottom:18px}
+    .marks-hdr{background:#1B3154;color:#fff;padding:8px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+    .marks-row{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px dashed #E0D9C8;font-size:13px}
+    .marks-row:last-child{border:none}
+    .marks-row .lbl{color:#5A6A7E}
+    .marks-row .val{font-weight:700}
+    .result-box{text-align:center;padding:18px;border-radius:12px;margin-bottom:18px;border:2px solid ${pass?'#16A34A':'#DC2626'};background:${pass?'#F0FDF4':'#FEF2F2'}}
+    .result-grade{font-size:52px;font-weight:900;color:${gradeColor}}
+    .result-pct{font-size:22px;font-weight:800;color:${gradeColor};margin:4px 0}
+    .result-status{font-size:14px;font-weight:700;color:${pass?'#16A34A':'#DC2626'}}
+    .footer{text-align:center;font-size:10px;color:#9A9080;margin-top:16px;border-top:1px solid #E5DFC8;padding-top:10px}
+    .sign-row{display:flex;justify-content:space-between;margin-top:24px;font-size:11px;color:#5A6A7E}
+    .sign-line{border-top:1px solid #5A6A7E;padding-top:4px;min-width:120px;text-align:center}
+  </style></head><body>
+  <div class="header">
+    ${logo?`<img src="${logo}" class="logo-img">`:''}
+    <div class="inst-name">${esc(inst)}</div>
+    ${addr?`<div class="inst-addr">${esc(addr)}</div>`:''}
+  </div>
+  <div class="rc-title">📝 Student Report Card</div>
+  <div class="student-box">
+    <div class="stu-av">${ini(s.name)}</div>
+    <div>
+      <div class="stu-name">${esc(s.name)}</div>
+      <div class="stu-sub">Class ${esc(s.cls)}${s.medium?' · '+esc(s.medium):''} ${s.batch?' · '+esc(s.batch):''}</div>
+      ${s.roll?`<div class="stu-sub">Roll No: ${esc(s.roll)}</div>`:''}
+    </div>
+  </div>
+  <div class="marks-box">
+    <div class="marks-hdr">Exam Details</div>
+    <div class="marks-row"><span class="lbl">Exam Name</span><span class="val">${esc(e.name)}</span></div>
+    <div class="marks-row"><span class="lbl">Subject</span><span class="val">${esc(e.subject||'General')}</span></div>
+    <div class="marks-row"><span class="lbl">Date</span><span class="val">${e.date}</span></div>
+    <div class="marks-row"><span class="lbl">Marks Obtained</span><span class="val" style="color:#1B3154;font-size:15px">${obtained} / ${e.totalMarks}</span></div>
+    <div class="marks-row"><span class="lbl">Pass Marks</span><span class="val">${e.passMark||35}</span></div>
+  </div>
+  <div class="result-box">
+    <div class="result-grade">${grade}</div>
+    <div class="result-pct">${pct}%</div>
+    <div class="result-status">${pass?'✅ PASS':'❌ FAIL'}</div>
+  </div>
+  <div class="sign-row">
+    <div class="sign-line">Class Teacher</div>
+    <div class="sign-line">Principal / Director</div>
+  </div>
+  <div class="footer">Generated by ClassCore · ${inst} · ${new Date().toLocaleDateString('en-IN')}</div>
+  </body></html>`;
+
+  // Show send modal with email/WA options
+  const mob  = (s.mobile||'').replace(/\D/g,'');
+  const num  = mob.length===10 ? '91'+mob : mob;
+  const waMsg = '📋 *Report Card — '+inst+'*\n\n'
+    +'Student: *'+s.name+'*\nExam: '+e.name+'\nMarks: '+obtained+'/'+e.totalMarks
+    +' ('+pct+'%) — Grade: '+grade+'\nResult: '+(pass?'✅ PASS':'❌ FAIL')+'\n\n🏫 '+inst;
+
+  showSendPDFModal(html, filename, num, s.email||'', waMsg, 'A4');
+}
+
+async function downloadAllReportCards(examId){
+  const e = exams.find(x=>x.id===examId);
+  if(!e){ toast('Exam not found','err'); return; }
+  const stuList = students.filter(s=>!s.inactive && s.cls===e.cls && e.marks[s.id]!==undefined);
+  if(!stuList.length){ toast('No marks entered yet','warn'); return; }
+
+  toast('⏳ Generating '+stuList.length+' report cards…');
+
+  // Generate and download one by one with delay to avoid browser blocking
+  for(let i=0; i<stuList.length; i++){
+    const s = stuList[i];
+    await new Promise(resolve=>{
+      setTimeout(async ()=>{
+        generateReportCard(examId, s.id);
+        resolve();
+      }, i * 800);
+    });
+  }
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
