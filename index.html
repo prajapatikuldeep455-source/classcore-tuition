@@ -738,6 +738,7 @@ async function persist(){
         sv('ops_s', students); sv('ops_b', batches);
         sv('ops_cf', classFees); sv('ops_sfo', stuFeeOvr);
         sv('ops_att', attData); sv('ops_mf', monthFees);
+        sv('ops_exams', exams);
       } catch(e){
         console.error('[ClassCore] localStorage save error:', e);
       }
@@ -786,6 +787,7 @@ window.addEventListener('beforeunload', (e)=>{
     try { window.classcore.saveDataSync(payload); } catch(err) { console.error('Sync save failed', err); }
   } else {
     sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+    sv('ops_exams',exams);
     sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
   }
 });
@@ -829,6 +831,7 @@ async function loadAllData(){
     expenses=ld('ops_exp',[]);
     salaries=ld('ops_sal',[]);
     announcements=ld('ops_ann',[]);
+    exams=ld('ops_exams',[]);
   }
 }
 
@@ -987,6 +990,7 @@ function doLogout(){
   } else {
     try{
       sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+    sv('ops_exams',exams);
       sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
     }catch(e){}
   }
@@ -3929,6 +3933,7 @@ function saveLogin(){
     catch(e){ console.warn('saveDataSync error:',e.message); }
   } else {
     sv('ops_s',students);sv('ops_b',batches);sv('ops_cf',classFees);
+    sv('ops_exams',exams);
     sv('ops_sfo',stuFeeOvr);sv('ops_att',attData);sv('ops_mf',monthFees);
   }
 
@@ -4306,9 +4311,9 @@ function deleteUser(username){
 // ══════════════════════════════════════════════════════════════════════
 // EMAIL SYSTEM — EmailJS Configuration
 // ══════════════════════════════════════════════════════════════════════
-// STEP 1: Replace YOUR_SERVICE_ID  → emailjs.com → Email Services → Copy ID
-// STEP 2: Replace YOUR_TEMPLATE_ID → emailjs.com → Email Templates → Copy ID
-// STEP 3: Replace YOUR_PUBLIC_KEY  → emailjs.com → Account → API Keys → Public Key
+// STEP 1: Replace service_1ywkxnl  → emailjs.com → Email Services → Copy ID
+// STEP 2: Replace template_3i4hfuj → emailjs.com → Email Templates → Copy ID
+// STEP 3: Replace YdR9wbP3wK0rUyA77  → emailjs.com → Account → API Keys → Public Key
 // ══════════════════════════════════════════════════════════════════════
 const EMAILJS_SERVICE_ID  = 'service_1ywkxnl';
 const EMAILJS_TEMPLATE_ID = 'template_3i4hfuj';
@@ -4319,7 +4324,7 @@ const EMAILJS_PUBLIC_KEY  = 'YdR9wbP3wK0rUyA77';
   function tryInit(attempts){
     if(typeof emailjs !== 'undefined'){
       if(EMAILJS_PUBLIC_KEY === 'YdR9wbP3wK0rUyA77'){
-        console.warn('[ClassCore][EmailJS] ⚠️ Public key not set. Replace YOUR_PUBLIC_KEY in index.html');
+        console.warn('[ClassCore][EmailJS] ⚠️ Public key not set. Replace YdR9wbP3wK0rUyA77 in index.html');
         return;
       }
       try{
@@ -4346,7 +4351,7 @@ async function sendEmail(toEmail, subject, body, extraVars){
   if(EMAILJS_SERVICE_ID  === 'service_1ywkxnl' ||
      EMAILJS_TEMPLATE_ID === 'template_3i4hfuj' ||
      EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
-    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace YOUR_SERVICE_ID, YOUR_TEMPLATE_ID, YOUR_PUBLIC_KEY');
+    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace service_1ywkxnl, template_3i4hfuj, YdR9wbP3wK0rUyA77');
     return { ok: false, error: 'EmailJS not configured' };
   }
   if(!toEmail || !toEmail.includes('@')){

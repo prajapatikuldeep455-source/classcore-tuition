@@ -1,4 +1,4 @@
 {
-  "version": "1.6.1",
-  "notes": "main.js: removed requestHeaders (AWS S3 403 fix), removed await from downloadUpdate (unstick 0% bug). verifyForgotOTP: sends email with new credentials. Exams module: create exams, enter marks, generate report card PDFs with Send via WhatsApp/Email."
+  "version": "1.6.2",
+  "notes": "Fixed: exams data now saves and loads correctly (was missing from localStorage fallback). All exam modals confirmed present. html2pdf CDN confirmed in head. Enter Marks and Report Card buttons now work correctly."
 }
