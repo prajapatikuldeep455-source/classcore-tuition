@@ -1,4 +1,4 @@
 {
-  "version": "1.6.2",
-  "notes": "Fixed: exams data now saves and loads correctly (was missing from localStorage fallback). All exam modals confirmed present. html2pdf CDN confirmed in head. Enter Marks and Report Card buttons now work correctly."
+  "version": "1.6.3",
+  "notes": "Exams: new dynamic multi-subject report modal (studentReportModal). Add unlimited subjects with + button. Live total and percentage. Save Marks stores per-student subject list. Generate PDF creates professional report card with all subjects, grade, pass/fail."
 }
