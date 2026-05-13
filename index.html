@@ -5257,36 +5257,63 @@ function manualCheckUpdate(){
 
 // User clicked "Update Now" in banner
 async function updStart(){
-  // 1. Save data first
-  const titleEl = document.getElementById('update-title');
-  const subEl   = document.getElementById('update-sub');
-  const btn     = document.getElementById('update-btn');
-  const later   = document.getElementById('update-later-btn');
-  const progWrap= document.getElementById('update-progress-wrap');
+  const titleEl  = document.getElementById('update-title');
+  const subEl    = document.getElementById('update-sub');
+  const btn      = document.getElementById('update-btn');
+  const later    = document.getElementById('update-later-btn');
+  const progWrap = document.getElementById('update-progress-wrap');
   const speedWrap= document.getElementById('update-speed-wrap');
+  const progBar  = document.getElementById('update-progress-bar');
+  const pctEl    = document.getElementById('update-pct');
+  const labelEl  = document.getElementById('update-progress-label');
 
-  if(btn)     { btn.disabled=true; btn.textContent='⏳ Saving…'; }
+  // ── Phase 1: Saving state ────────────────────────────────────────────────
+  if(btn)     { btn.disabled=true; btn.textContent='⏳ Saving data…'; }
   if(titleEl)   titleEl.textContent = 'Saving your data…';
-  if(subEl)     subEl.textContent   = 'This takes a few seconds';
+  if(subEl)     subEl.textContent   = 'Please wait a moment';
+  if(progWrap)  progWrap.style.display   = 'block';
+  if(speedWrap) speedWrap.style.display  = 'none'; // hide until download starts
+  if(progBar)   progBar.style.width      = '0%';
+  if(pctEl)     pctEl.textContent        = '0%';
+  if(labelEl)   labelEl.textContent      = 'Preparing download…';
 
-  // Record download start time for ETA
   _downloadStartTime = Date.now();
 
-  // Show progress bar area
-  if(progWrap)  progWrap.style.display  = 'block';
-  if(speedWrap) speedWrap.style.display = 'block';
-
-  const r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayloadSafe() : null);
+  // ── Phase 2: Call IPC — returns {ok:true} as soon as download fires ───────
+  let r;
+  try{
+    r = await window.classcore.downloadUpdate(IS_ELECTRON() ? buildPayloadSafe() : null);
+  }catch(e){
+    r = { ok: false, error: e.message };
+  }
 
   if(!r || !r.ok){
-    toast('Update download failed: '+(r?.error||'unknown'),'err');
-    // Restore banner to clickable state
-    if(btn)     { btn.disabled=false; btn.textContent='⬇️ Update Now'; }
+    // Download failed to start
+    toast('❌ Update failed to start: '+(r?.error||'check your internet connection'), 'err');
+    if(btn)     { btn.disabled=false; btn.textContent='⬇️ Try Again'; }
     if(titleEl)   titleEl.textContent = '🚀 New version v'+_updateVersion+' available!';
-    if(subEl)     subEl.textContent   = 'Click Update Now to download';
+    if(subEl)     subEl.textContent   = 'Download failed — click to retry';
     if(progWrap)  progWrap.style.display  = 'none';
     if(speedWrap) speedWrap.style.display = 'none';
+    return;
   }
+
+  // ── Phase 3: Download started — update UI to downloading state ───────────
+  if(btn)     { btn.disabled=true; btn.textContent='⬇️ Downloading…'; }
+  if(titleEl)   titleEl.textContent = 'Downloading update v'+_updateVersion+'…';
+  if(subEl)     subEl.textContent   = 'This takes 2–5 minutes. You can keep using the app.';
+  if(speedWrap) speedWrap.style.display = 'block';
+  if(labelEl)   labelEl.textContent = 'Download started…';
+  if(pctEl)     pctEl.textContent   = '0%';
+
+  // Fake starter tick at 1% so progress bar visibly starts moving
+  setTimeout(()=>{
+    if(progBar && progBar.style.width==='0%'){
+      progBar.style.width='1%';
+      if(pctEl) pctEl.textContent='1%';
+      if(labelEl) labelEl.textContent='Connecting to server…';
+    }
+  }, 2000);
 }
 
 // Alias used by old code paths
@@ -5300,12 +5327,7 @@ if(IS_ELECTRON()){
     _updateVersion = version;
     const msgEl = document.getElementById('update-check-msg');
     if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' available! See banner.'; }
-
-    // Show slim banner immediately with Update Now button visible
-    showUpdateBanner('🚀 New version v'+version+' is ready!', 'Download is ~76 MB — takes 2–5 minutes');
-
-    // Also show the modal popup
-    showUpdateModal(version);
+    showUpdateBanner('🚀 New version v'+version+' is ready!', 'Download is ~76 MB — takes 2–5 minutes on average internet');
   });
 
   // 2. Already latest

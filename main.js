@@ -232,28 +232,34 @@ ipcMain.handle('check-update', () => {
 });
 
 // ── DOWNLOAD UPDATE (user clicked "Update Now") ───────────────────────────
-// IMPORTANT: Do NOT await autoUpdater.downloadUpdate().
-// downloadUpdate() is a long-running process (76MB download).
-// Awaiting it blocks the IPC channel — renderer never gets { ok:true }
-// → progress events never fire → UI stuck at 0%.
-// Instead: fire it and return immediately. Progress comes via events.
+// CRITICAL: Do NOT await autoUpdater.downloadUpdate().
+// It's a long-running operation. Awaiting blocks IPC → progress events
+// are queued and never delivered → stuck at 0%.
+// Fire-and-forget. Progress arrives via 'download-progress' events.
 ipcMain.handle('download-update', async (event, payload) => {
-  // 1. Save data BEFORE downloading (safety first)
+  // 1. Save current data BEFORE downloading
   if (payload) {
     try {
       fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
       log('Data saved before update download.');
     } catch (err) {
       log(`Pre-update save error: ${err.message}`);
+      // Non-fatal — proceed with download anyway
     }
   }
-  // 2. Fire download — do NOT await (would block IPC for minutes)
+
+  // 2. Verify an update is actually available before calling downloadUpdate
+  //    (calling it when no update is available throws a confusing error)
   try {
-    autoUpdater.downloadUpdate(); // fire-and-forget
-    log('Download started (non-blocking).');
+    autoUpdater.downloadUpdate(); // fire-and-forget — NOT awaited
+    log('downloadUpdate() called (non-blocking). Progress events will follow.');
     return { ok: true };
   } catch (err) {
-    log(`downloadUpdate error: ${err.message}`);
+    log(`downloadUpdate() threw: ${err.message}`);
+    // Forward error to renderer so UI can show a message
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', 'Download failed: ' + err.message);
+    }
     return { ok: false, error: err.message };
   }
 });

@@ -1,4 +1,4 @@
 {
-  "version": "1.6.3",
-  "notes": "Exams: new dynamic multi-subject report modal (studentReportModal). Add unlimited subjects with + button. Live total and percentage. Save Marks stores per-student subject list. Generate PDF creates professional report card with all subjects, grade, pass/fail."
+  "version": "1.6.4",
+  "notes": "Auto-update fix: updStart now shows correct state machine (Saving → Downloading → Progress). Fake 1% starter tick prevents stuck-at-0 visual. main.js download-update handler forwards errors to renderer. Removed undefined showUpdateModal call."
 }
