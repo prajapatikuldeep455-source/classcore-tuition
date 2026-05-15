@@ -575,7 +575,53 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
   </div>
 </div>
 
-<!-- Auto Update Banner -->
+<!-- ── GLOBAL LOADING OVERLAY ─────────────────────────────────────── -->
+<div id="loading-overlay" style="
+  display:none;position:fixed;inset:0;z-index:99999;
+  background:rgba(24,24,27,.72);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;flex-direction:column;gap:20px">
+
+  <!-- Animated spinner ring -->
+  <div style="position:relative;width:72px;height:72px">
+    <div style="
+      position:absolute;inset:0;border-radius:50%;
+      border:5px solid rgba(255,255,255,.12)"></div>
+    <div id="lo-spinner" style="
+      position:absolute;inset:0;border-radius:50%;
+      border:5px solid transparent;
+      border-top-color:#E8622A;border-right-color:#C9A84C;
+      animation:loSpin .8s linear infinite"></div>
+    <div style="
+      position:absolute;inset:12px;border-radius:50%;
+      background:rgba(232,98,42,.15);
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px" id="lo-icon">✏️</div>
+  </div>
+
+  <!-- Text -->
+  <div style="text-align:center">
+    <div id="lo-title" style="font-size:17px;font-weight:700;color:#fff;margin-bottom:6px">Processing…</div>
+    <div id="lo-sub"   style="font-size:12px;color:rgba(255,255,255,.6)">Please wait</div>
+  </div>
+
+  <!-- Progress dots -->
+  <div style="display:flex;gap:6px" id="lo-dots">
+    <div class="lo-dot" style="animation-delay:0s"></div>
+    <div class="lo-dot" style="animation-delay:.2s"></div>
+    <div class="lo-dot" style="animation-delay:.4s"></div>
+  </div>
+</div>
+
+<style>
+@keyframes loSpin { to { transform:rotate(360deg); } }
+@keyframes loDot  { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+.lo-dot {
+  width:8px;height:8px;border-radius:50%;
+  background:#E8622A;animation:loDot 1.2s ease-in-out infinite;
+}
+</style>
+
+<!-- ── AUTO UPDATE BANNER ────────────────────────────────────────── -->
 <div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:linear-gradient(135deg,#18181B,#2d2d40);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.3);">
   <!-- Info row -->
   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;">
@@ -903,6 +949,33 @@ function toast(msg,type='ok'){
   el.style.background=type==='err'?'#DC2626':type==='warn'?'#E67E22':'#18181B';
   el.classList.add('show');clearTimeout(toastT);
   toastT=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ── GLOBAL LOADING OVERLAY ───────────────────────────────────────────────────
+// showLoader(title, sub, icon)  — shows full-screen loader
+// hideLoader()                  — hides it
+// withLoader(fn, title, sub, icon) — shows loader, runs fn, hides loader
+function showLoader(title='Processing…', sub='Please wait', icon='✏️'){
+  const ov    = document.getElementById('loading-overlay');
+  const tEl   = document.getElementById('lo-title');
+  const sEl   = document.getElementById('lo-sub');
+  const iEl   = document.getElementById('lo-icon');
+  if(tEl) tEl.textContent = title;
+  if(sEl) sEl.textContent = sub;
+  if(iEl) iEl.textContent = icon;
+  if(ov)  ov.style.display = 'flex';
+}
+
+function hideLoader(){
+  const ov = document.getElementById('loading-overlay');
+  if(ov) ov.style.display = 'none';
+}
+
+async function withLoader(fn, title='Processing…', sub='Please wait', icon='✏️'){
+  showLoader(title, sub, icon);
+  try       { await fn(); }
+  catch(err){ console.error('[withLoader] error:', err); }
+  finally   { hideLoader(); }
 }
 function openModal(id){
   const el=document.getElementById(id);
@@ -2379,18 +2452,34 @@ function sendWA(sid){
 function deletePayment(sid, histIdx){
   if(!canDo('delete_payments','You do not have permission to delete payments')) return;
   if(!confirm('Delete this payment record?')) return;
-  students = students.map(s=>{
-    if(s.id !== sid) return s;
-    const history = [...(s.history||[])];
-    history.splice(histIdx, 1);
-    const paid = history.reduce((a,h)=>a+(h.amount||0), 0);
-    return { ...s, paid, history };
-  });
-  persist().then(()=>{
-    toast('Payment deleted','err');
+
+  showLoader('Deleting Receipt…', 'Updating your records', '🗑️');
+
+  setTimeout(async ()=>{
+    // Delete the payment from in-memory data
+    students = students.map(s=>{
+      if(s.id !== sid) return s;
+      const history = [...(s.history||[])];
+      history.splice(histIdx, 1);
+      const paid = history.reduce((a,h)=>a+(h.amount||0), 0);
+      return { ...s, paid, history };
+    });
+
+    // Save to disk
+    await persist().catch(e=>console.error('[deletePayment] persist error:',e));
+
+    hideLoader();
+    toast('Receipt deleted');
+
+    // Refresh history modal in-place so deleted row disappears immediately
     openHist(sid);
+
+    // Refresh fees page stats + rows
     renderFees();
-  });
+
+    // Refresh dashboard if it's the active page
+    if(curPage==='dashboard') renderDash();
+  }, 1800);
 }
 function openHist(sid){
   const s=students.find(x=>x.id===sid);if(!s)return;
@@ -6235,23 +6324,39 @@ function updateSrmTotals(){
 }
 
 async function saveStudentReport(){
-  const btn      = document.getElementById('srm-save-btn');
   const subjects = _collectSubjectRows();
   if(!subjects.length){ toast('Add at least one subject','err'); return; }
 
   const e = exams.find(x=>x.id===_reportExamId);
   if(!e){ toast('Exam not found','err'); return; }
 
-  await triggerAction(btn, async ()=>{
-    // Store subjectMarks per student
+  showLoader('Saving Marks…', 'Updating student record', '✏️');
+
+  await new Promise(resolve=>setTimeout(resolve, 1800));
+
+  try{
     if(!e.subjectMarks) e.subjectMarks = {};
     e.subjectMarks[_reportStudentId] = subjects;
     exams = exams.map(x=>x.id===_reportExamId ? {...x, subjectMarks:e.subjectMarks} : x);
     await persist();
-  }, {
-    type:'save', label:'💾 Save Marks',
-    onDone:()=>{ toast('✅ Marks saved!'); renderExams(); }
-  });
+  }catch(err){
+    console.error('[saveStudentReport] error:', err);
+  }
+
+  hideLoader();
+
+  // Close the student report modal
+  closeModal('studentReportModal');
+
+  // Refresh the class-wide marks modal in-place (shows updated % etc.)
+  if(_currentExamId === _reportExamId){
+    openMarksEntry(_currentExamId);
+  }
+
+  // Refresh exam cards so "marked X/Y" count updates instantly
+  renderExams();
+
+  toast('✅ Marks saved for ' + (students.find(s=>s.id===_reportStudentId)?.name || 'student') + '!');
 }
 
 async function saveAndGenerateReportPDF(){

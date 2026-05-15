@@ -1,4 +1,4 @@
 {
-  "version": "1.6.4",
-  "notes": "Auto-update fix: updStart now shows correct state machine (Saving → Downloading → Progress). Fake 1% starter tick prevents stuck-at-0 visual. main.js download-update handler forwards errors to renderer. Removed undefined showUpdateModal call."
+  "version": "1.6.5",
+  "notes": "Global loading overlay with spinner + animated dots. Receipt deletion: shows loader 1.8s, deletes, refreshes history modal + fees page + dashboard instantly. Exam marks: shows loader 1.8s, saves, closes modal, refreshes marks table + exam cards instantly."
 }
