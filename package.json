@@ -1,6 +1,6 @@
 {
   "name": "classcore",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "ClassCore — Tuition Management System",
   "main": "main.js",
   "author": {
@@ -13,11 +13,11 @@
     "build": "electron-builder --win --x64"
   },
   "dependencies": {
-    "electron-updater": "^6.1.7"
+    "electron-updater": "6.3.9"
   },
   "devDependencies": {
-    "electron": "^29.0.0",
-    "electron-builder": "^24.9.1"
+    "electron": "32.2.7",
+    "electron-builder": "25.1.8"
   },
   "build": {
     "appId": "com.classcore.tuition",
@@ -41,7 +41,8 @@
     ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
@@ -49,7 +50,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ClassCore",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
     },
     "publish": {
       "provider": "github",
