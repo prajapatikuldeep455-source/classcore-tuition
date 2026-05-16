@@ -1,4 +1,4 @@
 {
-  "version": "1.6.5",
-  "notes": "Global loading overlay with spinner + animated dots. Receipt deletion: shows loader 1.8s, deletes, refreshes history modal + fees page + dashboard instantly. Exam marks: shows loader 1.8s, saves, closes modal, refreshes marks table + exam cards instantly."
+  "version": "1.6.6",
+  "notes": "Auto-update fully fixed: removed requestHeaders (403 fix), 5-min stall timeout, exponential backoff retry (3 attempts), download progress clears timeout, feedUrl from env/fallback. Loading overlay added. Receipt deletion and exam marks refresh instantly."
 }

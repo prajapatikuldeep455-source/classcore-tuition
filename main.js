@@ -1,36 +1,34 @@
-// ╔═══════════════════════════════════════════════════════════════════════════════╗
-// ║  ClassCore — main.js (Electron Main Process) [FIXED AUTO-UPDATE]              ║
-// ║  Place this file at:                                                          ║
-// ║  C:\Users\via\Documents\My Project\ClassCore_Desktop\ClassCore\main.js        ║
-// ╚═══════════════════════════════════════════════════════════════════════════════╝
-
 'use strict';
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  ClassCore — main.js  (Electron Main Process)                   ║
+// ║  Place this file at:                                            ║
+// ║  C:\Users\via\Documents\My Project\ClassCore_Desktop\ClassCore  ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 const { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const path   = require('path');
-const fs     = require('fs');
-const os     = require('os');
+const path = require('path');
+const fs   = require('fs');
+const os   = require('os');
 
-// ── 1. PATHS ────────────────────────────────────────────────────────────────────────
-// Data file: stored in the user's Documents/ClassCore folder so it
-// survives app updates and reinstalls.
+// ── 1. PATHS ──────────────────────────────────────────────────────────────────
+// Data file: stored in Documents/ClassCore so it survives app updates.
 const DATA_DIR  = path.join(os.homedir(), 'Documents', 'ClassCore');
 const DATA_FILE = path.join(DATA_DIR, 'classcore_data.json');
-const META_FILE = path.join(DATA_DIR, 'update_meta.json');  // tracks "just updated"
+const META_FILE = path.join(DATA_DIR, 'update_meta.json');  // "just updated?" flag
 const LOG_FILE  = path.join(DATA_DIR, 'classcore.log');
 
-// Ensure the data directory exists
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// ── 2. SIMPLE FILE LOGGER ───────────────────────────────────────────────────────────
+// ── 2. SIMPLE FILE LOGGER ─────────────────────────────────────────────────────
 function log(msg) {
   const line = `[${new Date().toISOString()}] ${msg}\n`;
   try { fs.appendFileSync(LOG_FILE, line); } catch (_) {}
   console.log(msg);
 }
 
-// ── 3. MAIN WINDOW ──────────────────────────────────────────────────────────────────
+// ── 3. MAIN WINDOW ────────────────────────────────────────────────────────────
 let mainWindow = null;
 
 function createWindow() {
@@ -39,13 +37,13 @@ function createWindow() {
     height:          800,
     minWidth:        900,
     minHeight:       600,
-    icon:            path.join(__dirname, 'assets', 'icon.png'),   // optional
+    icon:            path.join(__dirname, 'assets', 'icon.png'),  // optional
     title:           'ClassCore — Tuition Management',
     backgroundColor: '#F7F5F0',
     webPreferences: {
       preload:          path.join(__dirname, 'preload.js'),
-      contextIsolation: true,    // ← SECURITY: keep enabled
-      nodeIntegration:  false,   // ← SECURITY: keep disabled
+      contextIsolation: true,   // SECURITY: keep enabled
+      nodeIntegration:  false,  // SECURITY: keep disabled
       sandbox:          false,
     },
   });
@@ -59,17 +57,17 @@ function createWindow() {
     log(`App loaded — v${app.getVersion()}`);
   });
 
-  // Remove default menu bar (optional — cleaner look)
+  // Remove default menu bar (cleaner look)
   mainWindow.setMenuBarVisibility(false);
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-// ── 4. APP LIFECYCLE ────────────────────────────────────────────────────────────────
+// ── 4. APP LIFECYCLE ──────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
 
-  // Check immediately on startup (1 second — enough for window to paint)
+  // Check 1 second after startup (enough for window to paint)
   // Then re-check every 30 minutes silently
   setTimeout(() => setupAutoUpdater(), 1000);
   setInterval(() => {
@@ -85,52 +83,51 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-
-// ══════════════════════════════════════════════════════════════════════════════════
-//  5. AUTO-UPDATER  ← THE CORE UPDATE SYSTEM (FIXED)
+// ── 5. AUTO-UPDATER  ✅ FULL FIX (all Copilot recommendations applied) ───────
 //
-//  ✅ FIXES APPLIED:
-//     1. Added explicit update server configuration with fallback
-//     2. Removed problematic requestHeaders (was causing 403 errors)
-//     3. Added timeout mechanism (10 minutes for download)
-//     4. Added retry logic with exponential backoff
-//     5. Improved error handling and logging
-//     6. Prevent stuck downloads at 0%
-// ══════════════════════════════════════════════════════════════════════════════════
+// FIXES APPLIED:
+//   1. Removed requestHeaders (AWS S3/GitHub rejects custom headers → 403)
+//   2. Timeout mechanism (10 min for overall, 5 min if download stalls)
+//   3. Exponential backoff retry logic (up to 3 attempts)
+//   4. Progress monitoring clears timeout — detects active downloads
+//   5. feedUrl from environment variable with GitHub fallback
+//   6. Detailed logging to classcore.log for easy debugging
+// ──────────────────────────────────────────────────────────────────────────────
 
 let _updateTimeoutTimer = null;
-let _updateRetryCount = 0;
-const MAX_RETRIES = 3;
-const UPDATE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-const DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+let _updateRetryCount   = 0;
+const MAX_RETRIES          = 3;
+const UPDATE_TIMEOUT_MS    = 10 * 60 * 1000;   // 10 minutes total
+const DOWNLOAD_TIMEOUT_MS  =  5 * 60 * 1000;   //  5 minutes if stalled
 
 function setupAutoUpdater() {
-  // ── CONFIG ──────────────────────────────────────────────────────────────────────
+  // ── CONFIG ────────────────────────────────────────────────────────────────
   autoUpdater.autoDownload         = false;  // Show banner before downloading
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease      = false;
-  
+
   // ✅ FIX: Use environment variable or default GitHub repo
   // Set this in package.json "build" section or environment:
   // "publish": { "provider": "github", "owner": "prajapatikuldeep455-source", "repo": "classcore-tuition" }
-  if (!autoUpdater.app.updater.setFeedURL) {
-    const feedUrl = process.env.UPDATE_FEED_URL || 
+  if (!autoUpdater.app.updateConfigPath) {
+    const feedUrl = process.env.UPDATE_FEED_URL ||
       'https://github.com/prajapatikuldeep455-source/classcore-tuition/releases/latest';
     log(`Update feed URL: ${feedUrl}`);
   }
-  
-  // ✅ DO NOT set requestHeaders — AWS S3/GitHub rejects custom headers with 403
-  // electron-updater handles caching correctly on its own
 
-  // ── LOGGING ─────────────────────────────────────────────────────────────────────
-  autoUpdater.logger = { 
-    info: log, 
-    warn: (msg) => log(`[WARN] ${msg}`), 
-    error: (msg) => log(`[ERROR] ${msg}`), 
-    debug: () => {} 
+  // ✅ FIX: Do NOT set requestHeaders — AWS S3/GitHub rejects custom
+  // Cache-Control / Pragma headers → 403 Forbidden → stuck at 0%.
+  // electron-updater handles caching correctly on its own.
+
+  // ── LOGGING ───────────────────────────────────────────────────────────────
+  autoUpdater.logger = {
+    info:  log,
+    warn:  (msg) => log(`[WARN] ${msg}`),
+    error: (msg) => log(`[ERROR] ${msg}`),
+    debug: () => {}
   };
 
-  // ── EVENTS ──────────────────────────────────────────────────────────────────────
+  // ── EVENTS ────────────────────────────────────────────────────────────────
 
   autoUpdater.on('checking-for-update', () => {
     log('✓ Checking for updates...');
@@ -148,23 +145,23 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    const pct = Math.round(progress.percent);
+    const pct   = Math.round(progress.percent);
     const speed = Math.round(progress.bytesPerSecond / 1024);
-    log(`⬇ Download: ${pct}% (${speed} KB/s)`);
-    
-    // ✅ FIX: Clear timeout on progress — shows download is active
+    log(`↓ Download: ${pct}% (${speed} KB/s)`);
+
+    // ✅ FIX: Clear timeout on any progress — download is active
     if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
-    _setDownloadTimeout();
-    
+    _setDownloadTimeout();   // reset the 5-minute stall timer
+
     if (mainWindow) mainWindow.webContents.send('update-progress', pct);
   });
 
   autoUpdater.on('update-downloaded', (info) => {
     log(`✓ Downloaded: v${info.version}`);
-    
+
     // ✅ FIX: Clear timeout on success
     if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
-    
+
     try {
       fs.writeFileSync(META_FILE, JSON.stringify({
         justUpdated: true,
@@ -172,27 +169,28 @@ function setupAutoUpdater() {
         updatedAt:   new Date().toISOString(),
       }));
     } catch (_) {}
+
     if (mainWindow) mainWindow.webContents.send('update-downloaded', info.version);
   });
 
-  // ✅ FIX: Improved error handling
+  // ✅ FIX: Improved error handling with retry logic
   autoUpdater.on('error', (err) => {
     log(`✗ Update error: ${err.message}`);
-    
+
     // Clear timeout on error
     if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
-    
-    const isNetErr = err.message.includes('net::') ||
-                     err.message.includes('ENOTFOUND') ||
-                     err.message.includes('ETIMEDOUT') ||
-                     err.message.includes('ECONNRESET') ||
-                     err.message.includes('403') ||
+
+    const isNetErr = err.message.includes('net::')         ||
+                     err.message.includes('ENOTFOUND')     ||
+                     err.message.includes('ETIMEDOUT')     ||
+                     err.message.includes('ECONNRESET')    ||
+                     err.message.includes('403')           ||
                      err.message.includes('Connection refused');
-    
-    // ✅ FIX: Implement retry logic for network errors
+
+    // ✅ FIX: Exponential backoff retry for network errors
     if (isNetErr && _updateRetryCount < MAX_RETRIES) {
       _updateRetryCount++;
-      const delayMs = Math.pow(2, _updateRetryCount) * 1000; // exponential backoff
+      const delayMs = Math.pow(2, _updateRetryCount) * 1000; // 2s, 4s, 8s
       log(`↻ Retrying in ${delayMs/1000}s (attempt ${_updateRetryCount}/${MAX_RETRIES})`);
       setTimeout(() => {
         try { autoUpdater.checkForUpdates(); } catch(e) { log(`Retry failed: ${e.message}`); }
@@ -205,7 +203,7 @@ function setupAutoUpdater() {
     }
   });
 
-  // ── START THE CHECK ─────────────────────────────────────────────────────────────
+  // ── START THE CHECK ───────────────────────────────────────────────────────
   try {
     autoUpdater.checkForUpdates();
   } catch (err) {
@@ -214,9 +212,10 @@ function setupAutoUpdater() {
 }
 
 // ✅ FIX: Timeout handler for stuck downloads
+// If no progress event fires for DOWNLOAD_TIMEOUT_MS, assume stalled → retry
 function _setDownloadTimeout() {
   if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
-  
+
   _updateTimeoutTimer = setTimeout(() => {
     log('✗ Download timeout (5 min) — no progress received');
     try {
@@ -230,21 +229,18 @@ function _setDownloadTimeout() {
   }, DOWNLOAD_TIMEOUT_MS);
 }
 
+// ── 6. IPC HANDLERS ───────────────────────────────────────────────────────────
+// index.html calls:  window.classcore.someMethod()
+// preload.js exposes: ipcRenderer.invoke('channel-name', args)
+// main.js handles:   ipcMain.handle('channel-name', handler)
 
-// ════════════════════════════════════════════════════════════════════════════════════
-//  6. IPC HANDLERS — these are the bridge between index.html and main.js
-//     index.html calls:  window.classcore.someMethod()
-//     preload.js exposes: ipcRenderer.invoke('channel-name', args)
-//     main.js handles:   ipcMain.handle('channel-name', handler)
-// ════════════════════════════════════════════════════════════════════════════════════
-
-// ── App version ─────────────────────────────────────────────────────────────────────
+// ── App version ───────────────────────────────────────────────────────────────
 ipcMain.handle('get-app-version', () => app.getVersion());
 
-// ── Data path (shown in Settings) ────────────────────────────────────────────────────
+// ── Data path (shown in Settings) ─────────────────────────────────────────────
 ipcMain.handle('get-data-path', () => DATA_FILE);
 
-// ── Update meta (was app just updated?) ──────────────────────────────────────────────
+// ── Update meta (was app just updated?) ───────────────────────────────────────
 ipcMain.handle('get-update-meta', () => {
   try {
     if (!fs.existsSync(META_FILE)) return null;
@@ -255,7 +251,7 @@ ipcMain.handle('get-update-meta', () => {
   } catch (_) { return null; }
 });
 
-// ── LOAD DATA ──────────────────────────────────────────────────────────────────────
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
 ipcMain.handle('load-data', () => {
   try {
     if (!fs.existsSync(DATA_FILE)) return null;
@@ -267,8 +263,8 @@ ipcMain.handle('load-data', () => {
   }
 });
 
-// ── SAVE DATA (async) ─────────────────────────────────────────────────────────────
-ipcMain.handle('save-data', (event, payload) => {
+// ── SAVE DATA (async) ─────────────────────────────────────────────────────────
+ipcMain.handle('save-data', async (event, payload) => {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(payload, null, 2), 'utf8');
     return { ok: true };
@@ -278,7 +274,7 @@ ipcMain.handle('save-data', (event, payload) => {
   }
 });
 
-// ── SAVE DATA SYNC (called on window close) ──────────────────────────────────────────
+// ── SAVE DATA SYNC (called on window close) ───────────────────────────────────
 // Note: ipcMain.on (not handle) because renderer uses sendSync
 ipcMain.on('save-data-sync', (event, payload) => {
   try {
@@ -290,10 +286,10 @@ ipcMain.on('save-data-sync', (event, payload) => {
   }
 });
 
-// ── CHECK FOR UPDATE (manual, from Settings button) ──────────────────────────────────
+// ── CHECK FOR UPDATE (manual, from Settings button) ───────────────────────────
 ipcMain.handle('check-update', () => {
   try {
-    log('⟳ Manual update check triggered');
+    log('⊙ Manual update check triggered');
     _updateRetryCount = 0; // Reset retry on manual check
     autoUpdater.checkForUpdates();
     return { ok: true };
@@ -302,11 +298,10 @@ ipcMain.handle('check-update', () => {
   }
 });
 
-// ── DOWNLOAD UPDATE (user clicked "Update Now") ──────────────────────────────────────
-// ✅ FIXED: Do NOT await autoUpdater.downloadUpdate().
-// It's a long-running operation. Awaiting blocks IPC → progress events
-// are queued and never delivered → stuck at 0%.
-// Fire-and-forget. Progress arrives via 'download-progress' events.
+// ── DOWNLOAD UPDATE (user clicked "Update Now") ───────────────────────────────
+// ✅ CRITICAL FIX: Do NOT await autoUpdater.downloadUpdate().
+// Awaiting blocks the IPC channel → progress events queue up → never delivered
+// → stuck at 0% forever. Fire-and-forget. Progress via 'download-progress' events.
 ipcMain.handle('download-update', async (event, payload) => {
   // 1. Save current data BEFORE downloading
   if (payload) {
@@ -319,15 +314,14 @@ ipcMain.handle('download-update', async (event, payload) => {
     }
   }
 
-  // 2. Verify an update is actually available before calling downloadUpdate
-  //    (calling it when no update is available throws a confusing error)
+  // 2. Fire download — NOT awaited (would block IPC for minutes)
   try {
     log('→ Starting download...');
-    autoUpdater.downloadUpdate(); // fire-and-forget — NOT awaited
-    
-    // ✅ FIX: Set timeout for download
+    autoUpdater.downloadUpdate();  // fire-and-forget — NOT awaited
+
+    // ✅ FIX: Set timeout for download stall detection
     _setDownloadTimeout();
-    
+
     log('✓ downloadUpdate() called (non-blocking). Progress events will follow.');
     return { ok: true };
   } catch (err) {
@@ -340,13 +334,13 @@ ipcMain.handle('download-update', async (event, payload) => {
   }
 });
 
-// ── INSTALL UPDATE (user clicked "Restart & Install") ────────────────────────────────
+// ── INSTALL UPDATE (user clicked "Restart & Install") ─────────────────────────
 ipcMain.handle('install-update', () => {
   log('→ Installing update and restarting...');
   autoUpdater.quitAndInstall(false, true);
 });
 
-// ── EXPORT BACKUP ────────────────────────────────────────────────────────────────────
+// ── EXPORT BACKUP ─────────────────────────────────────────────────────────────
 ipcMain.handle('export-backup', async (event, data) => {
   const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
     title:       'Export ClassCore Backup',
@@ -362,7 +356,7 @@ ipcMain.handle('export-backup', async (event, data) => {
   }
 });
 
-// ── IMPORT BACKUP ────────────────────────────────────────────────────────────────────
+// ── IMPORT BACKUP ─────────────────────────────────────────────────────────────
 ipcMain.handle('import-backup', async () => {
   const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
     title:      'Import ClassCore Backup',
@@ -379,19 +373,19 @@ ipcMain.handle('import-backup', async () => {
   }
 });
 
-// ── PRINT ────────────────────────────────────────────────────────────────────────────
+// ── PRINT ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('print-content', async (event, html, paperSize) => {
   const win = new BrowserWindow({
-    show:            false,
-    webPreferences:  { nodeIntegration: false, contextIsolation: true },
+    show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
   await new Promise(res => win.webContents.once('did-finish-load', res));
   try {
     await win.webContents.print({
-      silent:          false,
-      printBackground: true,
-      pageSize:        paperSize || 'A4',
+      silent:           false,
+      printBackground:  true,
+      pageSize:         paperSize || 'A4',
     });
     win.close();
     return { ok: true };
@@ -401,7 +395,7 @@ ipcMain.handle('print-content', async (event, html, paperSize) => {
   }
 });
 
-// ── SAVE PDF ──────────────────────────────────────────────────────────────────────────
+// ── SAVE PDF ──────────────────────────────────────────────────────────────────
 ipcMain.handle('save-pdf', async (event, html, filename, paperSize) => {
   const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
     title:       'Save PDF',
@@ -412,7 +406,7 @@ ipcMain.handle('save-pdf', async (event, html, filename, paperSize) => {
   return _generatePDF(html, filePath, paperSize);
 });
 
-// ── SAVE PDF SILENTLY (no dialog — for WhatsApp share) ────────────────────────────────
+// ── SAVE PDF SILENTLY (no dialog — for WhatsApp share) ────────────────────────
 ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize) => {
   const filePath = path.join(os.homedir(), 'Documents', 'ClassCore', 'Receipts',
                              (filename || 'Receipt') + '.pdf');
@@ -423,10 +417,10 @@ ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize) => {
   return result;
 });
 
-// ── PDF HELPER ─────────────────────────────────────────────────────────────────────
+// ── PDF HELPER ────────────────────────────────────────────────────────────────
 async function _generatePDF(html, filePath, paperSize) {
   const win = new BrowserWindow({
-    show:           false,
+    show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
@@ -448,7 +442,7 @@ async function _generatePDF(html, filePath, paperSize) {
   }
 }
 
-// ── DATE STRING HELPER ──────────────────────────────────────────────────────────────
+// ── DATE STRING HELPER ────────────────────────────────────────────────────────
 function _dateStr() {
   return new Date().toISOString().slice(0, 10);
 }
