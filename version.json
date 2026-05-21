@@ -1,4 +1,4 @@
 {
-  "version": "1.6.6",
-  "notes": "Auto-update fully fixed: removed requestHeaders (403 fix), 5-min stall timeout, exponential backoff retry (3 attempts), download progress clears timeout, feedUrl from env/fallback. Loading overlay added. Receipt deletion and exam marks refresh instantly."
+  "version": "1.6.7",
+  "notes": "Bug 1 fixed: loading overlay now universal across Settings (salary, login, institute, employee add/edit/delete), all delete actions (students, batches, courses, expenses, exams). Bug 2 fixed: exam marks modal resets state on every open - no more one-time edit. Bug 3 fixed: subject totals use class-based selectors, deep-clone saved data, calculate correctly every time."
 }
