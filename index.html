@@ -2715,7 +2715,23 @@ async function printCurrentReceipt(){
 }
 
 async function saveReceiptPDF(){
-// Send current receipt as PDF via Email or WhatsApp
+  if(!curReceipt)return;
+  const{s,amount,rcptNo,payDate,month}=curReceipt;
+  const size = getReceiptSize();
+  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
+  const name='Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
+  if(IS_ELECTRON()){
+    const r=await window.classcore.savePDF(html,name,size);
+    if(r?.ok) toast('\u2705 PDF saved!');
+    else toast('PDF save failed','err');
+  } else {
+    const w=window.open('','_blank','width=800,height=700');
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(),600);
+  }
+}
+
 async function sendReceiptAsPDF(){
   if(!curReceipt){ toast('No receipt open','err'); return; }
   const {s, amount, rcptNo, payDate, month} = curReceipt;
@@ -2726,32 +2742,15 @@ async function sendReceiptAsPDF(){
   const filename = 'Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
   const mob = (s.mobile||'').replace(/\D/g,'');
   const num = mob.length===10 ? '91'+mob : mob;
-  const waMsg = '🧾 *Fee Receipt — '+inst+'*\n\n'
+  const waMsg = '\uD83E\uDDFE *Fee Receipt \u2014 '+inst+'*\n\n'
     + 'Student: *'+s.name+'*\n'
     + 'Receipt #'+rcptNo+'\n'
     + (month ? 'Month: '+month+'\n' : '')
-    + 'Amount: *₹'+Number(amount).toLocaleString('en-IN')+'*\n\n'
-    + '✅ Payment recorded.\n🏫 '+inst;
+    + 'Amount: *\u20B9'+Number(amount).toLocaleString('en-IN')+'*\n\n'
+    + '\u2705 Payment recorded.\n\uD83C\uDFEB '+inst;
   showSendPDFModal(html, filename, mob.length>=10?num:'', s.email||'', waMsg, size);
 }
 
-// Add data-exp-id attribute to expense table rows (for delete animation)
-  if(!curReceipt)return;
-  const{s,amount,rcptNo,payDate,month}=curReceipt;
-  const size = getReceiptSize();
-  const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
-  const name='Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
-  if(IS_ELECTRON()){
-    const r=await window.classcore.savePDF(html,name,size);
-    if(r?.ok) toast('✅ PDF saved!');
-    else toast('PDF save failed','err');
-  } else {
-    const w=window.open('','_blank','width=800,height=700');
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>w.print(),600);
-  }
-}
 async function sendReceiptWA(){
   if(!curReceipt){toast('No receipt to share','err');return;}
   const{s,amount,rcptNo,payDate,month}=curReceipt;
@@ -4114,18 +4113,6 @@ function saveSettings(){
 }
 function updSbInst(){
   document.getElementById('sb-inst-name').textContent=localStorage.getItem('tuitionName')||'Tuition Management';
-}
-async function exportData(){
-  const data=buildPayload();
-  data.exported=new Date().toISOString();
-  if(IS_ELECTRON()){
-    const r=await window.classcore.exportBackup(data);
-    if(r.ok) toast('Backup exported!');
-    else if(r.error) toast('Export failed: '+r.error,'err');
-  } else {
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
-    a.download='ClassCore_Backup_'+todayISO()+'.json';a.click();toast('Backup exported!');
-  }
 }
 async function exportData(){
   const data=buildPayload();
