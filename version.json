@@ -1,4 +1,4 @@
 {
-  "version": "1.6.8",
-  "notes": "Bug 1 fixed: loading overlay now universal across Settings (salary, login, institute, employee add/edit/delete), all delete actions (students, batches, courses, expenses, exams). Bug 2 fixed: exam marks modal resets state on every open - no more one-time edit. Bug 3 fixed: subject totals use class-based selectors, deep-clone saved data, calculate correctly every time."
+  "version": "1.6.9",
+  "notes": "One-Time Trial Lock: cc_trial_used flag set permanently when trial starts. checkLicense returns trial_expired status. showLicenseScreen and showPlans hide trial button if trialUsed. Paid plan expiry also locks trial. startTrial blocks repeat use."
 }

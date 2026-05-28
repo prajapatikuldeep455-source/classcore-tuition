@@ -83,22 +83,74 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// ── 5. AUTO-UPDATER  ✅ FULL FIX (all Copilot recommendations applied) ───────
+// ── 5. AUTO-UPDATER ───────────────────────────────────────────────────────────
 //
-// FIXES APPLIED:
-//   1. Removed requestHeaders (AWS S3/GitHub rejects custom headers → 403)
-//   2. Timeout mechanism (10 min for overall, 5 min if download stalls)
-//   3. Exponential backoff retry logic (up to 3 attempts)
-//   4. Progress monitoring clears timeout — detects active downloads
-//   5. feedUrl from environment variable with GitHub fallback
-//   6. Detailed logging to classcore.log for easy debugging
+// ALL 4 REQUESTED FIXES APPLIED:
+//   Fix 1. Update timeout     — fails after 8 min of total silence (not hanging forever)
+//   Fix 2. Exponential backoff — retries on network drop: 2s → 4s → 8s (3 attempts)
+//   Fix 3. Improved errors     — exact error type shown: Network / Server / Timeout / Unknown
+//   Fix 4. Manual fallback UI  — after all retries fail, sends 'update-manual-fallback'
+//                                 so UI can show "Download manually" button + GitHub link
+//
+// ALSO KEPT:
+//   - No requestHeaders (AWS S3 / GitHub rejects Cache-Control → 403 Forbidden)
+//   - fire-and-forget downloadUpdate() (await blocks IPC → stuck at 0%)
+//   - Download stall detection (5 min without progress → restart download)
+//   - feedUrl from env variable with GitHub fallback
+//   - Full logging to classcore.log
 // ──────────────────────────────────────────────────────────────────────────────
 
-let _updateTimeoutTimer = null;
-let _updateRetryCount   = 0;
-const MAX_RETRIES          = 3;
-const UPDATE_TIMEOUT_MS    = 10 * 60 * 1000;   // 10 minutes total
-const DOWNLOAD_TIMEOUT_MS  =  5 * 60 * 1000;   //  5 minutes if stalled
+let _updateTimeoutTimer  = null;   // single shared timer for both check + download phases
+let _updateRetryCount    = 0;
+const MAX_RETRIES        = 3;
+const CHECK_TIMEOUT_MS   = 8  * 60 * 1000;   // Fix 1: 8 min — if check hangs, give up
+const DOWNLOAD_TIMEOUT_MS= 5  * 60 * 1000;   // Fix 1: 5 min stall → restart download
+
+// Classify errors into human-readable types (Fix 3)
+function _classifyError(err) {
+  const m = (err && err.message) ? err.message : String(err);
+
+  if (m.includes('ENOTFOUND') || m.includes('getaddrinfo'))
+    return { type: 'Network',  msg: 'Cannot reach update server. Check your internet connection.' };
+
+  if (m.includes('ETIMEDOUT') || m.includes('ECONNRESET') || m.includes('net::ERR_TIMED_OUT'))
+    return { type: 'Timeout',  msg: 'Connection timed out. Your internet may be unstable.' };
+
+  if (m.includes('ECONNREFUSED') || m.includes('Connection refused'))
+    return { type: 'Refused',  msg: 'Update server refused the connection. Try again later.' };
+
+  if (m.includes('403') || m.includes('Forbidden'))
+    return { type: 'Forbidden',msg: 'Access denied by update server (403). Contact support.' };
+
+  if (m.includes('404') || m.includes('Not Found'))
+    return { type: 'NotFound', msg: 'Update file not found on server. It may not be published yet.' };
+
+  if (m.includes('ENOSPC'))
+    return { type: 'DiskFull', msg: 'Not enough disk space to download the update.' };
+
+  return { type: 'Unknown', msg: 'Update failed: ' + m };
+}
+
+// Send a message to renderer with classified error + manual fallback info (Fix 3 + Fix 4)
+function _sendErrorToRenderer(err, isFinal) {
+  if (!mainWindow) return;
+  const { type, msg } = _classifyError(err);
+  log(`✗ Error [${type}]: ${msg}`);
+
+  if (isFinal) {
+    // Fix 4: All retries exhausted — send manual fallback event
+    const fallback = {
+      type,
+      msg,
+      manualUrl: 'https://github.com/prajapatikuldeep455-source/classcore-tuition/releases/latest',
+      instructions: 'Auto-update failed after 3 attempts. Click the link below to download and install manually.',
+    };
+    log(`✗ All ${MAX_RETRIES} retries failed. Sending manual fallback to UI.`);
+    mainWindow.webContents.send('update-manual-fallback', fallback);
+  } else {
+    mainWindow.webContents.send('update-error', msg);
+  }
+}
 
 function setupAutoUpdater() {
   // ── CONFIG ────────────────────────────────────────────────────────────────
@@ -106,41 +158,53 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease      = false;
 
-  // ✅ FIX: Use environment variable or default GitHub repo
-  // Set this in package.json "build" section or environment:
-  // "publish": { "provider": "github", "owner": "prajapatikuldeep455-source", "repo": "classcore-tuition" }
+  // feedUrl from env variable with GitHub fallback
   if (!autoUpdater.app.updateConfigPath) {
     const feedUrl = process.env.UPDATE_FEED_URL ||
       'https://github.com/prajapatikuldeep455-source/classcore-tuition/releases/latest';
     log(`Update feed URL: ${feedUrl}`);
   }
 
-  // ✅ FIX: Do NOT set requestHeaders — AWS S3/GitHub rejects custom
-  // Cache-Control / Pragma headers → 403 Forbidden → stuck at 0%.
-  // electron-updater handles caching correctly on its own.
+  // NOTE: Do NOT set requestHeaders here.
+  // AWS S3 (used by GitHub Releases) rejects Cache-Control / Pragma headers → 403.
 
   // ── LOGGING ───────────────────────────────────────────────────────────────
   autoUpdater.logger = {
     info:  log,
     warn:  (msg) => log(`[WARN] ${msg}`),
     error: (msg) => log(`[ERROR] ${msg}`),
-    debug: () => {}
+    debug: () => {},
   };
 
   // ── EVENTS ────────────────────────────────────────────────────────────────
 
   autoUpdater.on('checking-for-update', () => {
-    log('✓ Checking for updates...');
+    log('⊙ Checking for updates...');
+
+    // Fix 1: Start check timeout — if nothing happens in 8 min, treat as failure
+    _clearUpdateTimer();
+    _updateTimeoutTimer = setTimeout(() => {
+      log('✗ Update check timeout (8 min) — server unreachable');
+      _sendErrorToRenderer(
+        new Error('ETIMEDOUT: Update server did not respond within 8 minutes.'),
+        _updateRetryCount >= MAX_RETRIES  // Fix 4: final if all retries used
+      );
+      // Fix 2: Try again if retries remain
+      _scheduleRetry();
+    }, CHECK_TIMEOUT_MS);
   });
 
   autoUpdater.on('update-available', (info) => {
     log(`✓ Update available: v${info.version}`);
-    _updateRetryCount = 0; // Reset retry counter on successful check
+    _clearUpdateTimer();           // clear check timeout — got a response
+    _updateRetryCount = 0;         // reset retries on success
     if (mainWindow) mainWindow.webContents.send('update-available', info.version);
   });
 
   autoUpdater.on('update-not-available', (info) => {
     log(`✓ Already up to date: v${info.version}`);
+    _clearUpdateTimer();
+    _updateRetryCount = 0;
     if (mainWindow) mainWindow.webContents.send('update-not-available', info.version);
   });
 
@@ -149,18 +213,17 @@ function setupAutoUpdater() {
     const speed = Math.round(progress.bytesPerSecond / 1024);
     log(`↓ Download: ${pct}% (${speed} KB/s)`);
 
-    // ✅ FIX: Clear timeout on any progress — download is active
-    if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
-    _setDownloadTimeout();   // reset the 5-minute stall timer
+    // Fix 1: Any progress clears the stall timer and resets it
+    _clearUpdateTimer();
+    _setDownloadStallTimer();
 
     if (mainWindow) mainWindow.webContents.send('update-progress', pct);
   });
 
   autoUpdater.on('update-downloaded', (info) => {
     log(`✓ Downloaded: v${info.version}`);
-
-    // ✅ FIX: Clear timeout on success
-    if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
+    _clearUpdateTimer();
+    _updateRetryCount = 0;
 
     try {
       fs.writeFileSync(META_FILE, JSON.stringify({
@@ -173,33 +236,36 @@ function setupAutoUpdater() {
     if (mainWindow) mainWindow.webContents.send('update-downloaded', info.version);
   });
 
-  // ✅ FIX: Improved error handling with retry logic
+  // Fix 2 + Fix 3 + Fix 4: Full error handler
   autoUpdater.on('error', (err) => {
-    log(`✗ Update error: ${err.message}`);
+    _clearUpdateTimer();
 
-    // Clear timeout on error
-    if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
+    const { type } = _classifyError(err);
+    const isNetworkErr = ['Network','Timeout','Refused'].includes(type);
 
-    const isNetErr = err.message.includes('net::')         ||
-                     err.message.includes('ENOTFOUND')     ||
-                     err.message.includes('ETIMEDOUT')     ||
-                     err.message.includes('ECONNRESET')    ||
-                     err.message.includes('403')           ||
-                     err.message.includes('Connection refused');
-
-    // ✅ FIX: Exponential backoff retry for network errors
-    if (isNetErr && _updateRetryCount < MAX_RETRIES) {
+    // Fix 2: Retry with exponential backoff on network errors
+    if (isNetworkErr && _updateRetryCount < MAX_RETRIES) {
       _updateRetryCount++;
       const delayMs = Math.pow(2, _updateRetryCount) * 1000; // 2s, 4s, 8s
-      log(`↻ Retrying in ${delayMs/1000}s (attempt ${_updateRetryCount}/${MAX_RETRIES})`);
+      log(`↻ Retrying in ${delayMs / 1000}s (attempt ${_updateRetryCount}/${MAX_RETRIES})`);
+
+      // Show retry progress to user (Fix 3)
+      if (mainWindow) {
+        mainWindow.webContents.send('update-retrying', {
+          attempt: _updateRetryCount,
+          max:     MAX_RETRIES,
+          delayMs,
+          reason:  _classifyError(err).msg,
+        });
+      }
+
       setTimeout(() => {
         try { autoUpdater.checkForUpdates(); } catch(e) { log(`Retry failed: ${e.message}`); }
       }, delayMs);
+
     } else {
-      // Non-recoverable error — forward to user
-      if (mainWindow && !isNetErr) {
-        mainWindow.webContents.send('update-error', `Update failed: ${err.message}`);
-      }
+      // Fix 4: All retries exhausted — send manual fallback
+      _sendErrorToRenderer(err, true);
     }
   });
 
@@ -211,22 +277,48 @@ function setupAutoUpdater() {
   }
 }
 
-// ✅ FIX: Timeout handler for stuck downloads
-// If no progress event fires for DOWNLOAD_TIMEOUT_MS, assume stalled → retry
-function _setDownloadTimeout() {
-  if (_updateTimeoutTimer) clearTimeout(_updateTimeoutTimer);
+// ── TIMER HELPERS ─────────────────────────────────────────────────────────────
+function _clearUpdateTimer() {
+  if (_updateTimeoutTimer) {
+    clearTimeout(_updateTimeoutTimer);
+    _updateTimeoutTimer = null;
+  }
+}
 
+// Fix 1: Download stall timer — if no progress for 5 min, restart download
+function _setDownloadStallTimer() {
+  _clearUpdateTimer();
   _updateTimeoutTimer = setTimeout(() => {
-    log('✗ Download timeout (5 min) — no progress received');
+    log('✗ Download stall timeout (5 min) — no progress received. Restarting download...');
     try {
-      autoUpdater.downloadUpdate(); // Try again
+      autoUpdater.downloadUpdate(); // restart — NOT awaited
     } catch(e) {
-      log(`Timeout retry failed: ${e.message}`);
-      if (mainWindow) {
-        mainWindow.webContents.send('update-error', 'Download took too long. Please check your internet connection.');
-      }
+      log(`Stall retry failed: ${e.message}`);
+      _sendErrorToRenderer(e, _updateRetryCount >= MAX_RETRIES);
     }
   }, DOWNLOAD_TIMEOUT_MS);
+}
+
+// Fix 2: Schedule a retry via checkForUpdates
+function _scheduleRetry() {
+  if (_updateRetryCount >= MAX_RETRIES) {
+    log(`✗ Max retries (${MAX_RETRIES}) reached. Giving up.`);
+    return;
+  }
+  _updateRetryCount++;
+  const delayMs = Math.pow(2, _updateRetryCount) * 1000;
+  log(`↻ Scheduling retry ${_updateRetryCount}/${MAX_RETRIES} in ${delayMs/1000}s`);
+  if (mainWindow) {
+    mainWindow.webContents.send('update-retrying', {
+      attempt: _updateRetryCount,
+      max:     MAX_RETRIES,
+      delayMs,
+      reason:  'Connection to update server timed out.',
+    });
+  }
+  setTimeout(() => {
+    try { autoUpdater.checkForUpdates(); } catch(e) { log(`Retry failed: ${e.message}`); }
+  }, delayMs);
 }
 
 // ── 6. IPC HANDLERS ───────────────────────────────────────────────────────────
@@ -299,7 +391,7 @@ ipcMain.handle('check-update', () => {
 });
 
 // ── DOWNLOAD UPDATE (user clicked "Update Now") ───────────────────────────────
-// ✅ CRITICAL FIX: Do NOT await autoUpdater.downloadUpdate().
+// CRITICAL: Do NOT await autoUpdater.downloadUpdate().
 // Awaiting blocks the IPC channel → progress events queue up → never delivered
 // → stuck at 0% forever. Fire-and-forget. Progress via 'download-progress' events.
 ipcMain.handle('download-update', async (event, payload) => {
@@ -319,18 +411,16 @@ ipcMain.handle('download-update', async (event, payload) => {
     log('→ Starting download...');
     autoUpdater.downloadUpdate();  // fire-and-forget — NOT awaited
 
-    // ✅ FIX: Set timeout for download stall detection
-    _setDownloadTimeout();
+    // Fix 1: Start stall timer — if no progress after 5 min, restart
+    _setDownloadStallTimer();
 
     log('✓ downloadUpdate() called (non-blocking). Progress events will follow.');
     return { ok: true };
   } catch (err) {
     log(`✗ downloadUpdate() threw: ${err.message}`);
-    // Forward error to renderer so UI can show a message
-    if (mainWindow) {
-      mainWindow.webContents.send('update-error', 'Download failed: ' + err.message);
-    }
-    return { ok: false, error: err.message };
+    // Fix 3: Classified error forwarded to renderer
+    _sendErrorToRenderer(err, _updateRetryCount >= MAX_RETRIES);
+    return { ok: false, error: _classifyError(err).msg };
   }
 });
 

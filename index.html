@@ -4977,7 +4977,7 @@ function checkAndShowLicense(){
     }
     return;
   }
-  // Expired
+  // trial_expired OR paid plan expired — show license screen (no trial button)
   showLicenseScreen();
 }
 
@@ -4999,11 +4999,21 @@ function checkLicense(){
 
   // No license — check trial
   if(!lic){
-    const trialStart = parseInt(localStorage.getItem('cc_trial_start')||'0');
-    if(!trialStart) return 'none'; // never started
-    const trialDays = Math.floor((now - trialStart) / 86400000);
-    if(trialDays < 30) return { status:'trial', daysLeft: 30 - trialDays };
-    return { status:'expired' };
+    const trialStart  = parseInt(localStorage.getItem('cc_trial_start')||'0');
+    const trialUsed   = localStorage.getItem('cc_trial_used') === 'true';
+
+    if(!trialStart && !trialUsed) return 'none'; // never started, never used
+
+    if(trialStart){
+      const trialDays = Math.floor((now - trialStart) / 86400000);
+      if(trialDays < 30) return { status:'trial', daysLeft: 30 - trialDays };
+      // Trial expired — mark permanently as used
+      localStorage.setItem('cc_trial_used', 'true');
+      return { status:'trial_expired' }; // distinct from paid plan expired
+    }
+
+    // cc_trial_used=true but no trialStart — already consumed
+    return { status:'trial_expired' };
   }
 
   // Lifetime license
@@ -5014,6 +5024,9 @@ function checkLicense(){
     const daysLeft = Math.floor((lic.expiry - now) / 86400000);
     return { status:'active', plan:lic.plan, daysLeft };
   }
+
+  // Paid plan expired — mark trial as used so they can't fall back to it
+  localStorage.setItem('cc_trial_used', 'true');
   return { status:'expired', plan:lic.plan };
 }
 
@@ -5022,30 +5035,53 @@ function showLicenseScreen(){
   scr.style.display = 'flex';
   const lic = checkLicense();
 
-  document.getElementById('trial-banner').style.display = 'none';
-  document.getElementById('expired-banner').style.display = 'none';
-  document.getElementById('trial-btn-wrap').style.display = 'block';
-  document.getElementById('trial-btn').style.display = 'inline';
+  // ── One-Time Trial Lock ───────────────────────────────────────────────────
+  // If trial was ever used (started or expired), permanently hide the trial button.
+  const trialUsed  = localStorage.getItem('cc_trial_used') === 'true'
+                  || !!localStorage.getItem('cc_trial_start');
+  const trialBtnWrap = document.getElementById('trial-btn-wrap');
+  const trialBtn     = document.getElementById('trial-btn');
 
-  if(lic === 'none'){
-    document.getElementById('trial-btn').textContent = 'Start 30-day free trial';
+  document.getElementById('trial-banner').style.display  = 'none';
+  document.getElementById('expired-banner').style.display= 'none';
+
+  // Default: hide trial button (will only show if legitimately never used)
+  if(trialBtnWrap) trialBtnWrap.style.display = 'none';
+
+  if(lic === 'none' && !trialUsed){
+    // First-time user — never started a trial, never had a plan
+    if(trialBtnWrap) trialBtnWrap.style.display = 'block';
+    if(trialBtn)     trialBtn.textContent = 'Start 30-day free trial';
+
   } else if(lic.status === 'trial'){
+    // Active trial — show trial banner and allow continuation
     document.getElementById('trial-banner').style.display = 'block';
     document.getElementById('trial-days').textContent = lic.daysLeft + ' days remaining in your free trial';
-    document.getElementById('trial-btn').textContent = 'Continue with trial (' + lic.daysLeft + ' days left)';
-  } else if(lic.status === 'expired'){
+    if(trialBtnWrap) trialBtnWrap.style.display = 'block';
+    if(trialBtn)     trialBtn.textContent = 'Continue with trial (' + lic.daysLeft + ' days left)';
+
+  } else if(lic.status === 'trial_expired'){
+    // Trial used and expired — show expired banner, NO trial button
     document.getElementById('expired-banner').style.display = 'block';
-    document.getElementById('trial-btn-wrap').style.display = 'none';
-    // Show which plan expired
+    document.getElementById('expired-banner').innerHTML =
+      '<div style="font-size:13px;font-weight:700;color:#DC2626">❌ Free Trial Expired</div>' +
+      '<div style="font-size:11px;color:#DC2626;margin-top:3px">Your 30-day trial has ended. Please purchase a plan to continue.</div>';
+    if(trialBtnWrap) trialBtnWrap.style.display = 'none'; // LOCKED — no trial again
+
+  } else if(lic.status === 'expired'){
+    // Paid plan expired — NO trial button (they already used trial before paying)
+    document.getElementById('expired-banner').style.display = 'block';
     const savedLic = getLicense();
     if(savedLic && savedLic.plan){
       document.getElementById('expired-banner').innerHTML =
         '<div style="font-size:13px;font-weight:700;color:#DC2626">❌ ' +
-        (savedLic.plan === 'trial' ? 'Free Trial' : savedLic.plan.charAt(0).toUpperCase()+savedLic.plan.slice(1)+' Plan') +
-        ' Expired</div>' +
-        '<div style="font-size:11px;color:#DC2626;margin-top:3px">Please renew your subscription to continue</div>';
+        (savedLic.plan.charAt(0).toUpperCase()+savedLic.plan.slice(1)) +
+        ' Plan Expired</div>' +
+        '<div style="font-size:11px;color:#DC2626;margin-top:3px">Please renew your subscription to continue.</div>';
     }
+    if(trialBtnWrap) trialBtnWrap.style.display = 'none'; // LOCKED — paid users can't go back to trial
   }
+
   selectPlan('yearly');
 }
 
@@ -5075,7 +5111,11 @@ function showKeyEntry(){
 function showPlans(){
   document.getElementById('plan-section').style.display = 'block';
   document.getElementById('key-section').style.display = 'none';
-  document.getElementById('trial-btn-wrap').style.display = 'block';
+  // Only show trial button if trial genuinely never used
+  const trialUsed = localStorage.getItem('cc_trial_used') === 'true'
+                 || !!localStorage.getItem('cc_trial_start');
+  const wrap = document.getElementById('trial-btn-wrap');
+  if(wrap) wrap.style.display = trialUsed ? 'none' : 'block';
 }
 
 function startTrial(){
@@ -5086,8 +5126,22 @@ function startTrial(){
     document.getElementById('reg-screen').style.display='flex';
     return;
   }
-  const existing = localStorage.getItem('cc_trial_start');
-  if(!existing) localStorage.setItem('cc_trial_start', Date.now().toString());
+
+  // ── One-Time Trial Lock ───────────────────────────────────────────────────
+  // If trial was already used (even partially), block it completely.
+  if(localStorage.getItem('cc_trial_used') === 'true' || localStorage.getItem('cc_trial_start')){
+    toast('Free trial has already been used on this device.','warn');
+    // Hide the button immediately so user can't try again
+    const wrap = document.getElementById('trial-btn-wrap');
+    if(wrap) wrap.style.display = 'none';
+    return;
+  }
+
+  // First time — set BOTH flags atomically
+  const now = Date.now().toString();
+  localStorage.setItem('cc_trial_start', now);
+  localStorage.setItem('cc_trial_used',  'true'); // permanent lock — survives plan changes
+
   hideLicenseScreen();
 }
 
@@ -5506,11 +5560,49 @@ if(IS_ELECTRON()){
     const msgEl = document.getElementById('update-check-msg');
     if(isNetworkErr){
       console.warn('[Update] Network error (silent):', msg);
-      // Do NOT show error to user — just means no internet for update check
     } else if(msg){
       console.error('[Update] Error:', msg);
       if(msgEl){ msgEl.style.color='#DC2626'; msgEl.textContent='❌ Update error: '+msg; }
     }
+  });
+
+  // Fix 3: Show retry progress in banner
+  window.classcore.onUpdateRetrying && window.classcore.onUpdateRetrying(data=>{
+    const titleEl = document.getElementById('update-title');
+    const subEl   = document.getElementById('update-sub');
+    const msgEl   = document.getElementById('update-check-msg');
+    if(titleEl) titleEl.textContent = `⏳ Retrying… (attempt ${data.attempt}/${data.max})`;
+    if(subEl)   subEl.textContent   = `${data.reason} Retrying in ${data.delayMs/1000}s…`;
+    if(msgEl){  msgEl.style.color='#E8622A'; msgEl.textContent=`⏳ Retry ${data.attempt}/${data.max} — ${data.reason}`; }
+    console.warn('[Update] Retrying:', data);
+  });
+
+  // Fix 4: Manual fallback — show download link when all retries fail
+  window.classcore.onUpdateManualFallback && window.classcore.onUpdateManualFallback(data=>{
+    console.error('[Update] All retries failed. Showing manual fallback.');
+    const msgEl   = document.getElementById('update-check-msg');
+    const titleEl = document.getElementById('update-title');
+    const subEl   = document.getElementById('update-sub');
+    const btn     = document.getElementById('update-btn');
+
+    if(titleEl) titleEl.textContent = '⚠️ Auto-update failed';
+    if(subEl)   subEl.textContent   = data.instructions || 'Please download the update manually.';
+    if(msgEl){
+      msgEl.style.color='#DC2626';
+      msgEl.innerHTML=`❌ ${data.msg} &nbsp;<a href="${data.manualUrl}" target="_blank" style="color:#E8622A;font-weight:700;text-decoration:underline">⬇️ Download Manually</a>`;
+    }
+
+    // Change Update Now button to open GitHub releases page
+    if(btn){
+      btn.style.display  = 'flex';
+      btn.disabled       = false;
+      btn.textContent    = '🌐 Download Manually';
+      btn.style.background = '#DC2626';
+      btn.onclick        = ()=>{ window.open(data.manualUrl); };
+    }
+
+    showUpdateBanner('⚠️ Auto-update failed — manual download required', data.msg);
+    toast('⚠️ Auto-update failed. Click "Download Manually" in the banner.','warn');
   });
 }
 
