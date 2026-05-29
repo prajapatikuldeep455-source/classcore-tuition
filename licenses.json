@@ -1,24 +1,14 @@
 {
-  "CCTR-KULD-NE7B-5UHX": {
+  "CCTR-KULD-5R6A-RKNR": {
     "plan": "lifetime",
     "expiry": 9999999999999,
-    "name": "Kuldeep Prajapati",
-    "institute": "CLASSCORE",
-    "mobile": "9904020671",
-    "email": "prajapatikuldeep455@gmail.com",
-    "expiryDate": "lifetime",
-    "issued": "2026-04-22",
-    "note": "Owner / Developer License"
+    "name": "kuldeep",
+    "expiryDate": "lifetime"
   },
-  "CCTR-SHUB-9OOU-PRU6": {
+  "CCTR-SHUB-GX45-ETOL": {
     "plan": "monthly",
-    "expiry": 1779408000000,
+    "expiry": 1782691200000,
     "name": "Shubham",
-    "institute": "RADHIKA",
-    "mobile": "8866265182",
-    "email": "shubhamsonar056@gmail.com",
-    "expiryDate": "2026-05-22",
-    "issued": "2026-04-22",
-    "note": ""
+    "expiryDate": "2026-06-29"
   }
 }
