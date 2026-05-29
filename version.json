@@ -1,4 +1,4 @@
 {
   "version": "1.6.9",
-  "notes": "One-Time Trial Lock: cc_trial_used flag set permanently when trial starts. checkLicense returns trial_expired status. showLicenseScreen and showPlans hide trial button if trialUsed. Paid plan expiry also locks trial. startTrial blocks repeat use."
+  "notes": "Firebase Firestore integration: trial_users collection checks email+mobile before allowing registration. Blocks duplicate trials across devices. fsSaveTrialUser saves to Firestore on registration. Local cc_trial_used lock + Firestore = two-layer protection."
 }

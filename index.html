@@ -10,6 +10,9 @@
 <!-- html2pdf — PDF generation in browser/Electron, no server needed -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
         onerror="console.warn('[ClassCore] html2pdf not loaded — PDF export unavailable')"></script>
+<!-- Firebase v10 compat — Firestore for trial abuse prevention -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
@@ -658,6 +661,92 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+// ══════════════════════════════════════════════════════════════════════
+// FIREBASE INIT — Firestore for trial abuse prevention
+// ══════════════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyB2XecFJhEMtOyGkUPPbkMZpAGbzJdwL3s",
+  authDomain:        "classcore-e5d97.firebaseapp.com",
+  projectId:         "classcore-e5d97",
+  storageBucket:     "classcore-e5d97.firebasestorage.app",
+  messagingSenderId: "54119164089",
+  appId:             "1:54119164089:web:921d50d3ffd0c192c89368"
+};
+
+let _db = null;  // Firestore instance — null until Firebase loads
+
+(function initFirebase(){
+  try{
+    if(typeof firebase !== 'undefined'){
+      firebase.initializeApp(firebaseConfig);
+      _db = firebase.firestore();
+      console.log('[ClassCore][Firebase] ✅ Firestore ready');
+    } else {
+      // Retry up to 5 seconds (Electron CDN load can be slow)
+      let tries = 0;
+      const iv = setInterval(()=>{
+        tries++;
+        if(typeof firebase !== 'undefined'){
+          clearInterval(iv);
+          firebase.initializeApp(firebaseConfig);
+          _db = firebase.firestore();
+          console.log('[ClassCore][Firebase] ✅ Firestore ready (deferred)');
+        } else if(tries > 10){
+          clearInterval(iv);
+          console.warn('[ClassCore][Firebase] ⚠️ Firebase SDK not loaded — trial checks will use local storage only');
+        }
+      }, 500);
+    }
+  }catch(e){ console.error('[ClassCore][Firebase] ❌ Init error:', e.message); }
+})();
+
+// ── Firestore helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Check if email OR mobile already has a trial in Firestore.
+ * Returns { used: boolean, reason: string }
+ * Falls back gracefully if offline or Firestore unavailable.
+ */
+async function fsCheckTrialUsed(email, mobile){
+  if(!_db) return { used: false, reason: 'offline' };
+  try{
+    const col = _db.collection('trial_users');
+    const [byEmail, byMobile] = await Promise.all([
+      col.where('email',  '==', email.toLowerCase().trim()).limit(1).get(),
+      col.where('mobile', '==', mobile.trim()).limit(1).get(),
+    ]);
+    if(!byEmail.empty)  return { used: true, reason: 'email' };
+    if(!byMobile.empty) return { used: true, reason: 'mobile' };
+    return { used: false };
+  }catch(e){
+    console.warn('[ClassCore][Firebase] fsCheckTrialUsed error:', e.message);
+    return { used: false, reason: 'error' }; // fail-open on network error
+  }
+}
+
+/**
+ * Save a new trial user record to Firestore.
+ */
+async function fsSaveTrialUser(name, email, mobile, institute, trialStart, trialEnd){
+  if(!_db) return;
+  try{
+    await _db.collection('trial_users').add({
+      name:       name       || '',
+      email:      email.toLowerCase().trim(),
+      mobile:     mobile.trim(),
+      institute:  institute  || '',
+      trialStart: trialStart,
+      trialEnd:   trialEnd,
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      deviceId:   localStorage.getItem('cc_device_id') || '',
+    });
+    console.log('[ClassCore][Firebase] ✅ Trial user saved to Firestore');
+  }catch(e){
+    console.warn('[ClassCore][Firebase] fsSaveTrialUser error:', e.message);
+    // Non-fatal — local lock is already set
+  }
+}
+
 const BUILTIN_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAE0UlEQVR4nO2dT4scRRyG60/39PzbRbIkYlajoK5GPIiwGFEUPXrIfgX16CleRMRD8IN49AvkkIPxoPHgsqIRI4uiYowaTXazWc06Mz3dVV7rbcGwLNq9vu9ze+mu7t8MzxRUVU+1MUIIIYQQQgghhGDBtl3Af80nm5uQT5082VIl3cC1XYBoFwlAjgQgRwKQIwHIkQDk/O+GgSuvvgHZDT3k3vIYjw9yzDZC9rGGvHHmrYOW2CnUA5AjAciRAORIAHIkADkSgBwJQM6hnwe49/RrkEfHFvpp9gP3eJr7xwZHsUE+SKPz7lqabQyf4x3tNE0bZ97cX8EdQz0AORKAHAlAjgQgRwKQIwHIydou4KBYa2HYN5tUr6S5P+o/nebJ9T+301w7B+vF4+VxmWZfuMfghiG81yhhsr+Ku4V6AHIkADkSgBwJQI4EIEcCkCMByDn08wB1WT+RZlvVK2kO8/r9NN/ty9/T/MjRYjHNlzM7gusb+2yancu+aJTw6f4q7hbqAciRAORIAHIkADkSgBwJQM6hHwaGKp5Ic6wjPLVb3pz+Cg2OhIfSuFj0YDl5JZudS/PXZnghzT1rfztAuZ1DPQA5EoAcCUCOBCBHApAjAciRAOQc+nmAGCI8ll1P5ih1kS1ArKvv0nx1p4R/SF8ZjpbTXBXxqTQHF883SvhyfxV3C/UA5EgAciQAORKAHAlAjgQgp/PDwJdffxvyvEZnP7h87VKa7ax8GK8QT6Xp2y37Q5p7VYTdoYul+QNpzsf2D7hcP8N8yFEPQI4EIEcCkCMByJEA5EgAciQAOa1vFr38AmzqZYLBlzyZxkucKozGDI5AHJXbD6a5tv4+OKHInkujH+XwHQyXRh+muTfwV+H+jx6H5eTejRtYrsWv1OImZCZMZpA/O/uOaRP1AORIAHIkADkSgBwJQI4EIKf15WDrcNxkQw3v+LHGLqV54HBz5ljuwDt+qmhvN673FZw/jd+nuX//4jDNxYnxcWgfa9g8utjavgeuZ0wwSPNHheO+zN00HUI9ADkSgBwJQI4EIEcCkCMByJEA5LQ+D+CsgxqCDU+m2UbzCxw35pk0xxibEuP6awwV5CrAuD1WVQ7Hrb2Ezc3zjeOwvBych/u5GPE7jfHnNI7y/N1GvbVpEfUA5EgAciQAORKAHAlAjgQgp/VhYKxKGKb1Mr+R5sLiZtDOVB+nuQz2rjTXVQ2bRTuLn9FbA88VZzu7cL7f68Ow0E5nW1Bwnu9A+9n0FpzvPbQPgz6cX+RFc/m4VdQDkCMByJEA5EgAciQAORKAHAlATvvzAAF36Xpx4cdv0rwbBvCuX+s8SDubTiGXZjZPs/N4vs8yWL4Nt67D/csLm/AYt/VZAe2dvZLmeR1wniHD5WF/e+8nOP/0S83/N7eKegByJAA5EoAcCUCOBCBHApDT+iZRTdbW1iA3N10K+FCvqWt8qHZ3dxdyluFItyhgVPe39mUJfwY2pjFoGy+MIe/t7UHOc3zIeDbD6128+JHpEuoByJEA5EgAciQAORKAHAlAjgQgp3PzAOvr65Cb43jvG5svN+YFmvMGd2I+n/9jbt7fOfzNRFzNvuPx1dXVfdX3b6MegBwJQI4EIEcCkCMByJEAQgghhBBCCCGEECT8BZt+FXBqUbAOAAAAAElFTkSuQmCC";
 const BASE_CLASSES=['Jr.KG','Sr.KG','1','2','3','4','5','6','7','8','9','10','11','12'];
 function getClasses(){
@@ -2616,7 +2705,7 @@ function buildReceiptHTML(s,amount,rcptNo,payDate,month,size){
     .hdr h1{font-size:${f.h1};font-weight:900;margin-bottom:2px;}
     .hdr .sub{font-size:10px;opacity:.7;margin-top:2px;}
     .rcpt-row{display:flex;justify-content:space-between;margin-top:14px;align-items:flex-end;}
-    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;opacity:.6;}
+    .lbl{font-six`ze:9px;text-transform:uppercase;letter-spacing:1.5px;opacity:.6;}
     .rcpt-num{font-size:${f.h1};font-weight:800;}
     .gold{color:${goldColor};}
     .amount-box{background:#FBF6E9;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px dashed #E0D5B5;}
@@ -4760,27 +4849,53 @@ async function doRegister(){
 
   // Disable button to prevent double-submit
   const btn = document.querySelector('#reg-screen .btn-primary');
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Registering...'; }
-  setRegMsg('⏳ Setting up your account...', 'warn');
+  if(btn){ btn.disabled = true; btn.textContent = '\u23F3 Checking...'; }
+  setRegMsg('\u23F3 Verifying your details...', 'warn');
+
+  // ── STEP 1: Check Firestore for duplicate email/mobile ─────────────────────
+  // This prevents trial abuse across devices
+  const fsCheck = await fsCheckTrialUsed(email, mobile);
+  if(fsCheck.used){
+    setRegMsg('\u274C Trial already used for this ' +
+      (fsCheck.reason==='email' ? 'Email Address' : 'Mobile Number') +
+      '. Please purchase a license.', 'err');
+    if(btn){ btn.disabled=false; btn.textContent='\uD83D\uDE80 Start Free Trial'; }
+    return;
+  }
+
+  // ── Also check local storage lock (offline protection) ─────────────────────
+  const localTrialUsed = localStorage.getItem('cc_trial_used') === 'true';
+  if(localTrialUsed){
+    setRegMsg('\u274C A free trial was already started on this device. Please purchase a license.', 'err');
+    if(btn){ btn.disabled=false; btn.textContent='\uD83D\uDE80 Start Free Trial'; }
+    return;
+  }
+
+  if(btn){ btn.textContent = '\u23F3 Registering...'; }
+  setRegMsg('\u23F3 Setting up your account...', 'warn');
 
   const deviceId   = await getDeviceId();
   const trialStart = Date.now();
   const trialEnd   = trialStart + 30 * 86400000;
 
-  // ── Generate credentials (NOT shown on screen) ─────────────────────
+  // ── Generate credentials (NOT shown on screen) ─────────────────────────────
   const tempUser = name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8)
                  + Math.floor(100+Math.random()*900);
   const tempPass = genPassword();
 
-  // ── Save registration locally ─────────────────────────────────────
+  // ── Save registration locally ──────────────────────────────────────────────
   const reg = { name, email, mobile, institute, deviceId, trialStart, trialEnd,
                 registeredAt: new Date().toISOString() };
   saveRegistration(reg);
   localStorage.setItem('cc_trial_start', trialStart.toString());
+  localStorage.setItem('cc_trial_used',  'true');  // ONE-TIME LOCK — permanent
   localStorage.setItem('tuitionName', institute || name + "'s Tuition");
 
-  // ── Save admin user (mustChange=true forces password reset on first login) ─
-  const users    = getUsers();
+  // ── Save to Firestore (blocks future trial abuse across devices) ────────────
+  await fsSaveTrialUser(name, email, mobile, institute, trialStart, trialEnd);
+
+  // ── Save admin user (mustChange=true forces password reset on first login) ──
+  const users = getUsers();
   const adminIdx = users.findIndex(x=>x.role==='admin');
   if(adminIdx !== -1){
     users[adminIdx].username  = tempUser;
@@ -4796,92 +4911,63 @@ async function doRegister(){
   localStorage.setItem('username', tempUser);
   localStorage.setItem('password', tempPass);
 
-  // ── Build welcome email (professional, no credentials shown on screen) ─
+  // ── Send welcome email ─────────────────────────────────────────────────────
   const trialEndDate = new Date(trialEnd).toLocaleDateString('en-IN',
     {day:'numeric', month:'long', year:'numeric'});
 
-  // ── Send email with username+password as separate template variables ─
-  // HTML template in EmailJS renders {{username}}, {{password}}, {{user_name}} etc.
-  setRegMsg('⏳ Sending login details to your email...', 'warn');
+  setRegMsg('\u23F3 Sending login details to your email...', 'warn');
   const emailResult = await sendEmail(
     email,
-    'ClassCore — Your Login Details (Keep This Safe!)',
-    '', // body is built by the HTML template in EmailJS dashboard
-    {
-      username:   tempUser,
-      password:   tempPass,
-      user_name:  name,
-      institute:  institute || 'Not specified',
-      mobile:     mobile,
-      trial_end:  trialEndDate,
-    }
+    'ClassCore \u2014 Your Login Details (Keep This Safe!)',
+    '',
+    { username:tempUser, password:tempPass, user_name:name,
+      institute:institute||'Not specified', mobile, trial_end:trialEndDate }
   );
 
-  // ── Log to Google Sheets (data only, no email sent from Sheets) ───
-  sendToSheets('register', {
-    name, email, mobile, institute, deviceId,
+  // ── Log to Google Sheets ───────────────────────────────────────────────────
+  sendToSheets('register', { name, email, mobile, institute, deviceId,
     trialStart: new Date(trialStart).toLocaleDateString('en-IN'),
-    trialEnd:   trialEndDate,
-    status:     'trial',
-    // DO NOT log credentials to Sheets for security
-  });
+    trialEnd:   trialEndDate, status:'trial' });
 
-  // ── Show success message — NEVER show credentials on screen ───────
-  if(btn){ btn.disabled = false; btn.textContent = '🚀 Start Free Trial'; }
+  // ── Show result ────────────────────────────────────────────────────────────
+  if(btn){ btn.disabled=false; btn.textContent='\uD83D\uDE80 Start Free Trial'; }
 
   if(emailResult.ok){
-    setRegMsg('✅ Registered! Login details sent to your email.', 'ok');
-    // Show only a safe confirmation box — no credentials
+    setRegMsg('\u2705 Registered! Login details sent to your email.', 'ok');
     const credsBox = document.getElementById('reg-creds-box');
     if(credsBox){
-      credsBox.style.background = '#F0FDF4';
-      credsBox.style.border     = '2px solid #16A34A';
-      credsBox.innerHTML = `
+      credsBox.style.background='#F0FDF4';
+      credsBox.style.border='2px solid #16A34A';
+      credsBox.innerHTML=`
         <div style="text-align:center">
-          <div style="font-size:28px;margin-bottom:8px">📧</div>
-          <div style="font-size:13px;font-weight:700;color:#16A34A;margin-bottom:6px">
-            Login details sent to your email!
-          </div>
-          <div style="font-size:12px;color:#78716C;margin-bottom:6px">
-            Check your inbox at: <b style="color:#18181B">${email}</b>
-          </div>
-          <div style="font-size:11px;color:#78716C">
-            ⚠️ Also check your <b>Spam / Junk</b> folder.<br>
-            Log in and set your own password immediately.
-          </div>
+          <div style="font-size:28px;margin-bottom:8px">\uD83D\uDCE7</div>
+          <div style="font-size:13px;font-weight:700;color:#16A34A;margin-bottom:6px">Login details sent to your email!</div>
+          <div style="font-size:12px;color:#78716C;margin-bottom:6px">Check your inbox at: <b style="color:#18181B">${email}</b></div>
+          <div style="font-size:11px;color:#78716C">\u26A0\uFE0F Also check your <b>Spam / Junk</b> folder.<br>Log in and set your own password immediately.</div>
         </div>`;
-      credsBox.style.display = 'block';
+      credsBox.style.display='block';
     }
   } else {
-    // Email failed — show minimal fallback ONLY (no password shown)
-    setRegMsg('✅ Registered! But email failed to send.', 'warn');
+    setRegMsg('\u2705 Registered! But email failed to send. Contact: coreclass.2025@gmail.com', 'warn');
     const credsBox = document.getElementById('reg-creds-box');
     if(credsBox){
-      credsBox.style.background = '#FEF9C3';
-      credsBox.style.border     = '2px solid #FDE047';
-      credsBox.innerHTML = `
+      credsBox.style.background='#FEF9C3';
+      credsBox.style.border='2px solid #FDE047';
+      credsBox.innerHTML=`
         <div style="text-align:center">
-          <div style="font-size:24px;margin-bottom:8px">⚠️</div>
-          <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:6px">
-            Email could not be delivered
-          </div>
-          <div style="font-size:12px;color:#92400E;margin-bottom:8px">
-            Please contact ClassCore support to get your login details:
-          </div>
+          <div style="font-size:24px;margin-bottom:8px">\u26A0\uFE0F</div>
+          <div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:6px">Email could not be delivered</div>
+          <div style="font-size:12px;color:#92400E;margin-bottom:8px">Contact ClassCore support with your registered mobile:</div>
           <div style="background:#fff;border-radius:8px;padding:8px 12px;font-size:12px">
-            📧 coreclass.2025@gmail.com<br>
-            📱 WhatsApp your registered mobile: <b>${mobile}</b>
-          </div>
-          <div style="font-size:11px;color:#92400E;margin-top:8px">
-            Tell us your name and email to receive your credentials securely.
+            \uD83D\uDCE7 coreclass.2025@gmail.com<br>\uD83D\uDCF1 WhatsApp: <b>${mobile}</b>
           </div>
         </div>`;
-      credsBox.style.display = 'block';
+      credsBox.style.display='block';
     }
   }
 
   setTimeout(()=>{
-    document.getElementById('reg-screen').style.display = 'none';
+    document.getElementById('reg-screen').style.display='none';
     checkAndShowLicense();
   }, 6000);
 }
