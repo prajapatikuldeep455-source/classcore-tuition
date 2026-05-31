@@ -229,6 +229,11 @@ tbody tr:last-child td{border-bottom:none;}tbody tr:hover{background:rgba(232,98
       <span style="font-size:11px;color:#78716C">Already have a license key? </span>
       <button onclick="showRegKeyEntry()" style="background:none;border:none;color:#E8622A;font-size:11px;font-weight:700;cursor:pointer">Enter Key →</button>
     </div>
+    <!-- ── Already have an account? Login link ── -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #E7E2D9;text-align:center">
+      <span style="font-size:12px;color:#78716C">Already have an account? </span>
+      <button onclick="showLoginFromReg()" style="background:none;border:none;color:#1B3154;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">Login Here →</button>
+    </div>
     <div id="reg-key-section" style="display:none;margin-top:14px;border-top:1px solid #E7E2D9;padding-top:14px">
       <input id="reg-key-input" placeholder="CCTR-XXXX-XXXX-XXXX" style="width:100%;text-align:center;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:#F7F5F0;border:1.5px solid #E7E2D9;border-radius:8px;padding:10px;outline:none;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="doRegWithKey()">🔑 Activate Key</button>
@@ -4474,20 +4479,20 @@ function deleteUser(username){
 // ══════════════════════════════════════════════════════════════════════
 // EMAIL SYSTEM — EmailJS Configuration
 // ══════════════════════════════════════════════════════════════════════
-// STEP 1: Replace service_1ywkxnl  → emailjs.com → Email Services → Copy ID
-// STEP 2: Replace template_3i4hfuj → emailjs.com → Email Templates → Copy ID
-// STEP 3: Replace YdR9wbP3wK0rUyA77  → emailjs.com → Account → API Keys → Public Key
+// STEP 1: Replace YOUR_SERVICE_ID  → emailjs.com → Email Services → Copy ID
+// STEP 2: Replace YOUR_TEMPLATE_ID → emailjs.com → Email Templates → Copy ID
+// STEP 3: Replace YOUR_PUBLIC_KEY  → emailjs.com → Account → API Keys → Public Key
 // ══════════════════════════════════════════════════════════════════════
-const EMAILJS_SERVICE_ID  = 'service_1ywkxnl';
-const EMAILJS_TEMPLATE_ID = 'template_3i4hfuj';
+const EMAILJS_SERVICE_ID  = 'service_ci0s1je';
+const EMAILJS_TEMPLATE_ID = 'template_r8k4w5p';
 const EMAILJS_PUBLIC_KEY  = 'YdR9wbP3wK0rUyA77';
 
 // Auto-init EmailJS with retry (Electron CDN load can be slow)
 (function initEmailJS(){
   function tryInit(attempts){
     if(typeof emailjs !== 'undefined'){
-      if(EMAILJS_PUBLIC_KEY === 'YdR9wbP3wK0rUyA77'){
-        console.warn('[ClassCore][EmailJS] ⚠️ Public key not set. Replace YdR9wbP3wK0rUyA77 in index.html');
+      if(EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY'){
+        console.warn('[ClassCore][EmailJS] ⚠️ Public key not set. Replace YOUR_PUBLIC_KEY in index.html');
         return;
       }
       try{
@@ -4511,10 +4516,10 @@ async function sendEmail(toEmail, subject, body, extraVars){
     console.error('[ClassCore][EmailJS] ❌ SDK not loaded');
     return { ok: false, error: 'EmailJS not loaded' };
   }
-  if(EMAILJS_SERVICE_ID  === 'service_1ywkxnl' ||
-     EMAILJS_TEMPLATE_ID === 'template_3i4hfuj' ||
-     EMAILJS_PUBLIC_KEY  === 'YdR9wbP3wK0rUyA77'){
-    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace service_1ywkxnl, template_3i4hfuj, YdR9wbP3wK0rUyA77');
+  if(EMAILJS_SERVICE_ID  === 'YOUR_SERVICE_ID' ||
+     EMAILJS_TEMPLATE_ID === 'YOUR_TEMPLATE_ID' ||
+     EMAILJS_PUBLIC_KEY  === 'YOUR_PUBLIC_KEY'){
+    console.error('[ClassCore][EmailJS] ❌ Credentials not configured.\nOpen index.html and replace YOUR_SERVICE_ID, YOUR_TEMPLATE_ID, YOUR_PUBLIC_KEY');
     return { ok: false, error: 'EmailJS not configured' };
   }
   if(!toEmail || !toEmail.includes('@')){
@@ -4823,6 +4828,23 @@ function showRegScreen(){
 function showRegFromLogin(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('reg-screen').style.display='flex';
+}
+
+// Go from Registration screen → Login screen
+function showLoginFromReg(){
+  document.getElementById('reg-screen').style.display='none';
+  // Clear any reg messages
+  const msg = document.getElementById('reg-msg');
+  if(msg) msg.textContent = '';
+  const creds = document.getElementById('reg-creds-box');
+  if(creds) creds.style.display = 'none';
+  // Show login
+  document.getElementById('login-screen').style.display='flex';
+  // Focus username field
+  setTimeout(()=>{
+    const u = document.getElementById('l-user');
+    if(u) u.focus();
+  }, 100);
 }
 
 function showRegKeyEntry(){
@@ -6701,6 +6723,5 @@ window.addEventListener('DOMContentLoaded',async ()=>{
   }
 });
 </script>
-<div id="toast"></div>
 </body>
 </html>
