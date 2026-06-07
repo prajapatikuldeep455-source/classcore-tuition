@@ -1,4 +1,4 @@
 {
-  "version": "1.7.0",
-  "notes": "Firebase Firestore integration: trial_users collection checks email+mobile before allowing registration. Blocks duplicate trials across devices. fsSaveTrialUser saves to Firestore on registration. Local cc_trial_used lock + Firestore = two-layer protection."
+  "version": "1.7.1",
+  "notes": "v1.7.1: Code splitting (HTML/CSS/JS modular architecture), auto-updater banner fix, inline styles extracted to CSS classes. Improved maintainability and performance."
 }

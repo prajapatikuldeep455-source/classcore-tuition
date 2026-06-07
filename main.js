@@ -427,7 +427,11 @@ ipcMain.handle('download-update', async (event, payload) => {
 // ── INSTALL UPDATE (user clicked "Restart & Install") ─────────────────────────
 ipcMain.handle('install-update', () => {
   log('→ Installing update and restarting...');
-  autoUpdater.quitAndInstall(false, true);
+  // Small delay to allow IPC response to reach renderer before quit
+  setTimeout(() => {
+    autoUpdater.quitAndInstall(false, true);
+  }, 500);
+  return { ok: true };
 });
 
 // ── EXPORT BACKUP ─────────────────────────────────────────────────────────────
