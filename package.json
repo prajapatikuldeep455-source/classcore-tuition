@@ -1,0 +1,82 @@
+{
+  "name": "classcore",
+  "version": "1.7.3",
+  "description": "ClassCore — Tuition Management System",
+  "main": "main.js",
+  "author": {
+    "name": "Kuldeep Prajapati",
+    "email": "coreclass.2025@gmail.com"
+  },
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "prebuild": "powershell -NoProfile -Command \"if(Test-Path 'dist'){ Remove-Item -Recurse -Force 'dist\\*' -ErrorAction SilentlyContinue }\"",
+    "build": "electron-builder --win --x64",
+    "deploy-local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-local.ps1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "electron": "32.2.7",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.classcore.tuition",
+    "productName": "ClassCore",
+    "copyright": "Copyright © 2025 ClassCore",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache/**",
+      "!dist/**",
+      "!*.md",
+      "!*.bat",
+      "!logo_b64*",
+      "!logo_ico*",
+      "!logo_png*",
+      "!MAKE_ICON*",
+      "!BUILD_EXE*",
+      "!README*",
+      "!keygen.html",
+      "!firebase/**",
+      "!script.js",
+      "!js/script.js",
+      "!js/script.backup.js",
+      "!licenses.json",
+      "!tmp_classcore.log"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ClassCore",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "perMachine": true,
+      "include": "build/installer.nsh"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "prajapatikuldeep455-source",
+      "repo": "classcore-tuition",
+      "releaseType": "release"
+    }
+  }
+}

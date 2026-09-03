@@ -1,0 +1,12 @@
+{
+  "CCTR-ADMI-BL9P-JMWI": {
+    "plan": "lifetime",
+    "expiry": 9999999999999,
+    "name": "Admin Demo"
+  },
+  "CCTR-TEST-DEMO-KEY1": {
+    "plan": "yearly",
+    "expiry": 9999999999999,
+    "name": "Demo User"
+  }
+}

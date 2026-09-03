@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+_extract_js.ps1
+licenses.json
+script.backup.js
+js/script.backup.js
+js/script.js
+js/config.js
+script.js
+js/config.js

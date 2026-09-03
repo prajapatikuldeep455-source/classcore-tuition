@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassCore — Tuition Management</title>
+<meta http-equiv="Content-Security-Policy" 
+  content="default-src 'self'; 
+    script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com https://*.razorpay.com 'unsafe-inline'; 
+    style-src 'self' 'unsafe-inline'; 
+    connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.emailjs.com https://*.razorpay.com wss://*.firebaseio.com; 
+    frame-src https://*.razorpay.com; 
+    img-src 'self' data: blob:; 
+    font-src 'self';">
+<!-- EmailJS SDK (defer — app works without it) -->
+<script defer src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+        onerror="console.error('[ClassCore] EmailJS failed to load from CDN.')"></script>
+<!-- html2pdf — PDF generation in browser/Electron, no server needed -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        onerror="console.warn('[ClassCore] html2pdf not loaded — PDF export unavailable')"></script>
+<!-- Firebase v10 compat — Firestore for trial abuse prevention (defer — app works without it) -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"
+        onerror="console.warn('[ClassCore] Firebase app failed to load')"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"
+        onerror="console.warn('[ClassCore] Firebase Firestore failed to load')"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="startup-loader" class="startup-loader">
+  <div class="startup-loader-card">
+    <div class="startup-spinner"></div>
+    <div class="loader-text">ClassCore is starting…</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     REGISTRATION SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="reg-screen" class="screen-overlay">
+  <div class="form-card">
+    <div class="brand-center">
+      <div class="brand-title">CLASS<span>CORE</span></div>
+      <div class="brand-subtitle-mb">Tuition Management</div>
+      <div class="brand-desc">Create your account to get started</div>
+    </div>
+    <div class="banner-success">
+      🎉 30-day free trial — No payment needed
+    </div>
+    <div class="fg fg-mb"><label>Full Name ★</label><input id="reg-name" placeholder="e.g. Ramesh Patel"></div>
+    <div class="fg fg-mb"><label>Email Address ★</label><input id="reg-email" type="email" placeholder="you@email.com"></div>
+    <div class="fg fg-mb"><label>Mobile Number ★</label><input id="reg-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
+    <div class="fg fg-mb-lg"><label>Institute / Tuition Name</label><input id="reg-institute" placeholder="e.g. ABC Tuition Center"></div>
+    <div class="fg fg-mb"><label>Create Password ★</label><input id="reg-password" type="password" placeholder="Min 6 characters" minlength="6"></div>
+    <div class="fg fg-mb-lg"><label>Confirm Password ★</label><input id="reg-password2" type="password" placeholder="Re-enter password"></div>
+    <button class="btn btn-primary btn-full" onclick="doRegister()">🚀 Start Free Trial</button>
+    <div class="divider-section">
+      <span class="divider-text-sm">Already have a license key? </span>
+      <button class="link-btn link-btn-primary" onclick="showRegKeyEntry()">Activate License →</button>
+    </div>
+    <!-- Already have an account? Login link -->
+    <div class="divider-section">
+      <span class="divider-text">Already have an account? </span>
+      <button class="link-btn link-btn-dark" onclick="showLoginFromReg()">Sign In →</button>
+    </div>
+    <div id="reg-key-section" style="display:none;margin-top:14px;border-top:1px solid #E7E2D9;padding-top:14px">
+      <input id="reg-key-input" class="license-key-input-sm" placeholder="CCTR-XXXX-XXXX-XXXX" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-primary btn-full-sm" onclick="doRegWithKey()">🔑 Activate Key</button>
+    </div>
+    <div id="reg-msg" class="result-msg"></div>
+    <!-- Safe confirmation box shown after registration (NO credentials shown here) -->
+    <div id="reg-creds-box" style="display:none;margin-top:14px;border-radius:12px;padding:14px 16px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LICENSE SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="license-screen" class="screen-overlay" style="flex-direction:column">
+  <div class="form-card">
+    <div class="brand-center" style="margin-bottom:24px">
+      <div class="brand-title">CLASS<span>CORE</span></div>
+      <div class="brand-subtitle">Tuition Management</div>
+    </div>
+
+    <!-- Trial Banner -->
+    <div id="trial-banner" class="banner-warning" style="display:none">
+      <div class="banner-warning-title">⏳ Free Trial</div>
+      <div id="trial-days" class="banner-warning-sub"></div>
+    </div>
+
+    <!-- Expired Banner -->
+    <div id="expired-banner" class="banner-danger" style="display:none">
+      <div class="banner-danger-title">❌ License Expired</div>
+      <div class="banner-danger-sub">Please renew your subscription to continue</div>
+    </div>
+
+    <!-- Plans -->
+    <div id="plan-section">
+      <div class="section-title-center">Choose Your Plan</div>
+      <div class="plan-grid">
+        <div class="plan-card" id="plan-monthly" onclick="selectPlan('monthly')">
+          <div class="plan-label">Monthly</div>
+          <div class="plan-price">₹499</div>
+          <div class="plan-period">per month</div>
+        </div>
+        <div class="plan-card popular" id="plan-yearly" onclick="selectPlan('yearly')">
+          <div class="plan-popular-badge">POPULAR</div>
+          <div class="plan-label-accent">Yearly</div>
+          <div class="plan-price-accent">₹4,499</div>
+          <div class="plan-period">per year</div>
+        </div>
+      </div>
+
+      <button id="buy-btn" class="btn btn-primary btn-full" onclick="buyPlan()">💳 Buy Now — ₹4,499/year</button>
+      <div style="text-align:center;margin-top:10px">
+        <span class="divider-text-sm">Already have a key? </span>
+        <button class="link-btn link-btn-primary" onclick="showKeyEntry()">Enter License Key →</button>
+      </div>
+    </div>
+
+    <!-- Key Entry -->
+    <div id="key-section" style="display:none">
+      <div class="section-title-center-sm">Enter License Key</div>
+      <div class="fg fg-mb">
+        <input id="license-key-input" class="license-key-input" placeholder="CCTR-XXXX-XXXX-XXXX" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn btn-primary btn-full-11" onclick="activateLicenseKey()">🔑 Activate</button>
+      <div style="text-align:center;margin-top:10px">
+        <button class="link-btn link-btn-muted" onclick="showPlans()">← Back to plans</button>
+      </div>
+    </div>
+
+    <!-- Trial Button -->
+    <div id="trial-btn-wrap" style="margin-top:14px;text-align:center">
+      <button id="trial-btn" onclick="startTrial()" style="background:none;border:none;color:#78716C;font-size:11px;cursor:pointer;text-decoration:underline">Start 30-day free trial</button>
+    </div>
+
+    <div id="lic-msg" class="result-msg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-wrapper">
+    <div class="form-card-sm">
+      <!-- Animated illustration -->
+      <div class="login-illustration">
+        <div class="login-bounce">✏️</div>
+        <div class="login-icons">
+          <span class="login-icon login-icon-1">📚</span>
+          <span class="login-icon login-icon-2">🖊️</span>
+          <span class="login-icon login-icon-3">📐</span>
+          <span class="login-icon login-icon-4">📏</span>
+        </div>
+        <div class="login-brand">CLASS<span style="color:#E8622A">CORE</span></div>
+        <div class="brand-subtitle">Tuition Management</div>
+      </div>
+      <div class="fg fg-mb"><label>Username</label><input id="l-user" placeholder="Enter your username" autocomplete="username"></div>
+      <div class="fg" style="margin-bottom:6px"><label>Password</label><input id="l-pass" type="password" placeholder="Enter your password" autocomplete="current-password"></div>
+      <div class="login-forgot-wrap">
+        <button class="link-btn link-btn-danger" onclick="showForgotPassword()">Forgot password?</button>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Login →</button>
+      <div class="login-register-wrap">
+        <span class="divider-text">New user? </span>
+        <button class="link-btn link-btn-primary" style="font-size:12px" onclick="showRegFromLogin()">Register & Start Free Trial →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FORCE CHANGE PASSWORD SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="force-change-screen" class="screen-overlay-dark">
+  <div class="form-card-dialog">
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="dialog-icon">🔐</div>
+      <div class="dialog-title">Set Your Password</div>
+      <div class="dialog-desc">Please create your own username and password before continuing</div>
+    </div>
+    <div class="banner-caution-inline">
+      ⚠️ You must change your temporary credentials before first use
+    </div>
+    <div class="fg fg-mb"><label>New Username ★</label><input id="fc-user" placeholder="Choose a username"></div>
+    <div class="fg fg-mb"><label>New Password ★</label><input id="fc-pass" type="password" placeholder="Min 6 characters"></div>
+    <div class="fg fg-mb-lg"><label>Confirm Password ★</label><input id="fc-pass2" type="password" placeholder="Re-enter password"></div>
+    <button class="btn btn-primary btn-full" onclick="saveForceChange()">✅ Save & Continue</button>
+    <div id="fc-msg" class="result-msg-red"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FORGOT PASSWORD SCREEN
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="forgot-screen" class="screen-overlay-dark">
+  <div class="form-card-dialog">
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="dialog-icon">🔑</div>
+      <div class="dialog-title">Reset Password</div>
+      <div class="dialog-desc">Enter your registered email and mobile to verify your identity</div>
+    </div>
+
+    <!-- Step 1: Verify identity -->
+    <div id="fp-step1">
+      <div class="fg fg-mb"><label>Registered Email ★</label><input id="fp-email" type="email" placeholder="your@email.com"></div>
+      <div class="fg fg-mb-lg"><label>Registered Mobile ★</label><input id="fp-mobile" placeholder="9876543210" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"></div>
+      <button class="btn btn-primary btn-full" onclick="sendForgotOTP()">🔍 Verify My Identity</button>
+    </div>
+
+    <!-- Step 2: Set new password (OTP field hidden — local verification) -->
+    <div id="fp-step2" style="display:none">
+      <div id="fp-verified-banner" class="banner-success">
+        ✅ Identity verified! Set your new password below.
+      </div>
+      <div class="fg" style="display:none;margin-bottom:12px"><label>Enter OTP ★</label><input id="fp-otp" placeholder="000000" value="000000" maxlength="6" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:4px"></div>
+      <div class="fg fg-mb"><label>New Username</label><input id="fp-newuser" placeholder="Leave blank to keep current"></div>
+      <div class="fg fg-mb"><label>New Password ★</label><input id="fp-newpass" type="password" placeholder="Min 6 characters"></div>
+      <div class="fg fg-mb-lg"><label>Confirm Password ★</label><input id="fp-newpass2" type="password" placeholder="Re-enter password"></div>
+      <button class="btn btn-primary btn-full" onclick="verifyForgotOTP()">✅ Save New Password</button>
+    </div>
+
+    <button onclick="document.getElementById('forgot-screen').style.display='none';document.getElementById('fp-step1').style.display='block';document.getElementById('fp-step2').style.display='none';document.getElementById('fp-msg').textContent=''" style="width:100%;background:none;border:none;color:#78716C;font-size:12px;cursor:pointer;margin-top:12px">← Back to Login</button>
+    <div id="fp-msg" class="result-msg"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN APP
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="app" style="display:none">
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div id="sb-logo-img" style="display:none"></div>
+      <h1>CLASS<span>CORE</span></h1>
+      <p id="sb-inst-name">Tuition Management</p>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="gotoPage('dashboard')">📊 Dashboard</div>
+      <div class="nav-item" data-page="students" onclick="gotoPage('students')">🎓 Students</div>
+      <div class="nav-item" data-page="batches" onclick="gotoPage('batches')">🕐 Batches</div>
+      <div class="nav-item" data-page="courses" onclick="gotoPage('courses')">📚 Courses</div>
+      <div class="nav-item" data-page="exams"   onclick="gotoPage('exams')">📝 Exams</div>
+      <div class="nav-item" data-page="fees" onclick="gotoPage('fees')">💰 Fees</div>
+      <div class="nav-item" data-page="expenses" onclick="gotoPage('expenses')">📋 Expenses</div>
+      <div class="nav-item" data-page="attendance" onclick="gotoPage('attendance')">✅ Attendance</div>
+      <div class="nav-item" data-page="broadcast" onclick="gotoPage('broadcast')">📣 Broadcast</div>
+      <div class="nav-item" data-page="settings" onclick="gotoPage('settings')">⚙️ Settings</div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user-row">
+        <div class="av avc0" id="sb-user-av" style="width:32px;height:32px;font-size:13px">A</div>
+        <div>
+          <div class="sb-user-name" id="sb-user-name">Admin</div>
+          <div class="sb-user-role" id="sb-user-role">Administrator</div>
+          <div class="sb-signout" onclick="doLogout()">Sign out</div>
+        </div>
+      </div>
+      <div class="sb-version" id="sb-version">ClassCore v—</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h2 id="page-title" class="page-title">Dashboard</h2>
+      <div class="topbar-right">
+        <span id="today-chip" class="today-chip"></span>
+        <span id="save-chip" class="save-chip"></span>
+        <button id="top-btn" class="btn btn-primary" style="display:none" onclick="topBtnAction()"></button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="page-dashboard" class="page active"></div>
+      <div id="page-students" class="page"></div>
+      <div id="page-students-form" class="page"></div>
+      <div id="page-batches" class="page"></div>
+      <div id="page-batches-form" class="page"></div>
+      <div id="page-courses" class="page"></div>
+      <div id="page-exams"   class="page"></div>
+      <div id="page-courses-form" class="page"></div>
+      <div id="page-fees" class="page"></div>
+      <div id="page-expenses" class="page"></div>
+      <div id="page-attendance" class="page"></div>
+      <div id="page-broadcast" class="page"></div>
+      <div id="page-settings" class="page"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- STUDENT FORM MODAL -->
+<div id="modal-student-form" class="modal-overlay" data-modal="student">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-stu-title">Add New Student</h3>
+      <button class="x-btn" onclick="closeFormModal('student')">×</button>
+    </div>
+    <div class="modal-body" id="modal-stu-body"></div>
+  </div>
+</div>
+
+<!-- BATCH FORM MODAL -->
+<div id="modal-batch-form" class="modal-overlay" data-modal="batch">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-bat-title">Create New Batch</h3>
+      <button class="x-btn" onclick="closeFormModal('batch')">×</button>
+    </div>
+    <div class="modal-body" id="modal-bat-body"></div>
+  </div>
+</div>
+
+<!-- COURSE FORM MODAL -->
+<div id="modal-course-form" class="modal-overlay" data-modal="course">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-crs-title">Add New Course</h3>
+      <button class="x-btn" onclick="closeFormModal('course')">×</button>
+    </div>
+    <div class="modal-body" id="modal-crs-body"></div>
+  </div>
+</div>
+
+<!-- EXPENSE FORM MODAL -->
+<div id="modal-expense-form" class="modal-overlay" data-modal="expense">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-exp-title">Add Expense</h3>
+      <button class="x-btn" onclick="closeFormModal('expense')">×</button>
+    </div>
+    <div class="modal-body" id="modal-exp-body"></div>
+  </div>
+</div>
+
+<!-- EXISTING MODALS -->
+<div id="modal-history" class="modal-overlay" data-modal="modal-history">
+  <div class="modal-box"><div class="modal-hdr"><h3 id="hist-title">Payment History</h3><button class="x-btn" onclick="closeModal('modal-history')">×</button></div><div class="modal-body" id="hist-body"></div></div>
+</div>
+<div id="modal-receipt" class="modal-overlay" data-modal="modal-receipt">
+  <div class="modal-box">
+    <div class="modal-hdr"><h3>🧾 Receipt Preview</h3><div style="display:flex;align-items:center;gap:8px">
+      <select id="receipt-size" style="padding:5px 10px;font-size:12px;border-radius:7px;border:1.5px solid #E7E2D9;background:#F7F5F0;font-weight:600">
+        <option value="A4" selected>A4 (Standard)</option>
+        <option value="A5">A5 (Half)</option>
+        <option value="A6">A6 (Small)</option>
+        <option value="A7">A7 (Mini)</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="printCurrentReceipt()">🖨️ Print</button>
+      <button class="x-btn" onclick="closeModal('modal-receipt')">×</button>
+    </div></div>
+    <div class="modal-body" id="receipt-body"></div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-receipt')">Close</button><button class="btn btn-green" onclick="sendReceiptWA()">💬 WhatsApp</button><button class="btn btn-teal" onclick="saveReceiptPDF()">📄 Save PDF</button><button class="btn btn-pdf" onclick="sendReceiptAsPDF()">📤 Send PDF</button><button class="btn btn-primary" onclick="printCurrentReceipt()">🖨️ Print</button></div>
+  </div>
+</div>
+<div id="modal-classfees" class="modal-overlay" data-modal="modal-classfees">
+  <div class="modal-box"><div class="modal-hdr"><h3>⚙️ Set Fees by Class</h3><button class="x-btn" onclick="closeModal('modal-classfees')">×</button></div><div class="modal-body" id="classfees-body"></div></div>
+</div>
+<div id="modal-assign" class="modal-overlay" data-modal="modal-assign">
+  <div class="modal-box"><div class="modal-hdr"><h3 id="assign-title">Assign Students</h3><button class="x-btn" onclick="closeModal('modal-assign')">×</button></div><div class="modal-body" id="assign-body"></div></div>
+</div>
+<div id="modal-batchdetail" class="modal-overlay" data-modal="modal-batchdetail">
+  <div class="modal-box"><div class="modal-hdr"><h3 id="batchdetail-title">Batch Students</h3><button class="x-btn" onclick="closeModal('modal-batchdetail')">×</button></div><div class="modal-body" id="batchdetail-body"></div></div>
+</div>
+
+<div id="modal-idcard" class="modal-overlay" data-modal="modal-idcard">
+  <div class="modal-box"><div class="modal-hdr"><h3>🪪 Student ID Card</h3><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="printIDCard()">🖨️ Print</button><button class="x-btn" onclick="closeModal('modal-idcard')">×</button></div></div><div class="modal-body" id="idcard-body"></div></div>
+</div>
+<div id="modal-bulk-fee" class="modal-overlay" data-modal="modal-bulk-fee">
+  <div class="modal-box"><div class="modal-hdr"><h3>💰 Bulk Fee Collection</h3><button class="x-btn" onclick="closeModal('modal-bulk-fee')">×</button></div><div class="modal-body" id="bulk-fee-body"></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-bulk-fee')">Close</button><button class="btn btn-teal" onclick="collectBulkFees()">✓ Collect All Selected</button></div></div>
+</div>
+
+<!-- EXAM FORM MODAL -->
+<div id="modal-exam-form" class="modal-overlay" data-modal="modal-exam-form">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-exam-title">Create New Exam</h3>
+      <button class="x-btn" onclick="closeModal('modal-exam-form')">×</button>
+    </div>
+    <div class="modal-body" id="modal-exam-body"></div>
+  </div>
+</div>
+
+<!-- EXAM MARKS MODAL -->
+<div id="modal-exam-marks" class="modal-overlay" data-modal="modal-exam-marks">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-marks-title">Enter Marks</h3>
+      <button class="x-btn" onclick="closeModal('modal-exam-marks')">×</button>
+    </div>
+    <div class="modal-body" id="modal-marks-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-exam-marks')">Close</button>
+      <button class="btn btn-primary" id="save-marks-btn" onclick="saveMarks()">💾 Save Marks</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT REPORT MODAL -->
+<div id="studentReportModal" class="modal-overlay" data-modal="studentReportModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="srm-title">📝 Student Report</h3>
+      <button class="x-btn" onclick="closeModal('studentReportModal')">×</button>
+    </div>
+    <div class="modal-body" id="srm-body"></div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-ghost" onclick="closeModal('studentReportModal')">Cancel</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-teal" id="srm-save-btn" onclick="saveStudentReport()">💾 Save Marks</button>
+        <button class="btn btn-primary" id="srm-pdf-btn" onclick="saveAndGenerateReportPDF()">📄 Generate PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GLOBAL LOADING OVERLAY
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="loading-overlay">
+  <!-- Animated spinner ring -->
+  <div class="lo-spinner-wrap">
+    <div class="lo-ring-bg"></div>
+    <div id="lo-spinner" class="lo-ring-spinner"></div>
+    <div class="lo-ring-center" id="lo-icon">✏️</div>
+  </div>
+  <!-- Text -->
+  <div class="lo-text-wrap">
+    <div id="lo-title" class="lo-title">Processing…</div>
+    <div id="lo-sub" class="lo-sub">Please wait</div>
+  </div>
+  <!-- Progress dots -->
+  <div class="lo-dots" id="lo-dots">
+    <div class="lo-dot" style="animation-delay:0s"></div>
+    <div class="lo-dot" style="animation-delay:.2s"></div>
+    <div class="lo-dot" style="animation-delay:.4s"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     UPDATE BANNER (FIXED — was previously broken/corrupted)
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="update-banner">
+  <!-- Info row -->
+  <div class="update-info-row">
+    <div class="update-info-left">
+      <span id="update-icon" class="update-icon">🚀</span>
+      <div>
+        <div id="update-title" class="update-title">New version available!</div>
+        <div id="update-sub" class="update-sub">Click Update Now to download and install</div>
+      </div>
+    </div>
+    <div class="update-actions">
+      <div id="update-speed-wrap" class="update-speed-wrap">
+        <div id="update-speed">0 KB/s</div>
+        <div id="update-eta">Calculating…</div>
+      </div>
+      <div id="update-pct-badge" class="update-pct-badge">0%</div>
+      <button id="update-btn" class="btn btn-primary btn-sm" onclick="updStart()" style="white-space:nowrap">⬇️ Update Now</button>
+      <button id="update-later-btn" class="btn btn-ghost btn-sm update-later-btn"
+        onclick="hideUpdateBanner()">Later</button>
+    </div>
+  </div>
+  <!-- Progress bar row — hidden until download starts -->
+  <div id="update-progress-wrap" class="update-progress-wrap">
+    <div class="update-progress-meta">
+      <span id="update-progress-label">Preparing download…</span>
+      <span id="update-pct">0%</span>
+    </div>
+    <div class="update-progress-track">
+      <div id="update-progress-bar" class="update-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TOAST NOTIFICATION
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════════════ -->
+<script async src="https://checkout.razorpay.com/v1/checkout.js"
+        onerror="console.warn('[ClassCore] Razorpay failed to load')"></script>
+<script src="js/config.js" defer></script>
+<script src="js/state.js" defer></script>
+<script src="js/features/utils.js" defer></script>
+<script src="js/features/students.js" defer></script>
+<script src="js/features/batches_courses.js" defer></script>
+<script src="js/features/fees.js" defer></script>
+<script src="js/features/attendance_expenses.js" defer></script>
+<script src="js/features/settings_exams.js" defer></script>
+<script src="js/features/license.js" defer></script>
+<script src="js/features/updates.js" defer></script>
+<script src="js/features/exams.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>

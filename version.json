@@ -1,0 +1,4 @@
+{
+  "version": "1.7.3",
+  "notes": "v1.7.3: Faster startup, safer packaged launch, updater load deferred until packaging, icon loading hardened, and general startup reliability improvements."
+}
