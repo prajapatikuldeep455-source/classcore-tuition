@@ -49,7 +49,6 @@
 - **Frontend:** HTML5, CSS3 (Responsive Design), Vanilla JavaScript
 - **Backend/Database:** [Google Firebase Firestore](https://firebase.google.com/)
 - **WhatsApp Integration:** [@whiskeysockets/baileys](https://github.com/WhiskeySockets/Baileys) (WhatsApp Web API)
-- **AI Engine:** Google Gemini API (for WhatsApp auto-reply)
 - **PDF Engine:** html2pdf.js
 
 ## 📦 Installation
