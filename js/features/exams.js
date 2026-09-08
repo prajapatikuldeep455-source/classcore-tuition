@@ -465,9 +465,9 @@ function makeExamCard(e){
         </div>
       <div style="display:flex;gap:7px">
         <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center"
-          onclick="openMarksEntry('${e.id}')">?? Record Marks</button>
+          onclick="openMarksEntry('${e.id}')">📝 Record Marks</button>
         ${marked>0?`<button class="btn btn-teal btn-sm" style="flex:1;justify-content:center"
-          onclick="downloadAllReportCards('${e.id}')">?? Export All Reports</button>`:''}
+          onclick="downloadAllReportCards('${e.id}')">📊 Export All Reports</button>`:''}
         </div>
         </div>
   </div>`;
