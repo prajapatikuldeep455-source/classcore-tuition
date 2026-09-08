@@ -28,12 +28,8 @@ let _db = null;  // Firestore instance — null until Firebase loads
   }catch(e){ console.error('[ClassCore][Firebase] ❌ Init error:', e.message); }
 })();
 
-// Auto-generate sync key if it doesn't exist
-if (!localStorage.getItem('cc_sync_key')) {
-  const newKey = 'SYNC-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-  localStorage.setItem('cc_sync_key', newKey);
-  console.log('[ClassCore] Generated new Sync Key:', newKey);
-}
+// Clean up legacy mobile sync key if present
+try { localStorage.removeItem('cc_sync_key'); } catch(_) {}
 
 // ── Firestore helpers ──────────────────────────────────────────────────────────
 
@@ -243,17 +239,6 @@ async function persist(){
 
       _persistFailCount = 0;
       showSaveChip('saved');
-      
-      const syncKey = localStorage.getItem('cc_sync_key');
-      if (syncKey && typeof _db !== 'undefined' && _db && !window._isIncomingSync) {
-        if (!window._ccClientId) window._ccClientId = Math.random().toString(36).substring(2, 15);
-        try { 
-          const p = typeof buildPayloadSafe === 'function' ? buildPayloadSafe() : buildPayload();
-          p._sender = window._ccClientId;
-          _db.collection(syncKey).doc("data").set(p); 
-        } 
-        catch(err) { console.error('[ClassCore][Firebase] Sync push error:', err); }
-      }
       return result;
 
     } else {
@@ -270,17 +255,6 @@ async function persist(){
       }
       _persistFailCount = 0;
       showSaveChip('saved');
-      
-      const syncKey = localStorage.getItem('cc_sync_key');
-      if (syncKey && typeof _db !== 'undefined' && _db && !window._isIncomingSync) {
-        if (!window._ccClientId) window._ccClientId = Math.random().toString(36).substring(2, 15);
-        try { 
-          const p = typeof buildPayloadSafe === 'function' ? buildPayloadSafe() : buildPayload();
-          p._sender = window._ccClientId;
-          _db.collection(syncKey).doc("data").set(p); 
-        } 
-        catch(err) { console.error('[ClassCore][Firebase] Sync push error:', err); }
-      }
       return { ok: true };
     }
   } catch(e) {

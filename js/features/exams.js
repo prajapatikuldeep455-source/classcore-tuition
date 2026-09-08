@@ -5,7 +5,7 @@ const COURSE_DURATIONS=['1 Week','2 Weeks','1 Month','2 Months','3 Months','6 Mo
 function renderCourses(){
   const el=document.getElementById('page-courses');
   if(!courses.length){
-    el.innerHTML=`<div style="text-align:center;padding:80px;color:#78716C"><div style="font-size:52px;margin-bottom:14px">📚</div><p style="font-size:15px;margin-bottom:16px">No courses yet!</p><button class="btn btn-primary" onclick="openCourseForm(null)">＋ Create Course</button></div>`;
+    el.innerHTML=`<div style="text-align:center;padding:80px;color:#78716C"><div style="font-size:52px;margin-bottom:14px">Courses</div><p style="font-size:15px;margin-bottom:16px">No courses yet!</p><button class="btn btn-primary" onclick="openCourseForm(null)">＋ Create Course</button></div>`;
     return;
   }
   el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">${courses.map(c=>makeCourseCard(c)).join('')}</div>`;
@@ -18,7 +18,7 @@ function makeCourseCard(c){
   return`<div class="card-fluid">
     <div style="background:linear-gradient(135deg,${color},${color}cc);padding:18px 20px 14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div style="font-size:17px;font-weight:800;color:#fff">${esc(c.name)}</div>${c.duration?`<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">⏱️ ${esc(c.duration)}</div>`:''}</div>
+        <div><div style="font-size:17px;font-weight:800;color:#fff">${esc(c.name)}</div>${c.duration?`<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">Duration: ${esc(c.duration)}</div>`:''}</div>
         <div style="display:flex;gap:5px">
           <button onclick="openCourseForm('${c.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">✏️</button>
           <button onclick="delCourse('${c.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">🗑️</button>
@@ -398,63 +398,9 @@ async function initApp(){
   if(av)av.textContent=(currentUser.name||'A').slice(0,2).toUpperCase();
   if(nm)nm.textContent=currentUser.name||'Admin';
   if(rl)rl.textContent=isAdmin()?'👑 Administrator':'👤 Employee';
-  
-  // Mobile App Sync Listener
-  const syncKey = localStorage.getItem('cc_sync_key');
-  if (syncKey && typeof _db !== 'undefined' && _db) {
-    if (!window._ccClientId) window._ccClientId = Math.random().toString(36).substring(2, 15);
-    console.log('[ClassCore][Firebase] Setting up sync listener for:', syncKey);
-    
-    _db.collection(syncKey).doc("data").onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
-        if (data && data._sender === window._ccClientId) {
-           console.log('[ClassCore][Firebase] Ignoring own sync echo.');
-    return;
-  }
-        console.log('[ClassCore][Firebase] Received sync update from mobile!');
-        if (data) {
-          window._isIncomingSync = true;
-          // Update local arrays
-          if(data.students) students = data.students;
-          if(data.batches) batches = data.batches;
-          if(data.courses) courses = data.courses;
-          if(data.classFees) classFees = data.classFees;
-          if(data.stuFeeOvr) stuFeeOvr = data.stuFeeOvr;
-          if(data.attData) attData = data.attData;
-          if(data.monthFees) monthFees = data.monthFees;
-          if(data.expenses) expenses = data.expenses;
-          if(data.salaries) salaries = data.salaries;
-          if(data.announcements) announcements = data.announcements;
-          if(data.exams) exams = data.exams;
-          
-          // Re-render current page
-          renderDash();
-          const activePage = document.querySelector('.nav-item.active')?.dataset.page || 'dashboard';
-          try {
-            if(activePage === 'students') renderStus();
-            if(activePage === 'batches') renderBats();
-            if(activePage === 'fees') renderFees();
-            if(activePage === 'expenses') renderExpenses();
-            if(activePage === 'exams') renderExams();
-            if(activePage === 'courses') renderCourses();
-          } catch(e) {}
-          
-          // Save to local storage silently
-          setTimeout(async () => {
-            window._isIncomingSync = true;
-    await persist();
-            window._isIncomingSync = false;
-          }, 500);
-  }
-  }
-    }, (error) => {
-      console.error('[ClassCore][Firebase] Sync listener error:', error);
-  });
-  }
 
   updSbInst();renderDash();
-  }
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // EXAMS MODULE  v1.0

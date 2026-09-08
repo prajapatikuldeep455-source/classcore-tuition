@@ -299,6 +299,24 @@ function renderSettings(){
   document.getElementById('page-settings').innerHTML =
     '<div style="max-width:520px">' +
     renderThemePicker() +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+        '<span style="font-size:22px">💬</span>' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700">WhatsApp Hub</div>' +
+          '<div style="font-size:12px;color:var(--text-muted,#888)" id="wa-hub-status-text">Not connected</div>' +
+        '</div>' +
+        '<span id="wa-hub-dot" style="margin-left:auto;width:10px;height:10px;border-radius:50%;background:#ccc"></span>' +
+      '</div>' +
+      '<p style="font-size:12.5px;color:var(--text-muted,#666);margin-bottom:14px">' +
+        'Connect your WhatsApp Business account to send broadcasts, fee reminders, ' +
+        'and receipts directly — no more manual copy-paste.' +
+      '</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<button class="btn btn-teal" onclick="openWaHub()">🔗 Open WhatsApp Hub</button>' +
+        '<button class="btn btn-ghost" id="wa-hub-disconnect-btn" style="display:none" onclick="disconnectWaHub()">Disconnect</button>' +
+      '</div>' +
+    '</div>' +
     renderSubscriptionCard() +
 
     '<div class="card" style="margin-bottom:18px">' +
@@ -348,15 +366,6 @@ function renderSettings(){
     (isAdmin() ? '<div class="card" style="margin-bottom:18px"><div id="salary-section"></div></div>' : '') +
 
     '<div class="card" style="margin-bottom:18px">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">📱 Mobile App Sync</div>' +
-      '<div style="font-size:12px;color:#78716C;margin-bottom:14px">Enter your Sync Key to connect to the ClassCore Mobile app.</div>' +
-      '<div class="form-grid">' +
-        '<div class="fg"><label>Sync Key (Mobile App)</label><input id="set-sync-key" placeholder="e.g. PATEL-TUITION-2025" value="'+(localStorage.getItem('cc_sync_key')||'')+'"></div>' +
-      '</div>' +
-      '<button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="saveSyncKey()">🔄 Save Sync Key</button>' +
-      '</div>' +
-
-    '<div class="card" style="margin-bottom:18px">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px">💬 Contact Support</div>' +
       '<div style="font-size:12px;color:#78716C;margin-bottom:14px">Send a message to ClassCore support team. We respond within 24 hours.</div>' +
       '<div class="form-grid">' +
@@ -368,13 +377,8 @@ function renderSettings(){
 
     '</div>';
   if(isAdmin()) setTimeout(()=>renderSalaries(),50);
-    }
-function saveSyncKey(){
-  const k = document.getElementById('set-sync-key').value.trim();
-  localStorage.setItem('cc_sync_key', k);
-  toast('Sync Key saved! Reloading to apply sync...', 'ok');
-  setTimeout(() => location.reload(), 1000);
-    }
+  setTimeout(() => initWaHubStatusListener(), 100);
+}
 async function sendSupportMessage(){
   const subject=(document.getElementById('sup-subject')?.value||'').trim();
   const message=(document.getElementById('sup-msg')?.value||'').trim();
@@ -833,8 +837,62 @@ async function sendEmail(toEmail, subject, body, extraVars){
     if(msg.includes('404')) console.error('  → Service ID or Template ID not found.');
     if(msg.includes('limit')) console.error('  → 200/month free limit reached.');
     return { ok: false, error: msg };
-    }
-    }
+  }
+}
+
+// ── WhatsApp Hub integration ──
+function openWaHub() {
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub) {
+    window.classcore.waHub.openHubWindow();
+  } else {
+    toast('WhatsApp Hub is only available in the desktop app', 'warning');
+  }
+}
+
+async function disconnectWaHub() {
+  if (!confirm('Disconnect your WhatsApp account? You will need to scan the QR code again to reconnect.')) return;
+  try {
+    await window.classcore.waHub.logout();
+    toast('WhatsApp disconnected');
+  } catch (e) {
+    toast('Failed to disconnect: ' + e.message, 'error');
+  }
+}
+
+function initWaHubStatusListener() {
+  if (typeof window.classcore === 'undefined' || !window.classcore.waHub) return;
+  
+  // Check initial status
+  window.classcore.waHub.isConnected().then(result => {
+    updateWaHubSettingsStatus(result.connected ? 'connected' : 'disconnected');
+  }).catch(() => {});
+  
+  // Listen for status changes
+  window.classcore.waHub.onStatus((data) => {
+    updateWaHubSettingsStatus(data.status, data.info);
+  });
+}
+
+function updateWaHubSettingsStatus(status, info) {
+  const dot = document.getElementById('wa-hub-dot');
+  const text = document.getElementById('wa-hub-status-text');
+  const dcBtn = document.getElementById('wa-hub-disconnect-btn');
+  if (!dot || !text) return;
+  
+  if (status === 'connected') {
+    dot.style.background = '#22c55e';
+    text.textContent = 'Connected' + (info && info.number ? ' — ' + info.number : '');
+    if (dcBtn) dcBtn.style.display = '';
+  } else if (status === 'qr' || status === 'reconnecting') {
+    dot.style.background = '#f59e0b';
+    text.textContent = status === 'qr' ? 'Scan QR in WhatsApp Hub' : 'Reconnecting...';
+    if (dcBtn) dcBtn.style.display = 'none';
+  } else {
+    dot.style.background = '#ccc';
+    text.textContent = 'Not connected';
+    if (dcBtn) dcBtn.style.display = 'none';
+  }
+}
 
 // Google Sheets — for data logging only
 const GSHEET_URL = 'https://script.google.com/macros/library/d/1NNJtHeLenk6yXZP2yDKJwcqn6lqieZpHnB9OmdePCeZ_J1Snv_1Gj4L5/2';

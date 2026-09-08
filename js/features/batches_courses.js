@@ -1,6 +1,6 @@
 function renderBats(){
   const el=document.getElementById('page-batches');
-  if(!batches.length){el.innerHTML=`<div style="text-align:center;padding:80px;color:#78716C"><div style="font-size:52px;margin-bottom:14px">🕐</div><p style="font-size:15px;margin-bottom:16px">No batches yet!</p><button class="btn btn-primary" onclick="openBatForm(null)">＋ Create New Batch</button></div>`;return;}
+  if(!batches.length){el.innerHTML=`<div style="text-align:center;padding:80px;color:#78716C"><div style="font-size:52px;margin-bottom:14px">Empty</div><p style="font-size:15px;margin-bottom:16px">No batches yet!</p><button class="btn btn-primary" onclick="openBatForm(null)">＋ Create New Batch</button></div>`;return;}
   el.innerHTML=`<div class="batch-grid">${batches.map(b=>makeBatCard(b)).join('')}</div>`;
 }
 
@@ -16,11 +16,11 @@ function makeBatCard(b){
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:17px;font-weight:800;color:#fff">${esc(b.name)}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">🕐 ${fmt12(b.startTime)} – ${fmt12(b.endTime)}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:3px">Time: ${fmt12(b.startTime)} – ${fmt12(b.endTime)}</div>
         </div>
         <div style="display:flex;gap:5px">
-          <button onclick="openBatForm('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">✏️</button>
-          <button onclick="delBat('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">🗑️</button>
+          <button onclick="openBatForm('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">Edit</button>
+          <button onclick="delBat('${b.id}')" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:5px 9px;color:#fff;cursor:pointer;font-size:12px">Del</button>
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
@@ -29,21 +29,21 @@ function makeBatCard(b){
     </div>
     <div style="padding:14px 20px 18px">
       <div class="flex-wrap-start" style="gap:12px;margin-bottom:10px">
-        ${b.subject?`<div style="font-size:12px;color:#78716C">📚 ${esc(b.subject)}</div>`:''}
-        ${b.subjectFee?`<div style="font-size:12px;color:#E8622A;font-weight:700">💰 ${fmt(b.subjectFee)}/mo</div>`:''}
-        ${teacher?`<div style="font-size:12px;color:#2A9D8F">👨‍🏫 ${esc(teacher.name||teacher.username)}</div>`:''}
-        ${b.notes?`<div style="font-size:11px;color:#78716C;font-style:italic;width:100%">📝 ${esc(b.notes)}</div>`:''}
+        ${b.subject?`<div style="font-size:12px;color:#78716C">Subject: ${esc(b.subject)}</div>`:''}
+        ${b.subjectFee?`<div style="font-size:12px;color:#E8622A;font-weight:700">Fee: ${fmt(b.subjectFee)}/mo</div>`:''}
+        ${teacher?`<div style="font-size:12px;color:#2A9D8F">Tutor: ${esc(teacher.name||teacher.username)}</div>`:''}
+        ${b.notes?`<div style="font-size:11px;color:#78716C;font-style:italic;width:100%">Note: ${esc(b.notes)}</div>`:''}
       </div>
       <div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
           <span style="font-weight:600">${list.length} Students</span>
-          <span style="color:${full?'#DC2626':'#78716C'}">${full?'🔴 Full':`${b.maxStudents-list.length} seats left`} / ${b.maxStudents}</span>
+          <span style="color:${full?'#DC2626':'#78716C'}">${full?'Full':`${b.maxStudents-list.length} seats left`} / ${b.maxStudents}</span>
         </div>
         <div class="prog"><div class="prog-fill" style="background:${full?'#DC2626':b.color};width:${pct}%"></div></div>
       </div>
       <div style="display:flex;margin-bottom:12px">${avs}${more}</div>
       <div style="display:flex;gap:7px">
-        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="openBatDetail('${b.id}')">👥 Manage Students</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="openBatDetail('${b.id}')">Manage Students</button>
         ${!full?`<button class="btn btn-ink btn-sm" style="flex:1;justify-content:center" onclick="openAssign('${b.id}')">＋ Assign</button>`:''}
       </div>
     </div>
@@ -58,7 +58,7 @@ function openBatDetail(bid){
     <div style="background:${b.color};border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;gap:20px;flex-wrap:wrap">
       ${[['Time',fmt12(b.startTime)+'–'+fmt12(b.endTime)],['Days',(b.days||[]).join(', ')],['Subject',b.subject||'—'],['Capacity',list.length+'/'+b.maxStudents]].map(([l,v])=>`<div><div style="font-size:9px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:1px">${l}</div><div style="font-size:13px;font-weight:700;color:#fff">${v}</div></div>`).join('')}
     </div>
-    ${!list.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:32px;margin-bottom:8px">👥</div><p>No students in this batch yet.</p></div>`:`
+    ${!list.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:32px;margin-bottom:8px">Empty</div><p>No students in this batch yet.</p></div>`:`
     <div class="table-wrap"><table><thead><tr><th>#</th><th>Student</th><th>Class</th><th>Mobile</th><th>Fee Status</th><th>Remove</th></tr></thead>
     <tbody>${list.map((s,i)=>{
       const curM=MONTHS[new Date().getMonth()];
@@ -96,9 +96,9 @@ function renderAssignBody(bid,q){
   const b=batches.find(x=>x.id===bid);if(!b)return;
   const unassigned=students.filter(s=>!s.inactive&&s.batch!==b.name&&(!q||s.name.toLowerCase().includes(q)));
   document.getElementById('assign-body').innerHTML=`
-    <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78716C">🪑 <b>${b.maxStudents-bStu(b).length}</b> seats available · <b>${bStu(b).length}</b> enrolled</div>
-    <div class="search-box" style="margin-bottom:14px"><span>🔍</span><input placeholder="Search students…" oninput="renderAssignBody('${bid}',this.value.toLowerCase())" style="width:100%"></div>
-    ${!unassigned.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:28px;margin-bottom:8px">✅</div><p>All students are in this batch.</p></div>`:
+    <div style="background:#F7F5F0;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78716C">Info: <b>${b.maxStudents-bStu(b).length}</b> seats available · <b>${bStu(b).length}</b> enrolled</div>
+    <div class="search-box" style="margin-bottom:14px"><span style="color:#78716C">Search</span><input placeholder="Search students…" oninput="renderAssignBody('${bid}',this.value.toLowerCase())" style="width:100%"></div>
+    ${!unassigned.length?`<div style="text-align:center;padding:30px;color:#78716C"><div style="font-size:28px;margin-bottom:8px">Done</div><p>All students are in this batch.</p></div>`:
     unassigned.map((s,i)=>`<div style="display:flex;align-items:center;gap:10px;background:#F7F5F0;border-radius:10px;padding:10px 14px;border:1.5px solid #E7E2D9;margin-bottom:8px">
       <div class="av ${avcC(i)}" style="width:32px;height:32px">${ini(s.name)}</div>
       <div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(s.name)}</div><div style="font-size:11px;color:#78716C">Class ${esc(s.cls)}${s.batch?' · Currently: '+esc(s.batch):' · No batch'}</div></div>
@@ -146,7 +146,7 @@ function openBatForm(id){
   </div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeFormModal('batch')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveBat()">💾 ${id?'Update Batch':'Create Batch'}</button>
+    <button class="btn btn-primary" onclick="saveBat()">${id?'Update Batch':'Create Batch'}</button>
   </div>`;
   openModal('modal-batch-form');
   updBatPrev();

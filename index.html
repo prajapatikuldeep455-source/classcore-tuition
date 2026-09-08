@@ -44,7 +44,7 @@
       <div class="brand-desc">Create your account to get started</div>
     </div>
     <div class="banner-success">
-      🎉 30-day free trial — No payment needed
+      30-day free trial — No payment needed
     </div>
     <div class="fg fg-mb"><label>Full Name ★</label><input id="reg-name" placeholder="e.g. Ramesh Patel"></div>
     <div class="fg fg-mb"><label>Email Address ★</label><input id="reg-email" type="email" placeholder="you@email.com"></div>
@@ -52,7 +52,7 @@
     <div class="fg fg-mb-lg"><label>Institute / Tuition Name</label><input id="reg-institute" placeholder="e.g. ABC Tuition Center"></div>
     <div class="fg fg-mb"><label>Create Password ★</label><input id="reg-password" type="password" placeholder="Min 6 characters" minlength="6"></div>
     <div class="fg fg-mb-lg"><label>Confirm Password ★</label><input id="reg-password2" type="password" placeholder="Re-enter password"></div>
-    <button class="btn btn-primary btn-full" onclick="doRegister()">🚀 Start Free Trial</button>
+    <button class="btn btn-primary btn-full" onclick="doRegister()">Start Free Trial</button>
     <div class="divider-section">
       <span class="divider-text-sm">Already have a license key? </span>
       <button class="link-btn link-btn-primary" onclick="showRegKeyEntry()">Activate License →</button>
@@ -64,7 +64,7 @@
     </div>
     <div id="reg-key-section" style="display:none;margin-top:14px;border-top:1px solid #E7E2D9;padding-top:14px">
       <input id="reg-key-input" class="license-key-input-sm" placeholder="CCTR-XXXX-XXXX-XXXX" oninput="this.value=this.value.toUpperCase()">
-      <button class="btn btn-primary btn-full-sm" onclick="doRegWithKey()">🔑 Activate Key</button>
+      <button class="btn btn-primary btn-full-sm" onclick="doRegWithKey()">Activate Key</button>
     </div>
     <div id="reg-msg" class="result-msg"></div>
     <!-- Safe confirmation box shown after registration (NO credentials shown here) -->
@@ -84,13 +84,13 @@
 
     <!-- Trial Banner -->
     <div id="trial-banner" class="banner-warning" style="display:none">
-      <div class="banner-warning-title">⏳ Free Trial</div>
+      <div class="banner-warning-title">Free Trial</div>
       <div id="trial-days" class="banner-warning-sub"></div>
     </div>
 
     <!-- Expired Banner -->
     <div id="expired-banner" class="banner-danger" style="display:none">
-      <div class="banner-danger-title">❌ License Expired</div>
+      <div class="banner-danger-title">License Expired</div>
       <div class="banner-danger-sub">Please renew your subscription to continue</div>
     </div>
 
@@ -124,7 +124,7 @@
       <div class="fg fg-mb">
         <input id="license-key-input" class="license-key-input" placeholder="CCTR-XXXX-XXXX-XXXX" oninput="this.value=this.value.toUpperCase()">
       </div>
-      <button class="btn btn-primary btn-full-11" onclick="activateLicenseKey()">🔑 Activate</button>
+      <button class="btn btn-primary btn-full-11" onclick="activateLicenseKey()">Activate</button>
       <div style="text-align:center;margin-top:10px">
         <button class="link-btn link-btn-muted" onclick="showPlans()">← Back to plans</button>
       </div>
@@ -182,7 +182,7 @@
       <div class="dialog-desc">Please create your own username and password before continuing</div>
     </div>
     <div class="banner-caution-inline">
-      ⚠️ You must change your temporary credentials before first use
+      You must change your temporary credentials before first use
     </div>
     <div class="fg fg-mb"><label>New Username ★</label><input id="fc-user" placeholder="Choose a username"></div>
     <div class="fg fg-mb"><label>New Password ★</label><input id="fc-pass" type="password" placeholder="Min 6 characters"></div>
@@ -213,13 +213,13 @@
     <!-- Step 2: Set new password (OTP field hidden — local verification) -->
     <div id="fp-step2" style="display:none">
       <div id="fp-verified-banner" class="banner-success">
-        ✅ Identity verified! Set your new password below.
+        Identity verified! Set your new password below.
       </div>
       <div class="fg" style="display:none;margin-bottom:12px"><label>Enter OTP ★</label><input id="fp-otp" placeholder="000000" value="000000" maxlength="6" style="text-align:center;font-size:18px;font-weight:700;letter-spacing:4px"></div>
       <div class="fg fg-mb"><label>New Username</label><input id="fp-newuser" placeholder="Leave blank to keep current"></div>
       <div class="fg fg-mb"><label>New Password ★</label><input id="fp-newpass" type="password" placeholder="Min 6 characters"></div>
       <div class="fg fg-mb-lg"><label>Confirm Password ★</label><input id="fp-newpass2" type="password" placeholder="Re-enter password"></div>
-      <button class="btn btn-primary btn-full" onclick="verifyForgotOTP()">✅ Save New Password</button>
+      <button class="btn btn-primary btn-full" onclick="verifyForgotOTP()">Save New Password</button>
     </div>
 
     <button onclick="document.getElementById('forgot-screen').style.display='none';document.getElementById('fp-step1').style.display='block';document.getElementById('fp-step2').style.display='none';document.getElementById('fp-msg').textContent=''" style="width:100%;background:none;border:none;color:#78716C;font-size:12px;cursor:pointer;margin-top:12px">← Back to Login</button>
@@ -396,7 +396,7 @@
     <div class="modal-body" id="modal-marks-body"></div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-exam-marks')">Close</button>
-      <button class="btn btn-primary" id="save-marks-btn" onclick="saveMarks()">💾 Save Marks</button>
+      <button class="btn btn-primary" id="save-marks-btn" onclick="saveMarks()">Save Marks</button>
     </div>
   </div>
 </div>
@@ -412,7 +412,7 @@
     <div class="modal-foot" style="justify-content:space-between">
       <button class="btn btn-ghost" onclick="closeModal('studentReportModal')">Cancel</button>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-teal" id="srm-save-btn" onclick="saveStudentReport()">💾 Save Marks</button>
+        <button class="btn btn-teal" id="srm-save-btn" onclick="saveStudentReport()">Save Marks</button>
         <button class="btn btn-primary" id="srm-pdf-btn" onclick="saveAndGenerateReportPDF()">📄 Generate PDF</button>
       </div>
     </div>
@@ -427,7 +427,7 @@
   <div class="lo-spinner-wrap">
     <div class="lo-ring-bg"></div>
     <div id="lo-spinner" class="lo-ring-spinner"></div>
-    <div class="lo-ring-center" id="lo-icon">✏️</div>
+    <div class="lo-ring-center" id="lo-icon">Core</div>
   </div>
   <!-- Text -->
   <div class="lo-text-wrap">
@@ -449,7 +449,7 @@
   <!-- Info row -->
   <div class="update-info-row">
     <div class="update-info-left">
-      <span id="update-icon" class="update-icon">🚀</span>
+      <span id="update-icon" class="update-icon">Update</span>
       <div>
         <div id="update-title" class="update-title">New version available!</div>
         <div id="update-sub" class="update-sub">Click Update Now to download and install</div>
@@ -461,7 +461,7 @@
         <div id="update-eta">Calculating…</div>
       </div>
       <div id="update-pct-badge" class="update-pct-badge">0%</div>
-      <button id="update-btn" class="btn btn-primary btn-sm" onclick="updStart()" style="white-space:nowrap">⬇️ Update Now</button>
+      <button id="update-btn" class="btn btn-primary btn-sm" onclick="updStart()" style="white-space:nowrap">Update Now</button>
       <button id="update-later-btn" class="btn btn-ghost btn-sm update-later-btn"
         onclick="hideUpdateBanner()">Later</button>
     </div>

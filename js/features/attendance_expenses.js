@@ -28,19 +28,19 @@ function renderAtt(){
     <div>
       <div style="font-size:10px;font-weight:700;color:#78716C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Search</div>
       <div style="display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:0 10px;width:190px">
-        <span style="color:#78716C">🔍</span>
+        <span style="color:#78716C">Search</span>
         <input id="att-search" placeholder="Search student…" value="${esc(attSearch)}"
           oninput="attSearch=this.value.toLowerCase();filterAttGrid()"
           style="border:none;background:transparent;outline:none;font-size:13px;padding:9px 0;width:100%;color:var(--text-main)">
       </div>
     </div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="btn btn-green btn-sm" onclick="markAll(true)">✓ Mark All Present</button>
-      <button class="btn btn-red btn-sm"   onclick="markAll(false)">✗ Mark All Absent</button>
-      <button class="btn btn-primary"      onclick="saveAtt()">💾 Save Attendance</button>
-      <button class="btn btn-ghost btn-sm" onclick="printAttReport()">🖨️ Print</button>
-      <button class="btn btn-teal btn-sm"  onclick="saveAttPDF()">📄 PDF</button>
-      <button class="btn btn-pdf btn-sm"   onclick="sendAttPDF()">📤 Send PDF</button>
+      <button class="btn btn-green btn-sm" onclick="markAll(true)">Mark All Present</button>
+      <button class="btn btn-red btn-sm"   onclick="markAll(false)">Mark All Absent</button>
+      <button class="btn btn-primary"      onclick="saveAtt()">Save Attendance</button>
+      <button class="btn btn-ghost btn-sm" onclick="printAttReport()">Print</button>
+      <button class="btn btn-teal btn-sm"  onclick="saveAttPDF()">PDF</button>
+      <button class="btn btn-pdf btn-sm"   onclick="sendAttPDF()">Send PDF</button>
     </div>
   </div>
 
@@ -104,7 +104,7 @@ function renderAttGrid(list){
 
   if(!list || !list.length){
     grid.innerHTML = `<div style="text-align:center;padding:50px;color:#78716C">
-      <div style="font-size:44px;margin-bottom:12px">👥</div>
+      <div style="font-size:44px;margin-bottom:12px">No Users</div>
       <p>No students found</p></div>`;
     updAttStats();
     return;
@@ -339,9 +339,9 @@ function renderExpenses(){
   if(!alreadyBuilt){
     page.innerHTML=`
     <div class="grid-3" style="margin-bottom:16px">
-      <div class="card" style="text-align:center"><div style="font-size:20px">💸</div><div id="exp-stat-month" style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(thisMonthExp)}</div><div style="font-size:11px;color:#78716C">${curMonth} Expenses</div></div>
-      <div class="card" style="text-align:center"><div style="font-size:20px">💚</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(feesCol)}</div><div style="font-size:11px;color:#78716C">Total Fees Collected</div></div>
-      <div class="card" style="text-align:center"><div style="font-size:20px">${profit>=0?'📈':'📉'}</div><div id="exp-stat-profit" style="font-size:22px;font-weight:800;color:${profit>=0?'#16A34A':'#DC2626'};margin:4px 0">${fmt(Math.abs(profit))}</div><div style="font-size:11px;color:#78716C">${profit>=0?'Net Profit':'Net Loss'}</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:20px">Exp</div><div id="exp-stat-month" style="font-size:22px;font-weight:800;color:#DC2626;margin:4px 0">${fmt(thisMonthExp)}</div><div style="font-size:11px;color:#78716C">${curMonth} Expenses</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:20px">Fee</div><div style="font-size:22px;font-weight:800;color:#16A34A;margin:4px 0">${fmt(feesCol)}</div><div style="font-size:11px;color:#78716C">Total Fees Collected</div></div>
+      <div class="card" style="text-align:center"><div style="font-size:20px">Trend</div><div id="exp-stat-profit" style="font-size:22px;font-weight:800;color:${profit>=0?'#16A34A':'#DC2626'};margin:4px 0">${fmt(Math.abs(profit))}</div><div style="font-size:11px;color:#78716C">${profit>=0?'Net Profit':'Net Loss'}</div></div>
     </div>
     <div id="exp-form-wrap"></div>
     <div class="table-wrap"><table>
@@ -368,8 +368,8 @@ function renderExpenses(){
         <td style="color:#78716C">${esc(e.paidTo||'—')}</td>
         <td style="font-weight:700;color:#DC2626">${fmt(e.amount)}</td>
         <td><div style="display:flex;gap:5px">
-          <button class="btn btn-ghost btn-xs" onclick="editExpense('${e.id}')">✏️</button>
-          <button class="btn btn-red btn-xs" onclick="delExpense('${e.id}')">🗑️</button>
+          <button class="btn btn-ghost btn-xs" onclick="editExpense('${e.id}')">Edit</button>
+          <button class="btn btn-red btn-xs" onclick="delExpense('${e.id}')">Del</button>
         </div></td>
       </tr>`).join('');
   }
@@ -389,7 +389,7 @@ function openExpenseForm(id){
   </div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeFormModal('expense')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveExpense()">💾 ${e?'Update':'Save'} Expense</button>
+    <button class="btn btn-primary" onclick="saveExpense()">${e?'Update':'Save'} Expense</button>
   </div>`;
   openModal('modal-expense-form');
 }
@@ -454,7 +454,7 @@ function renderBroadcast(){
     const active=students.filter(s=>!s.inactive&&s.mobile);
     page.innerHTML=`
     <div class="card" style="margin-bottom:18px">
-      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">📣 Send Announcement to Parents</h3>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Send Announcement to Parents</h3>
       <div class="form-grid">
         <div class="fg full"><label>Message ★</label>
           <textarea id="bc-msg" rows="4" placeholder="Type your announcement here…&#10;e.g. Dear Parents, school will be closed on 15th April due to holiday." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;outline:none;font-family:inherit;background:var(--input-bg);color:var(--text-main)"></textarea>
@@ -471,7 +471,7 @@ function renderBroadcast(){
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
-        <button class="btn btn-green" onclick="sendBroadcast()">💬 Send via WhatsApp</button>
+        <button class="btn btn-green" onclick="sendBroadcast()">Send via WhatsApp</button>
         <span style="font-size:11px;color:#78716C">WhatsApp opens for each parent. Press send for each one.</span>
       </div>
     </div>
@@ -496,8 +496,8 @@ function refreshBroadcastList(){
       <td style="font-size:12px;max-width:300px">${esc(a.text).substring(0,80)}${a.text.length>80?'…':''}</td>
       <td><span class="badge badge-gray">${a.sentTo||'All'} (${a.recipients||0})</span></td>
       <td><div style="display:flex;gap:5px">
-        <button class="btn btn-green btn-xs" onclick="reSendBroadcast('${a.id}')">💬 Resend</button>
-        <button class="btn btn-red btn-xs" onclick="delAnnouncement('${a.id}')">🗑️</button>
+        <button class="btn btn-green btn-xs" onclick="reSendBroadcast('${a.id}')">Resend</button>
+        <button class="btn btn-red btn-xs" onclick="delAnnouncement('${a.id}')">Del</button>
       </div></td>
     </tr>`).join('');
 }
@@ -507,7 +507,7 @@ let _bcIdx=0;
 let _bcMsg='';
 let _bcInst='';
 
-function sendBroadcast(){
+async function sendBroadcast(){
   const msg=(document.getElementById('bc-msg')?.value||'').trim();
   if(!msg){toast('Type a message first','err');return;}
   const target=document.getElementById('bc-target')?.value||'all';
@@ -521,6 +521,48 @@ function sendBroadcast(){
   announcements.unshift({id:uid(),date:todayStr(),text:msg,sentTo:target==='all'?'All':'Group',recipients:targets.length});
   persist();
   refreshBroadcastList();
+
+  // Check if WhatsApp Hub is connected for direct sending
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub) {
+    try {
+      const waStatus = await window.classcore.waHub.isConnected();
+      if (waStatus && waStatus.connected) {
+        // Direct background sending via WhatsApp Hub
+        const contacts = targets.map(s => {
+          const mobile = (s.mobile || '').replace(/\D/g, '');
+          const num = mobile.length === 10 ? '91' + mobile : mobile;
+          return {
+            phone: num,
+            fields: {
+              A: num,
+              B: s.parentName || s.name || '',
+            }
+          };
+        }).filter(c => c.phone);
+
+        const template = 'Dear {B},\n\n📢 *' + (inst || 'Institute') + '*\n\n' + msg + '\n\n_Sent via ClassCore_';
+
+        // Show progress UI
+        toast('📤 Sending broadcast to ' + contacts.length + ' recipients...', 'info');
+        
+        // Track progress
+        const progressHandler = (prog) => {
+          if (prog.done) {
+            toast('✅ Broadcast complete: ' + (prog.sent || 0) + ' sent, ' + (prog.failed || 0) + ' failed', prog.failed > 0 ? 'warning' : 'success');
+          }
+        };
+        window.classcore.waHub.onBulkProgress(progressHandler);
+
+        await window.classcore.waHub.sendBulk({
+          contacts: contacts,
+          message: template,
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('WhatsApp Hub send failed, falling back to manual queue:', e);
+    }
+  }
 
   // Start queue
   _bcQueue=[...targets];
@@ -536,7 +578,7 @@ function showSendQueue(){
     const qEl=document.getElementById('bc-queue-wrap');
     if(qEl) qEl.innerHTML=`
       <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:20px;text-align:center">
-        <div style="font-size:36px;margin-bottom:8px">✅</div>
+        <div style="font-size:36px;margin-bottom:8px">Done</div>
         <div style="font-size:16px;font-weight:800;color:#16A34A">All ${_bcQueue.length} messages sent!</div>
         <div style="font-size:12px;color:#78716C;margin-top:6px">All parents have been messaged.</div>
         <button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="closeSendQueue()">Close</button>
@@ -601,7 +643,7 @@ ${esc(_bcMsg)}</div>
     <div style="display:flex;gap:10px">
       <button onclick="sendQueueCurrent('${waUrl.replace(/'/g,"\\'")}')" 
         style="flex:1;background:#25D366;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        💬 Open WhatsApp
+        Open WhatsApp
       </button>
       <button onclick="nextInQueue()" 
         style="background:#F7F5F0;color:#18181B;border:1.5px solid #E7E2D9;border-radius:10px;padding:13px 18px;font-size:13px;font-weight:600;cursor:pointer">

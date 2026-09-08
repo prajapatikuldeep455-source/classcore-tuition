@@ -99,6 +99,12 @@ const LOG_FILE    = path.join(DATA_DIR, 'classcore.log');
 const BACKUP_DIR  = path.join(DATA_DIR, 'Backups');
 const { randomBytes } = require('crypto');
 
+// ── WhatsApp Hub imports ──
+const WaHubService = require('./wa-hub-service');
+const WaHubStore = require('./wa-hub-store');
+const { generateReply, detectProvider, sanitizeApiKey, PROVIDER_NAMES, DEFAULT_MODELS } = require('./wa-hub-ai');
+const { Notification } = require('electron');
+
 if (!fs.existsSync(DATA_DIR))    fs.mkdirSync(DATA_DIR,   { recursive: true });
 if (!fs.existsSync(BACKUP_DIR))  fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
@@ -173,6 +179,21 @@ function log(msg) {
 
 // ── 3. MAIN WINDOW ────────────────────────────────────────────────────────────
 let mainWindow = null;
+let waHubService = null;
+let waHubWindow = null;
+
+function waHubEmit(channel, data) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(channel, data);
+    }
+  } catch (e) { /* window may be closing */ }
+  try {
+    if (waHubWindow && !waHubWindow.isDestroyed()) {
+      waHubWindow.webContents.send(channel, data);
+    }
+  } catch (e) { /* window may be closing */ }
+}
 
 function createWindow() {
   _logCrash(`createWindow started`);
@@ -199,6 +220,37 @@ function createWindow() {
     _logCrash(`loadFile error: ${e.message}`);
   });
   _logCrash(`loadFile called`);
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  // ── Initialize WhatsApp Hub Service ──
+  try {
+    waHubService = new WaHubService({
+      onQr: (dataUrl) => waHubEmit('wa:qr', dataUrl),
+      onStatus: (status, info) => waHubEmit('wa:status', { status, info }),
+      onLog: (entry) => waHubEmit('wa:log', entry),
+      onOrderSummary: (order) => {
+        WaHubStore.saveOrder(order);
+        waHubEmit('wa:order-summary', order);
+        if (Notification.isSupported()) {
+          new Notification({ title: 'New Order', body: order.summary || 'New order received' }).show();
+        }
+      },
+      onOwnerAlert: (alert) => {
+        WaHubStore.saveAlert(alert);
+        waHubEmit('wa:owner-alert', alert);
+        if (Notification.isSupported()) {
+          new Notification({ title: 'Action Required', body: alert.reason || 'Needs your attention' }).show();
+        }
+      },
+    });
+    waHubService.connect().catch(err => console.error('WaHub connect error:', err));
+  } catch (err) {
+    console.error('WaHub initialization error:', err);
+  }
 
   let readyToShowTimeout = setTimeout(() => {
     if (mainWindow && !mainWindow.isVisible()) {
@@ -778,8 +830,7 @@ ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize) => {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const result = await _generatePDF(html, filePath, paperSize);
-  if (result.ok) shell.showItemInFolder(filePath);
-  return result;
+  return { ...result, path: filePath, filePath };
 });
 
 // ── PDF HELPER ────────────────────────────────────────────────────────────────
@@ -811,3 +862,154 @@ async function _generatePDF(html, filePath, paperSize) {
 function _dateStr() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// ══════════════════════════════════════════
+// WhatsApp Hub IPC Handlers
+// ══════════════════════════════════════════
+
+ipcMain.handle('wa:is-connected', async () => {
+  return { connected: waHubService ? waHubService.isConnected() : false };
+});
+
+ipcMain.handle('wa:open-hub-window', async () => {
+  if (waHubWindow && !waHubWindow.isDestroyed()) {
+    waHubWindow.focus();
+    return { ok: true };
+  }
+  waHubWindow = new BrowserWindow({
+    width: 1100, height: 750,
+    minWidth: 900, minHeight: 600,
+    parent: mainWindow,
+    title: 'WhatsApp Hub — ClassCore',
+    icon: path.join(__dirname, 'icon.ico'),
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'wa-hub-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    }
+  });
+  waHubWindow.loadFile(path.join(__dirname, 'wa-hub', 'wa-hub.html'));
+  waHubWindow.on('closed', () => { waHubWindow = null; });
+  
+  // Send current status to newly opened window
+  waHubWindow.webContents.once('did-finish-load', () => {
+    if (waHubService && waHubService.isConnected()) {
+      waHubWindow.webContents.send('wa:status', { status: 'connected', info: {} });
+    }
+  });
+  
+  waHubWindow.webContents.setWindowOpenHandler(({ url }) => {
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  
+  return { ok: true };
+});
+
+ipcMain.handle('wa:logout', async () => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  await waHubService.logout();
+  return { ok: true };
+});
+
+ipcMain.handle('wa:send-single', async (_e, { phone, message }) => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  return await waHubService.sendSingle(phone, message);
+});
+
+ipcMain.handle('wa:send-document', async (_e, { phone, filePath, caption }) => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  return await waHubService.sendDocument(phone, filePath, caption);
+});
+
+ipcMain.handle('wa:send-bulk', async (_e, payload) => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  return await waHubService.sendBulk(payload, (progress) => {
+    waHubEmit('wa:bulk-progress', progress);
+  });
+});
+
+ipcMain.handle('wa:get-auto-reply', async () => {
+  return WaHubStore.getAutoReply();
+});
+
+ipcMain.handle('wa:save-auto-reply', async (_e, settings) => {
+  WaHubStore.saveAutoReply(settings);
+  if (waHubService) waHubService.updateAutoReplySettings(settings);
+  return { ok: true };
+});
+
+ipcMain.handle('wa:detect-provider', async (_e, { apiKey }) => {
+  const key = sanitizeApiKey(apiKey || '');
+  const provider = detectProvider(key);
+  return {
+    provider,
+    label: PROVIDER_NAMES[provider] || 'Unknown',
+    defaultModel: DEFAULT_MODELS[provider] || '',
+    seenPrefix: key.slice(0, 6),
+    length: key.length,
+  };
+});
+
+ipcMain.handle('wa:preview-ai-reply', async (_e, { ai, sampleText }) => {
+  try {
+    const result = await generateReply({
+      apiKey: ai.apiKey,
+      model: ai.model,
+      persona: ai.persona,
+      businessInfo: ai.businessInfo,
+      menuPricing: ai.menuPricing,
+      history: [],
+      incomingText: sampleText,
+    });
+    return { ok: true, replyText: result.text };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('wa:get-orders', async () => {
+  return WaHubStore.getOrders();
+});
+
+ipcMain.handle('wa:update-order-status', async (_e, { orderId, status }) => {
+  WaHubStore.updateOrderStatus(orderId, status);
+  return { ok: true };
+});
+
+ipcMain.handle('wa:confirm-order', async (_e, { orderId }) => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  return await waHubService.confirmOrder(orderId);
+});
+
+ipcMain.handle('wa:reject-order', async (_e, { orderId, reason }) => {
+  if (!waHubService) return { ok: false, error: 'Service not initialized' };
+  return await waHubService.rejectOrder(orderId, reason);
+});
+
+ipcMain.handle('wa:delete-order', async (_e, { orderId }) => {
+  WaHubStore.deleteOrder(orderId);
+  return { ok: true };
+});
+
+ipcMain.handle('wa:get-alerts', async () => {
+  return WaHubStore.getAlerts();
+});
+
+ipcMain.handle('wa:dismiss-alert', async (_e, { alertId }) => {
+  WaHubStore.dismissAlert(alertId);
+  return { ok: true };
+});
+
+ipcMain.handle('wa:reply-to-alert', async (_e, { jid, text, alertId }) => {
+  try {
+    if (!waHubService) throw new Error('Service not initialized');
+    await waHubService.sendCustomReply(jid, text);
+    WaHubStore.dismissAlert(alertId);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});

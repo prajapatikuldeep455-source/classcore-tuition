@@ -6,6 +6,72 @@
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let curReceipt=null;
 
+async function sendViaWaHub(phone, message, fallbackUrl) {
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub) {
+    try {
+      const status = await window.classcore.waHub.isConnected();
+      if (status && status.connected) {
+        showLoader('Sending Message…', 'Sending via WhatsApp Hub', '💬');
+        const res = await window.classcore.waHub.sendSingle(phone, message);
+        hideLoader();
+        if (res && res.ok) {
+          toast('✅ Sent via WhatsApp Hub', 'success');
+          return true;
+        } else {
+          toast('Failed to send: ' + (res?.error || 'Unknown error'), 'err');
+          return false;
+        }
+      } else {
+        const wantHub = confirm('WhatsApp Hub is not connected.\n\nClick OK to open WhatsApp Hub and connect WhatsApp,\nor Cancel to open in WhatsApp Web.');
+        if (wantHub) {
+          window.classcore.waHub.openHubWindow();
+          return false;
+        }
+      }
+    } catch (e) {
+      hideLoader();
+      console.warn('WaHub send failed:', e);
+      toast('WhatsApp Hub error: ' + (e.message || e), 'err');
+    }
+  }
+  // Fallback
+  if (fallbackUrl) window.open(fallbackUrl);
+  return false;
+}
+
+async function shareReceiptViaWaHub(phone, pdfPath, caption, fallbackUrl) {
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub) {
+    try {
+      const status = await window.classcore.waHub.isConnected();
+      if (status && status.connected) {
+        showLoader('Sending Receipt…', 'Sending via WhatsApp Hub', '📄');
+        const res = await window.classcore.waHub.sendDocument(phone, pdfPath, caption);
+        hideLoader();
+        if (res && res.ok) {
+          toast('✅ Receipt PDF sent directly via WhatsApp Hub!', 'success');
+          return true;
+        } else {
+          toast('Failed to send: ' + (res?.error || 'Unknown error'), 'err');
+          return false;
+        }
+      } else {
+        const wantHub = confirm('WhatsApp Hub is not connected.\n\nClick OK to open WhatsApp Hub and connect WhatsApp,\nor Cancel to open in WhatsApp Web.');
+        if (wantHub) {
+          window.classcore.waHub.openHubWindow();
+          return false;
+        }
+      }
+    } catch (e) {
+      hideLoader();
+      console.warn('WaHub document send failed:', e);
+      toast('WhatsApp Hub error: ' + (e.message || e), 'err');
+    }
+  }
+  // Fallback
+  if (fallbackUrl) window.open(fallbackUrl);
+  return false;
+}
+
 // ── Fees-scoped state (private — no collision with other modules) ─────────────
 let _feesBuilt    = false;
 let _feesSearch   = '';
@@ -411,9 +477,9 @@ function sendWA(sid){
   const courseLines=enrolledCourses.length>0
     ? '\n'+enrolledCourses.map(c=>`  📚 ${c.name}: ₹${(c.fee||0).toLocaleString('en-IN')}/mo`).join('\n')
     : '';
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(
-    `Dear ${s.parent||s.name},\n\nReminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\nMonth Due: ${selMonth}\n\nFee Details:\n  Base Fee: ₹${baseFee.toLocaleString('en-IN')}/mo${courseLines}${cFee>0?'\n  ──────────\n  Total: ₹'+mFee.toLocaleString('en-IN')+'/mo':''}\n\nKindly pay the ${selMonth} fees at the earliest.\n\nThank you!`
-  ));
+  const msgText = `Dear ${s.parent||s.name},\n\nReminder from ${inst}.\n\nStudent: ${s.name}\nClass: ${s.cls}${s.batch?' | Batch: '+s.batch:''}\nMonth Due: ${selMonth}\n\nFee Details:\n  Base Fee: ₹${baseFee.toLocaleString('en-IN')}/mo${courseLines}${cFee>0?'\n  ──────────\n  Total: ₹'+mFee.toLocaleString('en-IN')+'/mo':''}\n\nKindly pay the ${selMonth} fees at the earliest.\n\nThank you!`;
+  const fallbackUrl = 'https://wa.me/'+num+'?text='+encodeURIComponent(msgText);
+  sendViaWaHub(num, msgText, fallbackUrl);
 }
 function deletePayment(sid, histIdx){
   if(!canDo('delete_payments','You do not have permission to delete payments')) return;
@@ -744,25 +810,24 @@ Total Paid: ₹${totalPaid.toLocaleString('en-IN')} (${paidCount} months)
 ✅ Payment recorded successfully!
 🏫 ${inst}`;
 
-  // In Electron: save PDF silently → open folder → open WhatsApp
+  // In Electron: save PDF silently → send via WhatsApp Hub
   if(IS_ELECTRON()){
-    toast('Saving PDF receipt…');
+    toast('Generating PDF receipt…');
     const size=getReceiptSize();
     const html=buildReceiptHTML(s,amount,rcptNo,payDate,month,size);
     const fname='Receipt_'+rcptNo+'_'+(s.name||'').replace(/\s+/g,'_');
     const r=await window.classcore.savePDFSilent(html,fname,size);
-    if(r?.ok){
-      toast('📁 PDF saved! Attach it on WhatsApp.');
-      // Open WhatsApp after short delay
-      setTimeout(()=>{
-        window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
-      },800);
+    const pdfPath = r?.filePath || r?.path;
+    const fallbackUrl = 'https://wa.me/'+num+'?text='+encodeURIComponent(msg);
+    if(r?.ok && pdfPath){
+      await shareReceiptViaWaHub(num, pdfPath, msg, fallbackUrl);
     } else {
-      toast('PDF save failed — sending text only','warn');
-      window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+      toast('PDF generation failed — sending text message','warn');
+      await sendViaWaHub(num, msg, fallbackUrl);
     }
   } else {
-    window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg));
+    const fallbackUrl = 'https://wa.me/'+num+'?text='+encodeURIComponent(msg);
+    await sendViaWaHub(num, msg, fallbackUrl);
   }
 }
 

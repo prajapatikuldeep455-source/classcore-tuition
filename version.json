@@ -1,4 +1,4 @@
 {
-  "version": "1.7.3",
-  "notes": "v1.7.3: Faster startup, safer packaged launch, updater load deferred until packaging, icon loading hardened, and general startup reliability improvements."
+  "version": "2.0.0",
+  "notes": "v2.0.0: WhatsApp Hub integration, automated broadcasts, AI smart replies, direct PDF receipts, and performance improvements."
 }

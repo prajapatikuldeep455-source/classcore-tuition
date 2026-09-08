@@ -213,7 +213,41 @@ async function sendPDFWhatsApp(mobileNum, message, html, filename, size){
   const statusEl = document.getElementById('pdf-send-status');
   if(statusEl){ statusEl.style.color='#E8622A'; statusEl.textContent='⏳ Generating PDF…'; }
 
-  // Download PDF first, then open WhatsApp
+  let waConnected = false;
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub) {
+    try {
+      const status = await window.classcore.waHub.isConnected();
+      waConnected = status && status.connected;
+    } catch (e) {}
+  }
+
+  if (waConnected && IS_ELECTRON && IS_ELECTRON()) {
+    const r = await window.classcore.savePDFSilent(html, filename, size);
+    const pdfPath = r?.filePath || r?.path;
+    if (r?.ok && pdfPath) {
+      if(statusEl){ statusEl.style.color='#25D366'; statusEl.textContent='✅ Sending via WhatsApp Hub…'; }
+      const res = await window.classcore.waHub.sendDocument(mobileNum, pdfPath, message);
+      if (res && res.ok) {
+        toast('✅ Document sent via WhatsApp Hub', 'success');
+      } else {
+        toast('Failed to send: ' + (res?.error || 'Unknown error'), 'err');
+      }
+      setTimeout(()=>{ const m=document.getElementById('modal-send-pdf'); if(m) m.remove(); }, 1200);
+      return;
+    }
+  }
+
+  // Not connected or save failed
+  if (typeof window.classcore !== 'undefined' && window.classcore.waHub && !waConnected) {
+    const wantHub = confirm('WhatsApp Hub is not connected.\n\nClick OK to open WhatsApp Hub to connect WhatsApp,\nor Cancel to open in WhatsApp Web.');
+    if (wantHub) {
+      window.classcore.waHub.openHubWindow();
+      if(statusEl){ statusEl.textContent=''; }
+      return;
+    }
+  }
+
+  // Download PDF first, then open WhatsApp Web
   await generatePDF(html, filename, size, true);
 
   if(statusEl){ statusEl.style.color='#25D366'; statusEl.textContent='✅ PDF downloaded! Opening WhatsApp…'; }
@@ -221,7 +255,7 @@ async function sendPDFWhatsApp(mobileNum, message, html, filename, size){
     window.open('https://wa.me/'+mobileNum+'?text='+encodeURIComponent(message));
     setTimeout(()=>{ const m=document.getElementById('modal-send-pdf'); if(m) m.remove(); }, 1000);
   }, 800);
-  }
+}
 
 async function sendPDFEmail(email, filename, bodyText, size){
   const btn      = document.getElementById('pdf-email-btn');

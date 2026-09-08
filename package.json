@@ -1,6 +1,6 @@
 {
   "name": "classcore",
-  "version": "1.7.3",
+  "version": "2.0.0",
   "description": "ClassCore — Tuition Management System",
   "main": "main.js",
   "author": {
@@ -15,7 +15,10 @@
     "deploy-local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-local.ps1"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "electron-updater": "^6.8.9",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "electron": "32.2.7",
@@ -30,6 +33,11 @@
     },
     "files": [
       "**/*",
+      "wa-hub/**/*",
+      "wa-hub-service.js",
+      "wa-hub-ai.js",
+      "wa-hub-store.js",
+      "wa-hub-preload.js",
       "!node_modules/.cache/**",
       "!dist/**",
       "!*.md",

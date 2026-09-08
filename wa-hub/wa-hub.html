@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>WhatsApp Hub</title>
+  <link rel="stylesheet" href="wa-hub-styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="../assets/icon.png" class="brand-logo" alt="WhatsApp Hub" width="34" height="34" />
+        <span class="brand-name">WhatsApp Hub</span>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item is-active" data-panel="connect">Connection</button>
+        <button class="nav-item" data-panel="send">Direct Broadcast</button>
+        <button class="nav-item" data-panel="autoreply">Smart Reply</button>
+        <button class="nav-item" data-panel="logs">Activity Log</button>
+        <button class="nav-item" data-panel="orders">Order Desk <span class="nav-alert-badge" id="navAlertBadge" hidden>0</span></button>
+      </nav>
+
+      <div class="conn-pill" id="connPill">
+        <span class="dot" id="connDot"></span>
+        <div class="conn-text">
+          <span class="conn-label" id="connLabel">Starting…</span>
+          <span class="conn-sub" id="connSub"></span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- CONNECT -->
+      <section class="panel is-active" id="panel-connect">
+        <h1>Connect your WhatsApp Business account</h1>
+        <p class="lead">Open WhatsApp Business on your phone → Settings → Linked Devices → Link a Device, then scan this code.</p>
+
+        <div class="qr-box" id="qrBox">
+          <p class="qr-placeholder" id="qrPlaceholder">Waiting for QR code…</p>
+          <img id="qrImage" alt="WhatsApp QR code" hidden />
+        </div>
+
+        <button class="btn btn-outline" id="resetConnBtn" style="margin-top:12px;">Reset connection</button>
+        <p class="hint" id="resetConnHint">Stuck on "Waiting for QR code" for more than ~30 seconds? Click this to clear the saved session and try again.</p>
+
+        <div class="connected-box" id="connectedBox" hidden>
+          <p class="connected-title">You're connected</p>
+          <p class="connected-number" id="connectedNumber"></p>
+          <button class="btn btn-outline" id="logoutBtn">Disconnect this number</button>
+        </div>
+      </section>
+
+      <!-- BULK SEND -->
+      <section class="panel" id="panel-send">
+        <h1>Send a message to a list</h1>
+        <p class="lead">Fill in your contacts like a spreadsheet. Column <strong>A</strong> is always the phone number. Use <code>{A}</code>, <code>{B}</code>, <code>{C}</code> (or <code>{1}</code>, <code>{2}</code>, <code>{3}</code>) in your message to personalize.</p>
+
+        <div class="field">
+          <label>Contacts</label>
+          <div class="spreadsheet-toolbar">
+            <button class="btn-small" id="addRowBtn" title="Add row">+ Row</button>
+            <button class="btn-small" id="addColBtn" title="Add column">+ Column</button>
+            <button class="btn-small btn-small-danger" id="clearGridBtn" title="Clear all">Clear</button>
+            <span class="hint" style="margin:0; padding-left:8px;">Tip: Paste from Excel — it fills automatically</span>
+          </div>
+          <div class="spreadsheet-wrap">
+            <table class="spreadsheet" id="spreadsheet">
+              <thead>
+                <tr id="spreadsheetHead">
+                  <th class="row-num-header"></th>
+                  <th>A <small>Phone</small></th>
+                  <th>B <small>Name</small></th>
+                  <th>C</th>
+                </tr>
+              </thead>
+              <tbody id="spreadsheetBody">
+                <tr>
+                  <td class="row-num">1</td>
+                  <td contenteditable="true" data-col="A" data-placeholder="919876543210"></td>
+                  <td contenteditable="true" data-col="B" data-placeholder="Priya"></td>
+                  <td contenteditable="true" data-col="C" data-placeholder=""></td>
+                </tr>
+                <tr>
+                  <td class="row-num">2</td>
+                  <td contenteditable="true" data-col="A" data-placeholder="919812345678"></td>
+                  <td contenteditable="true" data-col="B" data-placeholder="Rohan"></td>
+                  <td contenteditable="true" data-col="C" data-placeholder=""></td>
+                </tr>
+                <tr>
+                  <td class="row-num">3</td>
+                  <td contenteditable="true" data-col="A" data-placeholder=""></td>
+                  <td contenteditable="true" data-col="B" data-placeholder=""></td>
+                  <td contenteditable="true" data-col="C" data-placeholder=""></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="messageTemplate">Message</label>
+          <textarea id="messageTemplate" rows="4" placeholder="Hi {B}, your delivery to {C} is ready! 🎉"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="sendAt">Send at (optional)</label>
+            <input type="datetime-local" id="sendAt" />
+          </div>
+          <button class="btn btn-primary" id="sendBtn">Send now</button>
+        </div>
+
+        <p class="hint">A few seconds' random delay is added between messages — this protects the number from being flagged for spam. Keep lists small and relevant.</p>
+
+        <div class="progress-log" id="progressLog"></div>
+      </section>
+
+      <!-- AUTO-REPLY -->
+      <section class="panel" id="panel-autoreply">
+        <h1>Automatic replies</h1>
+        <p class="lead">Only ever replies to one-on-one chats — groups are never auto-replied to.</p>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="autoReplyEnabled" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>Turn on auto-reply</span>
+        </label>
+
+        <div class="field">
+          <label for="modeSimple">Reply style</label>
+          <div class="mode-switch">
+            <label class="mode-option">
+              <input type="radio" name="autoReplyMode" id="modeSimple" value="simple" />
+              <span>
+                <strong>Simple message</strong>
+                <small>One fixed reply, sent at most once per contact per hour.</small>
+              </span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="autoReplyMode" id="modeAi" value="ai" />
+              <span>
+                <strong>AI chat — replies in your voice</strong>
+                <small>Uses your AI provider (Claude, Gemini, or GPT) to hold a real back-and-forth, remembering each conversation.</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- SIMPLE MODE FIELDS -->
+        <div id="simpleFields">
+          <div class="field">
+            <label for="autoReplyMessage">Reply message</label>
+            <textarea id="autoReplyMessage" rows="4" placeholder="Thanks for messaging us! We're closed right now — we'll get back to you by 10am."></textarea>
+          </div>
+        </div>
+
+        <!-- AI MODE FIELDS -->
+        <div id="aiFields">
+          <p class="hint" style="margin-top:0;">
+            Needs your own AI API key — the app auto-detects which provider it belongs to, so paste any ONE of:
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener">Anthropic</a>,
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google Gemini</a>, or
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>.
+            It's pay-as-you-go, billed directly by that provider — separate from this app.
+          </p>
+
+          <div class="field">
+            <label for="aiApiKey">AI API key</label>
+            <input type="password" id="aiApiKey" placeholder="sk-ant-... / AIza... or AQ.... / sk-..." autocomplete="off" />
+            <p class="hint" id="aiProviderDetected" style="margin-bottom:0;">No key entered yet.</p>
+          </div>
+
+          <div class="field">
+            <label for="aiModel">Model <span class="hint" style="font-weight:normal;">(leave blank to use the recommended default for the detected provider)</span></label>
+            <input type="text" id="aiModel" placeholder="auto" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label for="aiPersona">How should it sound like you?</label>
+            <textarea id="aiPersona" rows="5" placeholder="You're Kk, owner of a saree boutique in Ahmedabad. Friendly and warm, keep replies short, mix in a little Hindi/Gujarati where natural. Delivery takes 3-4 days across India. Don't offer discounts unless the customer asks first."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="aiBusinessInfo">Business info / FAQs (optional)</label>
+            <textarea id="aiBusinessInfo" rows="4" placeholder="Shop hours: 10am-8pm, closed Sundays. Cash on delivery available. Returns within 7 days if unused."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="aiMenuPricing">Menu & Price List / Rate Card (AI quotes exact prices from here)</label>
+            <textarea id="aiMenuPricing" rows="4" placeholder="e.g.&#10;Sev Khamani - Rs 120 / plate&#10;Khaman Dhokla - Rs 100 / plate&#10;Fafda - Rs 400 / kg&#10;Jalebi - Rs 350 / kg"></textarea>
+            <p class="hint" style="margin-bottom:0;">AI strictly quotes these prices and calculates bills accurately based on customer quantity.</p>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="aiHistoryTurns">Messages to remember per chat</label>
+              <input type="text" id="aiHistoryTurns" placeholder="12" />
+            </div>
+            <div class="field">
+              <label for="aiMaxPerDay">Max AI replies per contact / day</label>
+              <input type="text" id="aiMaxPerDay" placeholder="100" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="aiPreviewInput">Try it — preview a reply</label>
+            <textarea id="aiPreviewInput" rows="2" placeholder="Type a sample customer message, e.g. 'Do you have this in blue?'"></textarea>
+            <button class="btn btn-outline" id="aiPreviewBtn" style="margin-top:8px;">Preview reply</button>
+            <div class="preview-box" id="aiPreviewBox" hidden></div>
+          </div>
+        </div>
+
+        <!-- WORKING HOURS & NIGHT SCHEDULE -->
+        <div class="working-hours-card">
+          <label class="toggle-row">
+            <input type="checkbox" id="workingHoursEnabled" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span><strong>Working Hours Schedule (Anti-Ban & Night Sleep)</strong></span>
+          </label>
+          <p class="hint" style="margin-top:0;">Outside working hours, AI will NOT reply continuously (preventing WhatsApp bot detection at night). Instead, a polite offline message is sent at most once per contact.</p>
+          <div id="workingHoursInputs">
+            <div class="working-hours-time-row">
+              <div class="field">
+                <label for="workingHoursStart">Start time</label>
+                <input type="time" id="workingHoursStart" value="08:00" />
+              </div>
+              <div class="field">
+                <label for="workingHoursEnd">End time (Closing)</label>
+                <input type="time" id="workingHoursEnd" value="22:30" />
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="workingHoursOfflineMsg">Offline message (sent outside working hours)</label>
+              <textarea id="workingHoursOfflineMsg" rows="2" placeholder="नमस्ते! फिलहाल दुकान बंद है। सुबह 8:00 बजे खुलते ही रिप्लाई करेंगे। धन्यवाद! 🙏"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="saveAutoReplyBtn">Save</button>
+        <span class="save-confirm" id="autoReplySaved" hidden>Saved</span>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section class="panel" id="panel-logs">
+        <h1>Activity</h1>
+        <div class="activity-log" id="activityLog">
+          <p class="log-empty">No activity yet.</p>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section class="panel" id="panel-orders">
+        <h1>Orders & Permissions</h1>
+        <p class="lead">AI automatically extracts customer orders and escalates special requests needing your permission.</p>
+
+        <!-- OWNER PERMISSION ALERTS -->
+        <div id="permissionAlertsContainer" class="permission-alerts-section" hidden>
+          <div class="permission-alerts-header">
+            <div class="permission-alerts-title-row">
+              <span class="permission-pulse">⚡</span>
+              <h3>Needs Your Permission (<span id="permissionAlertsCount">0</span>)</h3>
+            </div>
+            <p class="hint">Customer ne aisi request ki hai (discount, cancellation, unlisted item, bulk order) jisme aapka decision zaroori hai. Reply karein ya dismiss karein.</p>
+          </div>
+          <div class="permission-alerts-list" id="permissionAlertsList"></div>
+        </div>
+
+        <div class="orders-toolbar">
+          <button class="btn-small is-active" data-filter="all">All</button>
+          <button class="btn-small" data-filter="new">⏳ Pending</button>
+          <button class="btn-small" data-filter="confirmed">✅ Confirmed</button>
+          <button class="btn-small" data-filter="rejected">❌ Rejected</button>
+          <button class="btn-small" data-filter="delivered">📦 Delivered</button>
+          <button class="btn-small" id="exportOrdersBtn" style="margin-left: auto;">📥 Export Excel (CSV)</button>
+        </div>
+        <div class="orders-list" id="ordersList">
+          <p class="log-empty">No orders detected yet. Orders will appear here when customers place them via AI chat.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="wa-hub-renderer.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@ const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 let toastT;
 function toast(msg,type='ok'){
   const el=document.getElementById('toast');
-  el.innerHTML=(type==='err'?'❌ ':type==='warn'?'⚠️ ':'✅ ')+esc(msg);
+  el.innerHTML=(type==='err'?'Error: '+esc(msg):type==='warn'?'Warning: '+esc(msg):'Success: '+esc(msg));
   el.style.background=type==='err'?'#DC2626':type==='warn'?'#E67E22':'#18181B';
   el.classList.add('show');clearTimeout(toastT);
   toastT=setTimeout(()=>el.classList.remove('show'),2800);
@@ -16,7 +16,7 @@ function toast(msg,type='ok'){
 // showLoader(title, sub, icon)  — shows full-screen loader
 // hideLoader()                  — hides it
 // withLoader(fn, title, sub, icon) — shows loader, runs fn, hides loader
-function showLoader(title='Processing…', sub='Please wait', icon='✏️'){
+function showLoader(title='Processing…', sub='Please wait', icon='Processing'){
   const ov    = document.getElementById('loading-overlay');
   const tEl   = document.getElementById('lo-title');
   const sEl   = document.getElementById('lo-sub');
@@ -32,7 +32,7 @@ function hideLoader(){
   if(ov) ov.style.display = 'none';
 }
 
-async function withLoader(fn, title='Processing…', sub='Please wait', icon='✏️'){
+async function withLoader(fn, title='Processing…', sub='Please wait', icon='Processing'){
   showLoader(title, sub, icon);
   try       { await fn(); }
   catch(err){ console.error('[withLoader] error:', err); }

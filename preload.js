@@ -145,4 +145,22 @@ contextBridge.exposeInMainWorld('classcore', {
   importBackup: () =>
     ipcRenderer.invoke('import-backup'),
 
+  // ── WhatsApp Hub bridge ──
+  waHub: {
+    isConnected: () => ipcRenderer.invoke('wa:is-connected'),
+    openHubWindow: () => ipcRenderer.invoke('wa:open-hub-window'),
+    sendSingle: (phone, message) => ipcRenderer.invoke('wa:send-single', { phone, message }),
+    sendDocument: (phone, filePath, caption) => ipcRenderer.invoke('wa:send-document', { phone, filePath, caption }),
+    sendBulk: (payload) => ipcRenderer.invoke('wa:send-bulk', payload),
+    logout: () => ipcRenderer.invoke('wa:logout'),
+    onStatus: (cb) => {
+      ipcRenderer.removeAllListeners('wa:status');
+      ipcRenderer.on('wa:status', (_e, data) => cb(data));
+    },
+    onBulkProgress: (cb) => {
+      ipcRenderer.removeAllListeners('wa:bulk-progress');
+      ipcRenderer.on('wa:bulk-progress', (_e, data) => cb(data));
+    },
+  },
+
 });
