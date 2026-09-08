@@ -356,7 +356,7 @@ async function generateReply({ apiKey, model, persona, businessInfo, menuPricing
     // obvious at a glance instead of a generic "not supported" message.
     const seenPrefix = key.slice(0, 6);
     throw new Error(
-      `This doesn't look like a supported API key (it starts with "${seenPrefix}..."). Supported keys: Anthropic (starts with sk-ant-...), Google Gemini (starts with AIza... or the newer AQ. format), or OpenAI (starts with sk-...). Double-check you copied the whole key with nothing extra before/after it.`
+      `This doesn't look like a supported API key (it starts with "${seenPrefix}..."). Please check that you copied the whole key with nothing extra before or after it.`
     );
   }
 

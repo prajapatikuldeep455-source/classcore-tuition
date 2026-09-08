@@ -357,7 +357,7 @@ async function updateDetectedProvider() {
   const result = await window.waHub.detectProvider(key);
   if (!result.provider || result.provider === 'unknown') {
     aiProviderDetected.textContent =
-      "Key format not recognized. Supported: Anthropic (sk-ant-...), Google Gemini (AIza...), OpenAI (sk-...).";
+      "Key format not recognized. Please enter a valid AI API key.";
     aiProviderDetected.style.color = '#b5460c';
     lastDetectedProvider = null;
   } else {
