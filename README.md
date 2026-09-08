@@ -1,4 +1,4 @@
-# ClassCore — Tuition Management System
+# ClassCore â€” Tuition Management System
 
 ![Version](https://img.shields.io/badge/version-1.7.3-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
@@ -61,5 +61,5 @@
 - **Data Privacy:** Local-first data storage with optional cloud synchronization.
 
 ---
-**Developed by Kuldeep Prajapati**  
-© 2025 ClassCore Tuition Management
+  
+Â© 2025 ClassCore Tuition Management
