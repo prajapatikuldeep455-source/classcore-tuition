@@ -663,23 +663,67 @@ class WaHubService {
     return { ok: true };
   }
 
+  // Detect mimetype from file extension
+  _getMimetype(filePath) {
+    const ext = require('path').extname(filePath).toLowerCase();
+    const mimeMap = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.xls': 'application/vnd.ms-excel',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.csv': 'text/csv',
+      '.txt': 'text/plain',
+      '.zip': 'application/zip',
+      '.rar': 'application/x-rar-compressed',
+      '.mp3': 'audio/mpeg',
+      '.mp4': 'video/mp4',
+      '.avi': 'video/x-msvideo',
+    };
+    return mimeMap[ext] || 'application/octet-stream';
+  }
+
   async sendDocument(phone, filePath, caption = '') {
     if (!this.sock) throw new Error('WhatsApp not connected');
     const jid = this.toJid(phone);
     const fs = require('fs');
     const path = require('path');
     if (!filePath || !fs.existsSync(filePath)) {
-      throw new Error(`Receipt PDF file not found: ${filePath}`);
+      throw new Error(`File not found: ${filePath}`);
     }
     const buffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
+    const mimetype = this._getMimetype(filePath);
     await this.sock.sendMessage(jid, {
       document: buffer,
-      mimetype: 'application/pdf',
+      mimetype: mimetype,
       fileName: fileName,
       caption: caption
     });
-    this.log(`Document sent to ${phone}: ${fileName}`, 'success');
+    this.log(`Document sent to ${phone}: ${fileName} (${mimetype})`, 'success');
+    return { ok: true };
+  }
+
+  async sendImage(phone, filePath, caption = '') {
+    if (!this.sock) throw new Error('WhatsApp not connected');
+    const jid = this.toJid(phone);
+    const fs = require('fs');
+    if (!filePath || !fs.existsSync(filePath)) {
+      throw new Error(`Image not found: ${filePath}`);
+    }
+    const buffer = fs.readFileSync(filePath);
+    await this.sock.sendMessage(jid, {
+      image: buffer,
+      caption: caption
+    });
+    this.log(`Image sent to ${phone}`, 'success');
     return { ok: true };
   }
 
