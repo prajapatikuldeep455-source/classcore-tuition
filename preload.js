@@ -130,9 +130,13 @@ contextBridge.exposeInMainWorld('classcore', {
   savePDF: (html, filename, paperSize) =>
     ipcRenderer.invoke('save-pdf', html, filename, paperSize),
 
-  /** Save a PDF silently (no dialog) — used for WhatsApp share flow */
-  savePDFSilent: (html, filename, paperSize) =>
-    ipcRenderer.invoke('save-pdf-silent', html, filename, paperSize),
+  /** Save a PDF silently (no dialog) — used for WhatsApp share & report exports */
+  savePDFSilent: (html, filename, paperSize, subfolder) =>
+    ipcRenderer.invoke('save-pdf-silent', html, filename, paperSize, subfolder),
+
+  /** Open a folder or file in the OS file explorer */
+  openPath: (targetPath) =>
+    ipcRenderer.invoke('open-path', targetPath),
 
 
   // ── BACKUP ───────────────────────────────────────────────────────────────

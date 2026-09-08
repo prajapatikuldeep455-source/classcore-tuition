@@ -64,11 +64,23 @@ async function triggerAction(btn, actionFn, options = {}){
  * @param {boolean} download - true = auto-download, false = return blob
  */
 async function generatePDF(html, filename, size = 'A4', download = true){
+  // If in Electron desktop app, use native Chromium PDF engine
+  if(download && typeof window.classcore !== 'undefined' && window.classcore.savePDF){
+    try {
+      const res = await window.classcore.savePDF(html, filename, size);
+      return res;
+    } catch(err) {
+      console.warn('[ClassCore][PDF] Electron savePDF failed, falling back:', err);
+    }
+  }
+
   if(typeof html2pdf === 'undefined'){
     console.warn('[ClassCore][PDF] html2pdf not loaded — falling back to print');
     const w = window.open('','_blank');
-    w.document.write(html); w.document.close();
-    setTimeout(()=>w.print(), 400);
+    if(w){
+      w.document.write(html); w.document.close();
+      setTimeout(()=>w.print(), 400);
+    }
     return null;
   }
 

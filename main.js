@@ -823,14 +823,26 @@ ipcMain.handle('save-pdf', async (event, html, filename, paperSize) => {
   return _generatePDF(html, filePath, paperSize);
 });
 
-// ── SAVE PDF SILENTLY (no dialog — for WhatsApp share) ────────────────────────
-ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize) => {
-  const filePath = path.join(os.homedir(), 'Documents', 'ClassCore', 'Receipts',
-                             (filename || 'Receipt') + '.pdf');
-  const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+// ── SAVE PDF SILENTLY (no dialog — for WhatsApp share & report exports) ────────
+ipcMain.handle('save-pdf-silent', async (event, html, filename, paperSize, subfolder) => {
+  const sub = (typeof subfolder === 'string' && subfolder.trim()) ? subfolder.trim() : 'Receipts';
+  const folderPath = path.join(os.homedir(), 'Documents', 'ClassCore', sub);
+  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+  const safeName = (filename || 'Document').replace(/[\\/:*?"<>|]/g, '_');
+  const filePath = path.join(folderPath, safeName + '.pdf');
   const result = await _generatePDF(html, filePath, paperSize);
-  return { ...result, path: filePath, filePath };
+  return { ...result, path: filePath, filePath, folderPath };
+});
+
+// ── OPEN PATH IN OS FILE EXPLORER ──────────────────────────────────────────────
+ipcMain.handle('open-path', async (event, targetPath) => {
+  try {
+    const fullPath = targetPath || path.join(os.homedir(), 'Documents', 'ClassCore');
+    await shell.openPath(fullPath);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 // ── PDF HELPER ────────────────────────────────────────────────────────────────
