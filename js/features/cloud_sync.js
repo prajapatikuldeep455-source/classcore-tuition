@@ -198,8 +198,8 @@ function _applyIncomingModule(moduleId, data) {
         changed = true;
         break;
       case 'attendance':
-        if (data.attData) {
-          attData = data.attData;
+        if (data.attData && typeof data.attData === 'object') {
+          Object.assign(attData, data.attData);
           changed = true;
         }
         if (data.days && typeof data.days === 'object') {
@@ -273,16 +273,17 @@ function _refreshActiveScreen(moduleId) {
     const pageId = activePage ? activePage.id : '';
 
     if (moduleId === 'students' && (pageId === 'page-students' || pageId === 'page-dashboard')) {
-      if (typeof renderStudents === 'function') renderStudents();
-      if (typeof renderDashboard === 'function') renderDashboard();
+      if (typeof renderStus === 'function') renderStus();
+      if (typeof renderDash === 'function') renderDash();
     } else if (moduleId === 'attendance' && (pageId === 'page-attendance' || pageId === 'page-dashboard')) {
-      if (typeof renderAttendance === 'function') renderAttendance();
-      if (typeof renderDashboard === 'function') renderDashboard();
+      if (typeof loadAtt === 'function') loadAtt();
+      else if (typeof renderAtt === 'function') renderAtt();
+      if (typeof renderDash === 'function') renderDash();
     } else if (moduleId === 'fees' && (pageId === 'page-fees' || pageId === 'page-dashboard')) {
       if (typeof renderFees === 'function') renderFees();
-      if (typeof renderDashboard === 'function') renderDashboard();
+      if (typeof renderDash === 'function') renderDash();
     } else if (moduleId === 'batches' && (pageId === 'page-batches' || pageId === 'page-courses')) {
-      if (typeof renderBatches === 'function') renderBatches();
+      if (typeof renderBats === 'function') renderBats();
       if (typeof renderCourses === 'function') renderCourses();
     } else if (moduleId === 'exams' && pageId === 'page-exams') {
       if (typeof renderExams === 'function') renderExams();

@@ -208,6 +208,7 @@ function saveAtt(){
       });
     }
     await persist();
+    if (typeof cloudSyncMarkDirty === 'function') cloudSyncMarkDirty('attendance');
   }, { type:'save', label:'💾 Save', onDone:()=>{ updAttStats(); toast('✅ Attendance saved!'); } });
 }
 
