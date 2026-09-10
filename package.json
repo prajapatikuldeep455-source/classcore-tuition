@@ -54,9 +54,7 @@
       "!js/script.js",
       "!js/script.backup.js",
       "!licenses.json",
-      "!tmp_classcore.log",
-      "!.github/**",
-      "!capacitor.config.json"
+      "!tmp_classcore.log"
     ],
     "win": {
       "target": [

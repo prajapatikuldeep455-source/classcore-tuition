@@ -1,8 +1,0 @@
-{
-  "appId": "com.classcore.tuition",
-  "appName": "ClassCore",
-  "webDir": "mobile",
-  "server": {
-    "androidScheme": "https"
-  }
-}
