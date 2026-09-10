@@ -94,13 +94,21 @@ function _setupCloudSyncListeners(syncCode) {
       updateCloudSyncUI('synced', 'Cloud Synced');
     }, (err) => {
       console.warn('[ClassCore][CloudSync] Listener warning:', err.message);
-      updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+      if (err.message && (err.message.includes('permission') || err.message.includes('insufficient'))) {
+        updateCloudSyncUI('permission-denied', '⚠️ Firebase Permission Locked');
+      } else {
+        updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+      }
     });
 
     updateCloudSyncUI('synced', 'Cloud Synced');
   } catch (err) {
     console.error('[ClassCore][CloudSync] Listener setup error:', err);
-    updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+    if (err.message && (err.message.includes('permission') || err.message.includes('insufficient'))) {
+      updateCloudSyncUI('permission-denied', '⚠️ Firebase Permission Locked');
+    } else {
+      updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+    }
   }
 }
 
@@ -270,17 +278,49 @@ async function _flushCloudSync() {
     const modulesToSync = Array.from(_dirtyModules);
     const now = Date.now();
 
+    // Clean and normalize student data for mobile companion compatibility
+    const cleanStudents = (students || []).map((s) => ({
+      ...s,
+      status: s.inactive ? 'inactive' : 'active',
+      rollNo: s.rollNo || s.roll || '',
+      feeMonthly: Number(s.feeMonthly || s.monthlyFees || s.fee || 0),
+      parentName: s.parentName || s.parent || '',
+      parentMobile: s.parentMobile || s.mobile || '',
+      admissionDate: s.admissionDate || s.admDate || s.doj || ''
+    }));
+
+    // Clean and normalize batch data
+    const cleanBatches = (batches || []).map((b) => ({
+      ...b,
+      timing: b.timing || (b.startTime && b.endTime ? `${b.startTime} - ${b.endTime}` : '')
+    }));
+
+    // Extract all fee receipts into flat history
+    const allFeeHistory = [];
+    (students || []).forEach((s) => {
+      if (Array.isArray(s.history)) {
+        s.history.forEach((h) => {
+          allFeeHistory.push({
+            ...h,
+            studentId: s.id,
+            studentName: s.name,
+            amount: Number(h.amount || 0)
+          });
+        });
+      }
+    });
+
     const writePromises = modulesToSync.map((mod) => {
       let payload = null;
       switch (mod) {
         case 'students':
-          payload = { list: students || [], count: (students || []).length, updatedAt: now, _sender: _cloudClientId };
+          payload = { list: cleanStudents, count: cleanStudents.length, updatedAt: now, _sender: _cloudClientId };
           break;
         case 'batches':
-          payload = { batches: batches || [], courses: courses || [], updatedAt: now, _sender: _cloudClientId };
+          payload = { batches: cleanBatches, courses: courses || [], updatedAt: now, _sender: _cloudClientId };
           break;
         case 'fees':
-          payload = { classFees: classFees || {}, stuFeeOvr: stuFeeOvr || {}, monthFees: monthFees || {}, updatedAt: now, _sender: _cloudClientId };
+          payload = { classFees: classFees || {}, stuFeeOvr: stuFeeOvr || {}, monthFees: monthFees || {}, history: allFeeHistory, list: allFeeHistory, updatedAt: now, _sender: _cloudClientId };
           break;
         case 'attendance':
           payload = { attData: attData || {}, updatedAt: now, _sender: _cloudClientId };
@@ -298,16 +338,21 @@ async function _flushCloudSync() {
       return Promise.resolve();
     });
 
-    // Update institute meta
-    const metaPromise = instDocRef.set({
-      tuitionName: localStorage.getItem('tuitionName') || '',
-      tuitionMobile: localStorage.getItem('tuitionMobile') || '',
+    // Update institute meta in both root document and meta/info
+    const tuitionName = localStorage.getItem('tuitionName') || 'ClassCore Tuition';
+    const tuitionMobile = localStorage.getItem('tuitionMobile') || '';
+    const metaData = {
+      name: tuitionName,
+      tuitionName: tuitionName,
+      tuitionMobile: tuitionMobile,
       lastSync: now,
       activeSender: _cloudClientId,
-      version: '2.0.0'
-    }, { merge: true });
+      version: '3.0.0'
+    };
+    const metaPromise = instDocRef.set(metaData, { merge: true });
+    const metaSubPromise = instDocRef.collection('meta').doc('info').set(metaData, { merge: true });
 
-    await Promise.all([...writePromises, metaPromise]);
+    await Promise.all([...writePromises, metaPromise, metaSubPromise]);
 
     // Clear synced modules
     modulesToSync.forEach((m) => _dirtyModules.delete(m));
@@ -315,7 +360,11 @@ async function _flushCloudSync() {
     console.log(`[ClassCore][CloudSync] ✅ Synced ${modulesToSync.length} modules to cloud.`);
   } catch (err) {
     console.warn('[ClassCore][CloudSync] Sync error:', err.message);
-    updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+    if (err.message && (err.message.includes('permission') || err.message.includes('insufficient'))) {
+      updateCloudSyncUI('permission-denied', '⚠️ Firebase Permission Locked');
+    } else {
+      updateCloudSyncUI('offline', 'Offline (Saved on PC)');
+    }
   }
 }
 
@@ -346,6 +395,11 @@ function updateCloudSyncUI(status, labelText) {
     chip.style.border = '1px solid #E5E7EB';
     chip.style.color = '#6B7280';
     dot.style.background = '#9CA3AF';
+  } else if (status === 'permission-denied') {
+    chip.style.background = '#FEF2F2';
+    chip.style.border = '1px solid #FECACA';
+    chip.style.color = '#991B1B';
+    dot.style.background = '#EF4444';
   } else {
     chip.style.background = '#FEF2F2';
     chip.style.border = '1px solid #FECACA';
@@ -393,6 +447,8 @@ async function openPairModal() {
 
   const apkDownloadUrl = 'https://github.com/prajapatikuldeep455-source/classcore-tuition/releases/latest';
 
+  const isPermDenied = _cloudSyncStatus === 'permission-denied';
+
   modal.innerHTML = `
   <div class="modal-box" style="max-width:540px;border-radius:16px;padding:26px">
     <div class="modal-hdr" style="margin-bottom:16px">
@@ -405,6 +461,21 @@ async function openPairModal() {
       </div>
       <button class="x-btn" onclick="document.getElementById('modal-pair-mobile').classList.remove('open')">×</button>
     </div>
+
+    ${isPermDenied ? `
+    <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:14px;margin-bottom:16px;text-align:left">
+      <div style="font-size:13px;font-weight:800;color:#991B1B;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+        <span>⚠️</span> Firebase Firestore Rules are Locked!
+      </div>
+      <div style="font-size:12px;color:#7F1D1D;line-height:1.4">
+        Google Firebase is blocking database access. You need to publish the Firestore rules once in Firebase Console (takes 10 seconds).
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-xs btn-primary" onclick="openFirebaseRulesConsole()">🌐 Open Firebase Rules</button>
+        <button class="btn btn-xs btn-ghost" onclick="copyFirestoreRules()">📋 Copy Rules Code</button>
+      </div>
+    </div>
+    ` : ''}
 
     <div style="text-align:center;background:#F9FAFB;border:1.5px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px">
       <div style="font-size:12px;font-weight:700;color:#4B5563;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Your Institute Sync Code</div>
@@ -420,6 +491,12 @@ async function openPairModal() {
         <img src="${qrDataUrl}" alt="Pair QR Code" style="width:190px;height:190px;display:block;margin:auto" />
         <div style="font-size:11px;font-weight:600;color:#6B7280;margin-top:6px">Scan with Mobile App Camera</div>
       </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <button id="btn-manual-sync" class="btn btn-teal btn-full" style="padding:10px;font-size:13px;font-weight:700" onclick="manualSyncNow()">
+        🔄 Push All Data to Cloud Now
+      </button>
     </div>
 
     <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 16px;margin-bottom:18px">
@@ -438,6 +515,42 @@ async function openPairModal() {
   </div>`;
 
   modal.classList.add('open');
+}
+
+async function manualSyncNow() {
+  const btn = document.getElementById('btn-manual-sync');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Uploading data to Cloud...';
+  }
+  cloudSyncMarkAllDirty();
+  await _flushCloudSync();
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '🔄 Push All Data to Cloud Now';
+  }
+  if (_cloudSyncStatus === 'synced') {
+    if (typeof toast === 'function') toast('✅ Synced ' + (students ? students.length : 0) + ' students & ' + (batches ? batches.length : 0) + ' batches to Cloud!', 'success');
+  } else if (_cloudSyncStatus === 'permission-denied') {
+    if (typeof toast === 'function') toast('⚠️ Firebase Permission Locked. Please publish rules in Firebase Console.', 'error');
+    openPairModal();
+  }
+}
+
+function openFirebaseRulesConsole() {
+  const url = 'https://console.firebase.google.com/project/classcore-e5d97/firestore/rules';
+  if (typeof window.classcore !== 'undefined' && window.classcore.openExternal) {
+    window.classcore.openExternal(url);
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+function copyFirestoreRules() {
+  const rules = `rules_version = '2';\n\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}`;
+  navigator.clipboard.writeText(rules).then(() => {
+    if (typeof toast === 'function') toast('✅ Firestore Rules copied to clipboard! Paste them in Firebase Console.');
+  }).catch(() => {});
 }
 
 function copySyncCode(code) {
