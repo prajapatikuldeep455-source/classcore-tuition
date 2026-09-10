@@ -282,13 +282,15 @@ function _refreshActiveScreen(moduleId) {
     } else if (moduleId === 'fees' && (pageId === 'page-fees' || pageId === 'page-dashboard')) {
       if (typeof renderFees === 'function') renderFees();
       if (typeof renderDash === 'function') renderDash();
-    } else if (moduleId === 'batches' && (pageId === 'page-batches' || pageId === 'page-courses')) {
+    } else if (moduleId === 'batches' && (pageId === 'page-batches' || pageId === 'page-courses' || pageId === 'page-dashboard')) {
       if (typeof renderBats === 'function') renderBats();
       if (typeof renderCourses === 'function') renderCourses();
+      if (typeof renderDash === 'function') renderDash();
     } else if (moduleId === 'exams' && pageId === 'page-exams') {
       if (typeof renderExams === 'function') renderExams();
-    } else if (moduleId === 'expenses' && pageId === 'page-expenses') {
+    } else if (moduleId === 'expenses' && (pageId === 'page-expenses' || pageId === 'page-dashboard')) {
       if (typeof renderExpenses === 'function') renderExpenses();
+      if (typeof renderDash === 'function') renderDash();
     }
   } catch (e) {
     console.warn('[ClassCore][CloudSync] UI refresh error:', e);
