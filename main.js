@@ -441,9 +441,11 @@ function _sendErrorToRenderer(err, isFinal) {
 function setupAutoUpdater() {
   try {
   // ── CONFIG ────────────────────────────────────────────────────────────────
-  autoUpdater.autoDownload         = false;  // Show banner before downloading
-  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.autoDownload         = true;   // Automatically download in background when available
+  autoUpdater.autoInstallOnAppQuit = true;   // Auto-install on quit if user finishes later
   autoUpdater.allowPrerelease      = false;
+  autoUpdater.disableWebInstaller  = true;   // Direct full NSIS installer download
+  autoUpdater.disableDifferentialDownload = true; // Stream direct installer, avoiding GitHub blockmap 404s
 
   // feedUrl from env variable with GitHub fallback
   try {

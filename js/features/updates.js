@@ -133,22 +133,37 @@ async function doUpdate(){ return updStart(); }
 // ── IPC EVENT HANDLERS ────────────────────────────────────────────────────────
 if(IS_ELECTRON()){
 
-  // 1. Update found
+  // 1. Update found — auto downloading in background
   window.classcore.onUpdateAvailable(version=>{
     _updateVersion = version;
+    _downloadStartTime = Date.now();
     const msgEl = document.getElementById('update-check-msg');
-    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' available! See banner.'; }
-    showUpdateBanner('🚀 New version v'+version+' is ready!', 'Download is ~76 MB — takes 2–5 minutes on average internet');
+    if(msgEl){
+      msgEl.style.color='#0284C7';
+      msgEl.textContent='⬇️ New version v'+version+' found! Downloading in background…';
+    }
+    showUpdateBanner('🚀 New version v'+version+' found!', 'Downloading update in background… You can continue using ClassCore safely.');
+    const btn = document.getElementById('update-btn');
+    if(btn){
+      btn.style.display = 'flex';
+      btn.disabled = true;
+      btn.textContent = '⬇️ Downloading in background…';
+    }
+    const progWrap = document.getElementById('update-progress-wrap');
+    const speedWrap = document.getElementById('update-speed-wrap');
+    if(progWrap) progWrap.style.display = 'block';
+    if(speedWrap) speedWrap.style.display = 'block';
   });
 
   // 2. Already latest
   window.classcore.onUpdateNotAvailable && window.classcore.onUpdateNotAvailable(version=>{
     const msgEl = document.getElementById('update-check-msg');
     if(msgEl){
-      msgEl.style.color   = '#78716C';
-      msgEl.textContent   = '✅ Already on latest version (v'+version+')';
-      setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 4000);
+      msgEl.style.color   = '#16A34A';
+      msgEl.textContent   = '✅ You are on the latest version (v'+version+')';
+      setTimeout(()=>{ if(msgEl) msgEl.textContent=''; }, 5000);
     }
+    hideUpdateBanner();
   });
 
   // 3. Download progress — updates EVERY percent
@@ -192,6 +207,13 @@ if(IS_ELECTRON()){
       }
     }
 
+    // Settings message update
+    const msgEl = document.getElementById('update-check-msg');
+    if(msgEl && _updateVersion){
+      msgEl.style.color = '#0284C7';
+      msgEl.textContent = '⬇️ Downloading v' + _updateVersion + ' in background… (' + pct + '%)';
+    }
+
     // Sync modal progress bar too
     const mFill = document.getElementById('upd-progress-fill');
     const mPct  = document.getElementById('upd-pct-label');
@@ -219,7 +241,7 @@ if(IS_ELECTRON()){
     if(pctEl)      pctEl.textContent   = '100%';
     if(label)      label.textContent   = '✅ Download complete!';
     if(titleEl)    titleEl.textContent = '✅ v'+version+' downloaded & ready!';
-    if(subEl)      subEl.textContent   = 'Click Restart & Install — takes 30 seconds';
+    if(subEl)      subEl.textContent   = 'Click Restart & Install to apply update';
     if(speedWrap)  speedWrap.style.display = 'none';
 
     // Show restart button
@@ -230,13 +252,16 @@ if(IS_ELECTRON()){
       btn.style.background = '#16A34A';
       btn.onclick          = ()=>window.classcore.installUpdate();
     }
-    if(later)  later.style.display = 'none';  // no "later" after download
+    if(later)  later.style.display = 'none';
 
-    // Settings message
+    // Settings message with direct button
     const msgEl = document.getElementById('update-check-msg');
-    if(msgEl){ msgEl.style.color='#16A34A'; msgEl.textContent='✅ v'+version+' ready! Click Restart & Install.'; }
+    if(msgEl){
+      msgEl.style.color='#16A34A';
+      msgEl.innerHTML='✅ v'+version+' downloaded! <button class="btn btn-primary btn-sm" style="margin-left:8px;padding:3px 10px;font-size:11px" onclick="window.classcore.installUpdate()">🔄 Restart & Install Now</button>';
+    }
 
-    toast('✅ Update downloaded! Click Restart & Install in the banner.');
+    toast('✅ Update downloaded! Click Restart & Install to apply.');
 
     // Sync modal
     const mFill = document.getElementById('upd-progress-fill');

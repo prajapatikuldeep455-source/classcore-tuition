@@ -68,6 +68,7 @@
         }
       ],
       "icon": "icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
