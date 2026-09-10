@@ -548,12 +548,14 @@ function checkAndShowLicense(){
   if(licStatus.status === 'active'){
     // Good — show login
     if(localStorage.getItem('ops_logged')){
-  document.getElementById('login-screen').style.display='none';
+      document.getElementById('login-screen').style.display='none';
       document.getElementById('app').style.display='flex';
       initApp();
-  } else {
-  document.getElementById('login-screen').style.display='flex';
-  }
+    } else {
+      document.getElementById('login-screen').style.display='flex';
+    }
+    // Silent background device registration (seamless, non-blocking)
+    _syncDeviceLockInBackground();
     return;
   }
   if(licStatus.status === 'trial'){
@@ -785,12 +787,29 @@ function activateLicenseKey(){
 
   verifyKeyOnline(key).then(result => {
     if(result.valid){
-      // Save license with correct expiry from server
-      saveLicense({ key, plan: result.plan, expiry: result.expiry, name: result.name || '' });
+      // Save license with all details from server
+      saveLicense({
+        key,
+        plan: result.plan,
+        expiry: result.expiry,
+        name: result.name || '',
+        institute: result.institute || '',
+        mobile: result.mobile || '',
+        email: result.email || '',
+        expiryDate: result.expiryDate || ''
+      });
+      let reg = (typeof getRegistration === 'function' ? getRegistration() : null) || {};
+      reg = {
+        ...reg,
+        name: result.name || reg.name || '',
+        email: result.email || reg.email || '',
+        mobile: result.mobile || reg.mobile || '',
+        institute: result.institute || reg.institute || ''
+      };
+      if(typeof saveRegistration === 'function') saveRegistration(reg);
       const planLabel = result.plan === 'lifetime' ? 'Lifetime' : result.plan === 'yearly' ? '1 Year' : '1 Month';
       showLicMsg('✅ License activated! Plan: ' + planLabel, 'ok');
       // Update Google Sheets
-  const reg = getRegistration();
       if(reg) sendToSheets('activate_key', { email: reg.email, mobile: reg.mobile, name: reg.name, key, plan: result.plan, status: 'active' });
       setTimeout(()=>hideLicenseScreen(), 1200);
   } else {
@@ -803,62 +822,107 @@ function activateLicenseKey(){
     });
   }
 
-// Verify key against GitHub licenses.json
-async function verifyKeyOnline(key){
-  // Try Google Sheets first if configured
-  try{
-    if(GSHEET_URL && !GSHEET_URL.includes('YOUR_GOOGLE')){
-      const url = GSHEET_URL + '?action=verify_key&key=' + encodeURIComponent(key);
-      const r = await fetch(url, {cache:'no-store'});
-      if(r.ok){
-        const data = await r.json();
-        if(data.ok !== false){
-          if(data.valid) return { valid:true, plan:data.plan, expiry:data.expiry, name:data.name||'' };
-          return { valid:false, reason: data.msg || 'Key invalid or not approved' };
-  }
-  }
-  }
-  }catch(e){ console.warn('Sheets verify failed:', e.message); }
+// Background silent sync of device ID for already active users
+async function _syncDeviceLockInBackground(){
+  try {
+    const lic = getLicense();
+    if (!lic || !lic.key) return;
+    const deviceId = (typeof getDeviceId === 'function') ? await getDeviceId() : (localStorage.getItem('cc_device_id') || '');
+    if (!deviceId) return;
+    if (typeof window.classcore !== 'undefined' && typeof window.classcore.verifyLicenseKey === 'function'){
+      window.classcore.verifyLicenseKey(lic.key, deviceId).catch(()=>{});
+    }
+  } catch(e) {}
+}
 
-  // Method 1: GitHub raw URL
+// Verify key against Firestore, Electron IPC bridge, or local fallback
+async function verifyKeyOnline(key){
+  const deviceId = (typeof getDeviceId === 'function') ? await getDeviceId() : (localStorage.getItem('cc_device_id') || '');
+
+  // Preferred Method in Desktop App: Electron IPC bridge (Direct HTTPS + Device Lock)
+  if(typeof window.classcore !== 'undefined' && typeof window.classcore.verifyLicenseKey === 'function'){
+    try{
+      const ipcRes = await window.classcore.verifyLicenseKey(key, deviceId);
+      if(ipcRes && typeof ipcRes === 'object'){
+        if(ipcRes.valid) return ipcRes;
+        if(ipcRes.reason && !ipcRes.reason.includes('Cannot reach')) return ipcRes;
+      }
+    }catch(err){
+      console.warn('[License] IPC verification error:', err);
+    }
+  }
+
+  // Method 1: Firebase Firestore Web SDK directly (if loaded in renderer)
+  try {
+    if (typeof _db !== 'undefined' && _db) {
+      const docSnap = await _db.collection('licenses').doc(key).get();
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        if (data.status && data.status !== 'active') {
+          return { valid: false, reason: 'License key is suspended or inactive.' };
+        }
+        if (data.plan !== 'lifetime') {
+          const exp = Number(data.expiry);
+          if (!exp) return { valid: false, reason: 'Key has no expiry date. Contact support.' };
+          if (Date.now() > exp) return { valid: false, reason: 'Key expired on ' + new Date(exp).toLocaleDateString('en-IN') + '. Please renew.' };
+        }
+        // Device check
+        if (deviceId) {
+          if (!data.deviceId) {
+            try {
+              await _db.collection('licenses').doc(key).update({ deviceId, activatedAt: new Date().toISOString() });
+            } catch(e) {}
+          } else if (data.deviceId !== deviceId) {
+            return { valid: false, reason: '❌ This license key is already active on another computer. Each license is valid for 1 PC only.' };
+          }
+        }
+        return { valid: true, plan: data.plan, expiry: Number(data.expiry) || 9999999999999, name: data.name || '', institute: data.institute || '' };
+      }
+    }
+  } catch(e) { console.warn('[License] Direct Firestore check error:', e.message); }
+
+  // Method 2: Local licenses.json fallback
+  try{
+    const localResp = await fetch('./licenses.json?t='+Date.now(), {cache:'no-store'});
+    if(localResp.ok){
+      const licenses = await localResp.json();
+      return _checkKeyInLicenses(key, licenses);
+    }
+  }catch(e){ console.warn('Local licenses.json fetch failed:', e.message); }
+
+  // Method 3: GitHub raw URL fallback
   try{
     const rawUrl = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t='+Date.now();
     const resp = await fetch(rawUrl, {cache:'no-store'});
     if(resp.ok){
       const licenses = await resp.json();
       return _checkKeyInLicenses(key, licenses);
-  }
+    }
   }catch(e){ console.warn('Raw GitHub failed:', e.message); }
 
-  // Method 2: GitHub Contents API (works better in Electron)
-  try{
-    const apiUrl = 'https://api.github.com/repos/prajapatikuldeep455-source/classcore-tuition/contents/licenses.json?ref=main&t='+Date.now();
-    const resp = await fetch(apiUrl, {
-      headers:{'Accept':'application/vnd.github.v3+json'},
-      cache:'no-store'
-    });
-    if(resp.ok){
-      const data = await resp.json();
-      const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
-      const licenses = JSON.parse(decoded);
-      return _checkKeyInLicenses(key, licenses);
-  }
-  }catch(e){ console.warn('GitHub API failed:', e.message); }
-
   // All methods failed
-  throw new Error('Cannot reach GitHub. Check your internet connection.');
-  }
+  throw new Error('Cannot reach verification server. Check your internet connection.');
+}
 
 function _checkKeyInLicenses(key, licenses){
   if(!licenses || typeof licenses !== 'object') throw new Error('Invalid license data from server');
   const lic = licenses[key];
-  if(!lic) return { valid:false, reason:'Key not found. Make sure the key was pushed to GitHub.' };
+  if(!lic) return { valid:false, reason:'Key not found. Please verify your license key.' };
   if(lic.plan !== 'lifetime'){
     if(!lic.expiry) return { valid:false, reason:'Key has no expiry date. Contact support.' };
     if(Date.now() > lic.expiry) return { valid:false, reason:'Key expired on '+new Date(lic.expiry).toLocaleDateString('en-IN')+'. Please renew.' };
   }
-  return { valid:true, plan:lic.plan, expiry:lic.expiry||9999999999999, name:lic.name||'' };
-  }
+  return {
+    valid: true,
+    plan: lic.plan,
+    expiry: lic.expiry || 9999999999999,
+    name: lic.name || '',
+    institute: lic.institute || '',
+    mobile: lic.mobile || '',
+    email: lic.email || '',
+    expiryDate: lic.expiryDate || ''
+  };
+}
 
 function showLicMsg(msg, type){
   const el = document.getElementById('lic-msg');

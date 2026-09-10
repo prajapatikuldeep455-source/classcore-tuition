@@ -1,5 +1,8 @@
 node_modules/
 dist/
+*.exe
+*.zip
+*.apk
 *.log
 _extract_js.ps1
 licenses.json

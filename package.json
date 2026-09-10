@@ -53,8 +53,9 @@
       "!script.js",
       "!js/script.js",
       "!js/script.backup.js",
+      "!tmp_classcore.log",
       "!licenses.json",
-      "!tmp_classcore.log"
+      "!scripts/**"
     ],
     "win": {
       "target": [

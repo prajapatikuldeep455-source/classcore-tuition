@@ -643,6 +643,141 @@ ipcMain.handle('get-update-meta', () => {
   } catch (_) { return null; }
 });
 
+// ── VERIFY LICENSE KEY (Firebase Firestore + Device ID Binding) ───────────────
+ipcMain.handle('verify-license-key', async (_event, payload) => {
+  const cleanKey = ((typeof payload === 'object' ? payload.key : payload) || '').trim().toUpperCase();
+  const currentDeviceId = ((typeof payload === 'object' ? payload.deviceId : '') || '').trim();
+  if (!cleanKey) return { valid: false, reason: 'Empty license key' };
+
+  const projectId = 'classcore-e5d97';
+  const apiKey = 'AIzaSyB2XecFJhEMtOyGkUPPbkMZpAGbzJdwL3s';
+
+  function checkLicFields(lic, key) {
+    if (!lic) return null;
+    if (lic.plan !== 'lifetime') {
+      const exp = Number(lic.expiry);
+      if (!exp) return { valid: false, reason: 'Key has no expiry date. Contact support.' };
+      if (Date.now() > exp) {
+        return { valid: false, reason: 'Key expired on ' + new Date(exp).toLocaleDateString('en-IN') + '. Please renew.' };
+      }
+    }
+    return {
+      valid: true,
+      plan: lic.plan,
+      expiry: Number(lic.expiry) || 9999999999999,
+      name: lic.name || '',
+      institute: lic.institute || '',
+      mobile: lic.mobile || '',
+      email: lic.email || '',
+      expiryDate: lic.expiryDate || ''
+    };
+  }
+
+  // 1. Check Firebase Firestore (Primary secure DRM database)
+  try {
+    const docUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/licenses/${cleanKey}?key=${apiKey}`;
+    const resp = await fetch(docUrl, { cache: 'no-store' });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.fields) {
+        const f = data.fields;
+        const lic = {
+          plan: f.plan?.stringValue || 'monthly',
+          expiry: Number(f.expiry?.integerValue || 9999999999999),
+          name: f.name?.stringValue || '',
+          institute: f.institute?.stringValue || '',
+          mobile: f.mobile?.stringValue || '',
+          email: f.email?.stringValue || '',
+          expiryDate: f.expiryDate?.stringValue || '',
+          status: f.status?.stringValue || 'active',
+          deviceId: f.deviceId?.stringValue || ''
+        };
+
+        if (lic.status && lic.status !== 'active') {
+          return { valid: false, reason: 'License key is suspended or inactive. Contact support.' };
+        }
+
+        const validCheck = checkLicFields(lic, cleanKey);
+        if (!validCheck.valid) return validCheck;
+
+        // ── Device ID Binding (1 PC = 1 Key) ──
+        if (currentDeviceId) {
+          if (!lic.deviceId) {
+            // First activation: bind device ID to this PC in Firestore
+            try {
+              const patchUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/licenses/${cleanKey}?updateMask.fieldPaths=deviceId&updateMask.fieldPaths=activatedAt&key=${apiKey}`;
+              await fetch(patchUrl, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fields: {
+                    deviceId: { stringValue: currentDeviceId },
+                    activatedAt: { stringValue: new Date().toISOString() }
+                  }
+                })
+              });
+              log(`[License] Bound key ${cleanKey} to device ${currentDeviceId}`);
+            } catch (bindErr) {
+              log(`[License] Failed to bind device: ${bindErr.message}`);
+            }
+          } else if (lic.deviceId !== currentDeviceId) {
+            // Key is already bound to another machine!
+            return {
+              valid: false,
+              reason: '❌ This license key is already active on another computer. Each license is valid for 1 PC only. Please contact admin to transfer.'
+            };
+          }
+        }
+
+        return { ...validCheck, deviceId: lic.deviceId || currentDeviceId };
+      }
+    }
+  } catch (err) {
+    log(`[License] Firestore check error: ${err.message}`);
+  }
+
+  // 2. Fallback: Local licenses.json bundled with the app or in Documents
+  try {
+    const candidatePaths = [
+      path.join(__dirname, 'licenses.json'),
+      path.join(process.resourcesPath || '', 'licenses.json'),
+      path.join(DATA_DIR, 'licenses.json')
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        const localData = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (localData && localData[cleanKey]) {
+          const lic = localData[cleanKey];
+          const validCheck = checkLicFields(lic, cleanKey);
+          if (validCheck) {
+            log(`[License] Key ${cleanKey} verified via local fallback.`);
+            return validCheck;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    log(`[License] Local fallback check error: ${err.message}`);
+  }
+
+  // 3. Fallback: GitHub raw check (legacy compatibility)
+  try {
+    const rawUrl = 'https://raw.githubusercontent.com/prajapatikuldeep455-source/classcore-tuition/main/licenses.json?t=' + Date.now();
+    const resp = await fetch(rawUrl, { cache: 'no-store' });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data[cleanKey]) {
+        return checkLicFields(data[cleanKey], cleanKey);
+      }
+      return { valid: false, reason: 'License key not found. Please verify your key.' };
+    }
+  } catch (err) {
+    log(`[License] GitHub raw check error: ${err.message}`);
+  }
+
+  return { valid: false, reason: 'Cannot reach verification server. Check your internet connection.' };
+});
+
 // ── LOAD DATA ─────────────────────────────────────────────────────────────────
 ipcMain.handle('load-data', () => {
   try {

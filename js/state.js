@@ -374,14 +374,15 @@ const courseFeeMonthly=s=>{
 };
 // Monthly fee for a student (base fee + course fees)
 const monthlyFee=s=>{
+  if(!s) return 0;
   let base=0;
-  if(stuFeeOvr[s.id]!=null) base=Math.round(+stuFeeOvr[s.id]/12);
-  else if(classFees[s.cls]!=null) base=+classFees[s.cls];
+  if(stuFeeOvr && stuFeeOvr[s.id]!=null) base=Math.round(+stuFeeOvr[s.id]/12);
+  else if(classFees && classFees[s.cls]!=null) base=+classFees[s.cls];
   else if(s.feeType==='annual'){
     const ann=+(s.finalFees||s.annualFees||0);
     base=ann>0?Math.round(ann/12):0;
   } else {
-    base=+(s.monthlyFees||0);
+    base=Number(s.monthlyFees != null ? s.monthlyFees : (s.feeMonthly != null ? s.feeMonthly : (s.fee || 0)));
   }
   return base+courseFeeMonthly(s);
 };

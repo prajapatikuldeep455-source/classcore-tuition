@@ -202,10 +202,27 @@ async function activateLicenseFromSettings(){
   try{
     const result=await verifyKeyOnline(key);
     if(result.valid){
-      saveLicense({key,plan:result.plan,expiry:result.expiry,name:result.name||''});
+      saveLicense({
+        key,
+        plan: result.plan,
+        expiry: result.expiry,
+        name: result.name || '',
+        institute: result.institute || '',
+        mobile: result.mobile || '',
+        email: result.email || '',
+        expiryDate: result.expiryDate || ''
+      });
+      let reg = (typeof getRegistration === 'function' ? getRegistration() : null) || {};
+      reg = {
+        ...reg,
+        name: result.name || reg.name || '',
+        email: result.email || reg.email || '',
+        mobile: result.mobile || reg.mobile || '',
+        institute: result.institute || reg.institute || ''
+      };
+      if(typeof saveRegistration === 'function') saveRegistration(reg);
       const planLabel=result.plan==='lifetime'?'Lifetime ♾️':result.plan==='yearly'?'Yearly 📅':'Monthly 🗓️';
       msg.style.color='#16A34A'; msg.textContent='✅ License activated! Plan: '+planLabel;
-      const reg=getRegistration();
       if(reg) sendToSheets('activate_key',{email:reg.email,mobile:reg.mobile,name:reg.name,key,plan:result.plan,status:'active'});
       toast('✅ License activated! Plan: '+planLabel);
       setTimeout(()=>renderSettings(),1200);
@@ -217,7 +234,7 @@ async function activateLicenseFromSettings(){
     // Real network error — show actual error message
     if(err.message&&err.message.includes('404')){
       msg.style.color='#DC2626';
-      msg.textContent='❌ Key not found on server. Make sure your key is added to licenses.json on GitHub.';
+      msg.textContent='❌ Key not found on server. Please verify your license key.';
     } else if(err.message&&(err.message.includes('NetworkError')||err.message.includes('Failed to fetch')||err.message.includes('net::'))){
       msg.style.color='#E8622A';
       msg.textContent='⚠️ No internet connection. Check your WiFi and try again.';

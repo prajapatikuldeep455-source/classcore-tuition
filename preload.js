@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld('classcore', {
   getDataPath: () =>
     ipcRenderer.invoke('get-data-path'),
 
+  /** Verify license key online or via local backup with Device Lock */
+  verifyLicenseKey: (key, deviceId) =>
+    ipcRenderer.invoke('verify-license-key', { key, deviceId }),
+
 
   // ── APP INFO ─────────────────────────────────────────────────────────────
 

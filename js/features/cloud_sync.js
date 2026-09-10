@@ -123,7 +123,25 @@ function _applyIncomingModule(moduleId, data) {
     switch (moduleId) {
       case 'students':
         if (Array.isArray(data.list)) {
-          students = data.list;
+          students = data.list.map(incoming => {
+            const existing = (students || []).find(s => s.id === incoming.id) || {};
+            const hist = (existing.history && existing.history.length > 0)
+              ? existing.history
+              : (Array.isArray(incoming.history) ? incoming.history : []);
+            const mFee = Number(incoming.monthlyFees || incoming.feeMonthly || incoming.fee || existing.monthlyFees || existing.feeMonthly || existing.fee || 0);
+            return {
+              ...existing,
+              ...incoming,
+              history: hist,
+              paid: (existing.paid != null && existing.paid > 0) ? existing.paid : (incoming.paid || hist.reduce((a, b) => a + Number(b.amount || 0), 0)),
+              monthlyFees: mFee,
+              feeMonthly: mFee,
+              fee: mFee,
+              feeType: existing.feeType || incoming.feeType || 'monthly',
+              totalFees: existing.totalFees || incoming.totalFees || (mFee * 12),
+              finalFees: existing.finalFees || incoming.finalFees || (mFee * 12)
+            };
+          });
           changed = true;
         }
         break;
@@ -143,25 +161,31 @@ function _applyIncomingModule(moduleId, data) {
         if (data.monthFees) monthFees = data.monthFees;
         if (Array.isArray(data.history) || Array.isArray(data.list)) {
           const feesList = data.history || data.list;
+          const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
           feesList.forEach(f => {
             if (!f.studentId) return;
-            const stu = students.find(s => s.id === f.studentId);
+            const stu = (students || []).find(s => s.id === f.studentId);
             if (stu) {
               if (!Array.isArray(stu.history)) stu.history = [];
               const exists = stu.history.some(h => 
-                (h.receiptNo && f.receiptNo && h.receiptNo === f.receiptNo) ||
+                (h.receiptNo && f.receiptNo && String(h.receiptNo) === String(f.receiptNo)) ||
                 (h.date === (f.paidDate || f.date) && Number(h.amount) === Number(f.amount))
               );
               if (!exists) {
                 const pDate = f.paidDate || f.date || (typeof todayStr === 'function' ? todayStr() : new Date().toISOString().slice(0, 10));
                 const dObj = new Date(pDate);
-                const curMonth = dObj.toLocaleString('en-US', { month: 'short' });
-                const curYear = dObj.getFullYear();
+                const curMonth = dObj.toLocaleString('en-US', { month: 'long' });
+                const curYear = dObj.getFullYear() || new Date().getFullYear();
+                let fMonth = curMonth;
+                if (f.month) {
+                  const match = monthNames.find(m => m.toLowerCase().startsWith(String(f.month).toLowerCase().slice(0, 3)));
+                  if (match) fMonth = match;
+                }
                 stu.history.push({
                   amount: Number(f.amount || 0),
                   date: pDate,
                   receiptNo: f.receiptNo || ('REC-' + Date.now().toString().slice(7)),
-                  month: f.month || curMonth,
+                  month: fMonth,
                   year: curYear,
                   mode: f.mode || 'Cash',
                   notes: f.notes || ''
@@ -323,15 +347,23 @@ async function _flushCloudSync() {
     const now = Date.now();
 
     // Clean and normalize student data for mobile companion compatibility
-    const cleanStudents = (students || []).map((s) => ({
-      ...s,
-      status: s.inactive ? 'inactive' : 'active',
-      rollNo: s.rollNo || s.roll || '',
-      feeMonthly: Number(s.feeMonthly || s.monthlyFees || s.fee || 0),
-      parentName: s.parentName || s.parent || '',
-      parentMobile: s.parentMobile || s.mobile || '',
-      admissionDate: s.admissionDate || s.admDate || s.doj || ''
-    }));
+    const cleanStudents = (students || []).map((s) => {
+      const mFee = Number(s.monthlyFees != null ? s.monthlyFees : (s.feeMonthly != null ? s.feeMonthly : (s.fee || 0)));
+      return {
+        ...s,
+        status: s.inactive ? 'inactive' : 'active',
+        rollNo: s.rollNo || s.roll || '',
+        monthlyFees: mFee,
+        feeMonthly: mFee,
+        fee: mFee,
+        feeType: s.feeType || 'monthly',
+        history: Array.isArray(s.history) ? s.history : [],
+        paid: (s.paid != null && s.paid > 0) ? s.paid : (Array.isArray(s.history) ? s.history.reduce((a, b) => a + Number(b.amount || 0), 0) : 0),
+        parentName: s.parentName || s.parent || '',
+        parentMobile: s.parentMobile || s.mobile || '',
+        admissionDate: s.admissionDate || s.admDate || s.doj || ''
+      };
+    });
 
     // Clean and normalize batch data
     const cleanBatches = (batches || []).map((b) => ({
@@ -364,7 +396,7 @@ async function _flushCloudSync() {
           payload = { batches: cleanBatches, courses: courses || [], updatedAt: now, _sender: _cloudClientId };
           break;
         case 'fees':
-          payload = { classFees: classFees || {}, stuFeeOvr: stuFeeOvr || {}, monthFees: monthFees || {}, history: allFeeHistory, list: allFeeHistory, updatedAt: now, _sender: _cloudClientId };
+          payload = { classFees: classFees || {}, stuFeeOvr: stuFeeOvr || {}, monthFees: monthFees || {}, history: allFeeHistory, list: allFeeHistory, count: allFeeHistory.length, updatedAt: now, _sender: _cloudClientId };
           break;
         case 'attendance': {
           const mobileDays = {};
