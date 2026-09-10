@@ -141,11 +141,55 @@ function _applyIncomingModule(moduleId, data) {
         if (data.classFees) classFees = data.classFees;
         if (data.stuFeeOvr) stuFeeOvr = data.stuFeeOvr;
         if (data.monthFees) monthFees = data.monthFees;
+        if (Array.isArray(data.history) || Array.isArray(data.list)) {
+          const feesList = data.history || data.list;
+          feesList.forEach(f => {
+            if (!f.studentId) return;
+            const stu = students.find(s => s.id === f.studentId);
+            if (stu) {
+              if (!Array.isArray(stu.history)) stu.history = [];
+              const exists = stu.history.some(h => 
+                (h.receiptNo && f.receiptNo && h.receiptNo === f.receiptNo) ||
+                (h.date === (f.paidDate || f.date) && Number(h.amount) === Number(f.amount))
+              );
+              if (!exists) {
+                const pDate = f.paidDate || f.date || (typeof todayStr === 'function' ? todayStr() : new Date().toISOString().slice(0, 10));
+                const dObj = new Date(pDate);
+                const curMonth = dObj.toLocaleString('en-US', { month: 'short' });
+                const curYear = dObj.getFullYear();
+                stu.history.push({
+                  amount: Number(f.amount || 0),
+                  date: pDate,
+                  receiptNo: f.receiptNo || ('REC-' + Date.now().toString().slice(7)),
+                  month: f.month || curMonth,
+                  year: curYear,
+                  mode: f.mode || 'Cash',
+                  notes: f.notes || ''
+                });
+                stu.paid = stu.history.reduce((a, b) => a + Number(b.amount || 0), 0);
+              }
+            }
+          });
+        }
         changed = true;
         break;
       case 'attendance':
         if (data.attData) {
           attData = data.attData;
+          changed = true;
+        }
+        if (data.days && typeof data.days === 'object') {
+          Object.keys(data.days).forEach(k => {
+            const dayObj = data.days[k];
+            if (dayObj && dayObj.date && dayObj.records) {
+              const bName = (dayObj.batchId === 'all' || !dayObj.batchId) ? 'ALL' : dayObj.batchId;
+              const dtKey = `${dayObj.date}__${bName}`;
+              if (!attData[dtKey]) attData[dtKey] = {};
+              Object.keys(dayObj.records).forEach(sid => {
+                attData[dtKey][sid] = (dayObj.records[sid] === 'P');
+              });
+            }
+          });
           changed = true;
         }
         break;
@@ -322,9 +366,28 @@ async function _flushCloudSync() {
         case 'fees':
           payload = { classFees: classFees || {}, stuFeeOvr: stuFeeOvr || {}, monthFees: monthFees || {}, history: allFeeHistory, list: allFeeHistory, updatedAt: now, _sender: _cloudClientId };
           break;
-        case 'attendance':
-          payload = { attData: attData || {}, updatedAt: now, _sender: _cloudClientId };
+        case 'attendance': {
+          const mobileDays = {};
+          if (attData && typeof attData === 'object') {
+            Object.keys(attData).forEach(k => {
+              const parts = k.split('__');
+              const date = parts[0];
+              const bName = parts[1] || 'all';
+              const recs = {};
+              const dRec = attData[k] || {};
+              Object.keys(dRec).forEach(sid => {
+                recs[sid] = dRec[sid] ? 'P' : 'A';
+              });
+              mobileDays[`${date}_${bName === 'ALL' ? 'all' : bName}`] = {
+                date: date,
+                batchId: bName === 'ALL' ? 'all' : bName,
+                records: recs
+              };
+            });
+          }
+          payload = { attData: attData || {}, days: mobileDays, updatedAt: now, _sender: _cloudClientId };
           break;
+        }
         case 'exams':
           payload = { exams: exams || [], updatedAt: now, _sender: _cloudClientId };
           break;
