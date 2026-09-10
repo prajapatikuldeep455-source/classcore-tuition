@@ -1,4 +1,4 @@
 {
-  "version": "2.0.0",
-  "notes": "v2.0.0: WhatsApp Hub integration, automated broadcasts, AI smart replies, direct PDF receipts, and performance improvements."
+  "version": "3.0.0",
+  "notes": "v3.0.0: Real-time Cloud Sync with Mobile Companion App, instant QR code phone pairing, auto-login on registration, and WhatsApp Hub."
 }
