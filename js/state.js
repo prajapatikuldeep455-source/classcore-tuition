@@ -239,6 +239,7 @@ async function persist(){
 
       _persistFailCount = 0;
       showSaveChip('saved');
+      if (typeof cloudSyncMarkAllDirty === 'function') cloudSyncMarkAllDirty();
       return result;
 
     } else {
@@ -255,6 +256,7 @@ async function persist(){
       }
       _persistFailCount = 0;
       showSaveChip('saved');
+      if (typeof cloudSyncMarkAllDirty === 'function') cloudSyncMarkAllDirty();
       return { ok: true };
     }
   } catch(e) {

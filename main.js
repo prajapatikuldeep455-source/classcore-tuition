@@ -845,6 +845,17 @@ ipcMain.handle('open-path', async (event, targetPath) => {
   }
 });
 
+// ── GENERATE QR CODE ──────────────────────────────────────────────────────────
+ipcMain.handle('generate-qr', async (event, text) => {
+  try {
+    const QRCode = require('qrcode');
+    const dataUrl = await QRCode.toDataURL(text || '', { width: 220, margin: 1 });
+    return { ok: true, dataUrl };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // ── PDF HELPER ────────────────────────────────────────────────────────────────
 async function _generatePDF(html, filePath, paperSize) {
   const win = new BrowserWindow({

@@ -157,7 +157,7 @@
         <div class="login-brand">CLASS<span style="color:#E8622A">CORE</span></div>
         <div class="brand-subtitle">Tuition Management</div>
       </div>
-      <div class="fg fg-mb"><label>Username</label><input id="l-user" placeholder="Enter your username" autocomplete="username"></div>
+      <div class="fg fg-mb"><label>Username, Email or Mobile</label><input id="l-user" placeholder="Username, email or mobile" autocomplete="username"></div>
       <div class="fg" style="margin-bottom:6px"><label>Password</label><input id="l-pass" type="password" placeholder="Enter your password" autocomplete="current-password"></div>
       <div class="login-forgot-wrap">
         <button class="link-btn link-btn-danger" onclick="showForgotPassword()">Forgot password?</button>
@@ -269,6 +269,10 @@
       <div class="topbar-right">
         <span id="today-chip" class="today-chip"></span>
         <span id="save-chip" class="save-chip"></span>
+        <span id="sync-chip" class="sync-chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#F3F4F6;border:1px solid #E5E7EB;color:#6B7280" onclick="openPairModal()" title="Click to pair Mobile App">
+          <span id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:#9CA3AF"></span>
+          <span id="sync-text">Cloud Sync</span>
+        </span>
         <button id="top-btn" class="btn btn-primary" style="display:none" onclick="topBtnAction()"></button>
       </div>
     </div>
@@ -499,6 +503,7 @@
 <script src="js/features/license.js" defer></script>
 <script src="js/features/updates.js" defer></script>
 <script src="js/features/exams.js" defer></script>
+<script src="js/features/cloud_sync.js" defer></script>
 <script src="js/app.js" defer></script>
 </body>
 </html>

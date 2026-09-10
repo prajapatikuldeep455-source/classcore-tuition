@@ -320,6 +320,23 @@ function renderSettings(){
     renderSubscriptionCard() +
 
     '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+        '<span style="font-size:22px">📱</span>' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700">Mobile Companion App</div>' +
+          '<div style="font-size:12px;color:var(--text-muted,#888)">Connect your Android phone to manage fees and attendance on the go</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">' +
+        '<div>' +
+          '<div style="font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px">Institute Sync Code</div>' +
+          '<div style="font-size:16px;font-weight:900;color:#1B3154;font-family:monospace;margin-top:2px">'+(typeof getInstituteSyncCode === "function" ? getInstituteSyncCode() : "CC-INST1000")+'</div>' +
+        '</div>' +
+        '<button class="btn btn-primary btn-sm" onclick="openPairModal()">📲 Pair Phone / QR</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card" style="margin-bottom:18px">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">🔐 Change Login Credentials</div>' +
       '<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:10px;padding:11px 14px;font-size:12px;color:#92400E;margin-bottom:14px">⚠️ Current login: <b>'+(localStorage.getItem('username')||'admin')+'</b> / <b>••••••••</b></div>' +
       '<div class="form-grid">' +

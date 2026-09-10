@@ -1,0 +1,85 @@
+name: Build ClassCore Android APK
+
+on:
+  push:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-apk.yml'
+      - 'capacitor.config.json'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Capacitor Dependencies
+        run: |
+          npm install --save-dev @capacitor/cli @capacitor/core @capacitor/android
+
+      - name: Initialize Android Platform
+        run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Android Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Sign Android APK
+        run: |
+          # Generate a release keystore for signing
+          keytool -genkeypair -v -keystore release.keystore -alias classcore -keyalg RSA -keysize 2048 -validity 10000 -storepass classcore2025 -keypass classcore2025 -dname "CN=ClassCore, OU=Mobile, O=ClassCore, L=Surat, ST=Gujarat, C=IN"
+          
+          # Locate unsigned APK
+          UNSIGNED_APK=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "Found unsigned APK: $UNSIGNED_APK"
+          
+          # Find Android SDK build-tools
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          echo "Using Android Build Tools: $BUILD_TOOLS"
+          
+          # Align and Sign
+          $BUILD_TOOLS/zipalign -v -p 4 "$UNSIGNED_APK" ClassCore-aligned.apk
+          $BUILD_TOOLS/apksigner sign --ks release.keystore --ks-pass pass:classcore2025 --key-pass pass:classcore2025 --out ClassCore.apk ClassCore-aligned.apk
+          
+          echo "Verification:"
+          $BUILD_TOOLS/apksigner verify ClassCore.apk
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClassCore-Android-APK
+          path: ClassCore.apk
+          retention-days: 30
+
+      - name: Attach APK to GitHub Release v2.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v2.0.0 ClassCore.apk --clobber || echo "Release upload skipped or failed"

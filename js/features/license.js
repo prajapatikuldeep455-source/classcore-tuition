@@ -467,6 +467,9 @@ async function doRegister(){
   localStorage.setItem('cc_users', JSON.stringify(users));
   localStorage.setItem('username', tempUser);
   localStorage.setItem('password', hashedPwd);
+  currentUser = { username: tempUser, role: 'admin', name, email };
+  localStorage.setItem('ops_logged', '1');
+  localStorage.setItem('ops_cur_user', JSON.stringify(currentUser));
 
   // ── Log to Google Sheets ───────────────────────────────────────────────────
   const trialEndDate = new Date(trialEnd).toLocaleDateString('en-IN',

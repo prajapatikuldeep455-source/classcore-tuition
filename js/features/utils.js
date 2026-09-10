@@ -128,22 +128,31 @@ async function doLogin(){
   if(!u){toast('Enter username','err');return;}
   if(!p){toast('Enter password','err');return;}
   const users=getUsers();
-  // Check username exists first
-  const byUser=users.find(x=>x.username===u);
-  if(!byUser){toast('Username not found','err');return;}
+  const reg = (typeof getRegistration === 'function') ? getRegistration() : null;
+  const cleanU = u.toLowerCase();
+  const digitsU = u.replace(/\D/g, '');
+
+  const byUser = users.find(x => {
+    if (x.username && x.username.toLowerCase() === cleanU) return true;
+    if (x.email && x.email.toLowerCase() === cleanU) return true;
+    if (digitsU.length >= 10 && x.mobile && x.mobile.replace(/\D/g, '') === digitsU) return true;
+    if (x.role === 'admin' && reg) {
+      if (reg.email && reg.email.toLowerCase() === cleanU) return true;
+      if (digitsU.length >= 10 && reg.mobile && reg.mobile.replace(/\D/g, '') === digitsU) return true;
+    }
+    return false;
+  });
+
+  if(!byUser){toast('Username, email or mobile not found','err');return;}
   // Hash the entered password for comparison
   const hashedInput = await hashPassword(p);
-  let found = users.find(x=>x.username===u && x.password===hashedInput);
-  // Backward compatibility: if hash didn't match, try plain-text comparison
-  // and auto-migrate the password to hashed version
-  if(!found){
-    const plainMatch = users.find(x=>x.username===u && x.password===p);
-    if(plainMatch && !_isHashed(plainMatch.password)){
-      // Auto-migrate: save hashed version
-      plainMatch.password = hashedInput;
+  let found = (byUser.password === hashedInput) ? byUser : null;
+  if(!found && byUser.password === p){
+    if(!_isHashed(byUser.password)){
+      byUser.password = hashedInput;
       saveUsers(users);
-      found = plainMatch;
     }
+    found = byUser;
   }
   if(!found){toast('Wrong password','err');return;}
   // Correct credentials

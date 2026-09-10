@@ -138,6 +138,10 @@ contextBridge.exposeInMainWorld('classcore', {
   openPath: (targetPath) =>
     ipcRenderer.invoke('open-path', targetPath),
 
+  /** Generate a QR code data URL (offline) */
+  generateQR: (text) =>
+    ipcRenderer.invoke('generate-qr', text),
+
 
   // ── BACKUP ───────────────────────────────────────────────────────────────
 
